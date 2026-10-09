@@ -1,0 +1,10 @@
+{
+  "aggiornato": "9 ottobre 2026 · in attesa degli exit poll",
+  "accordi": [["רק", "ל"], ["דרך", "אמת"], ["מחל", "ט"], ["ודם", "עם"]],
+  "exit": {
+    "kan": { "ora": "", "seggi": {} },
+    "c12": { "ora": "", "seggi": {} },
+    "c13": { "ora": "", "seggi": {} },
+    "c14": { "ora": "", "seggi": {} }
+  }
+}
