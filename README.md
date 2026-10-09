@@ -125,4 +125,5 @@ Liste, colori e blocchi stanno in testa allo script, nella costante `LISTE['26']
 
 - Voti: Commissione elettorale centrale (bechirot.gov.il).
 - Confini delle località: Ufficio centrale di statistica, nella versione TopoJSON di [DarthVictor/israel-election-results](https://github.com/DarthVictor/israel-election-results) (licenza MIT), semplificata con mapshaper. L'unione con i dati avviene sul codice di località `סמל ישוב`. Le tribù beduine non riconosciute e i campi militari non hanno un poligono: entrano nei totali ma non nella mappa.
+- Sagoma del paese e sottodistretti: [geoBoundaries](https://www.geoboundaries.org) ISR ADM2 (CC0), semplificati. Coprono il territorio di Israele entro la Linea verde più il Golan: la Cisgiordania resta senza sfondo e gli insediamenti vi compaiono come poligoni isolati.
 - Base 2022: `expc.csv` definitivo della Knesset 25.
