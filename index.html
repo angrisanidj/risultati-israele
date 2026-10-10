@@ -59,7 +59,7 @@ h1,h2,h3{font-family:var(--serif);font-weight:700;letter-spacing:-.01em;margin:0
 .he{font-family:"Arial Hebrew","Noto Sans Hebrew","Segoe UI",Arial,sans-serif;direction:rtl;unicode-bidi:isolate}
 
 /* ---------- testata: le due strisce della bandiera ---------- */
-.flagbar{height:9px;background:linear-gradient(180deg,#fff 0 18%,var(--blue) 18% 46%,#fff 46% 54%,var(--blue) 54% 82%,#fff 82%)}
+.flagbar{height:5px;background:var(--blue)}
 .topbar{position:sticky;top:0;z-index:40;backdrop-filter:blur(14px);background:rgba(5,11,24,.86);border-bottom:1px solid var(--line)}
 .topbar-in{max-width:1420px;margin:auto;padding:10px var(--pad);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:9px;font:700 15px/1 var(--serif);white-space:nowrap}
@@ -100,7 +100,18 @@ select{background:rgba(0,0,0,.32);color:var(--t1);border:1px solid var(--line-2)
 .social-lab{color:var(--t3);font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-right:3px}
 .sbtn{width:40px;height:40px;flex:0 0 40px;padding:0;border-radius:50%;border:1.5px solid rgba(242,245,251,.34);background:transparent;color:var(--t1);
   display:inline-flex;align-items:center;justify-content:center;font-size:17px;line-height:1;text-decoration:none;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
-.sbtn:hover,.sbtn:focus-visible{background:var(--white);border-color:var(--white);color:#071436}
+.social-btns{display:flex;gap:9px}
+.sbtn:focus-visible{background:var(--white);border-color:var(--white);color:#071436;outline:none}
+.sbtn:active{background:rgba(255,255,255,.14)}
+@media(hover:hover){.sbtn:hover{background:var(--white);border-color:var(--white);color:#071436}}
+/* sul telefono: l'etichetta sopra, i sette pulsanti su una riga sola, larghi uguali */
+@media(max-width:560px){
+  .social{display:grid;gap:9px;justify-items:start}
+  .social-lab{margin:0}
+  .social-btns{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;width:100%;max-width:330px}
+  .sbtn{width:auto;height:auto;aspect-ratio:1;flex:none;font-size:16px}
+  .sbtn .bi-link-45deg{font-size:19px}
+}
 .sbtn .bi-link-45deg{font-size:21px}
 .social-esito{color:var(--green);font-size:12px;font-weight:600}
 .hero .metaline{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;position:relative;z-index:1;align-items:center}
@@ -409,6 +420,7 @@ footer a{color:var(--t2)}
     </div>
     <div class="social" aria-label="Condividi la pagina">
       <span class="social-lab">Condividi</span>
+      <div class="social-btns">
       <a class="sbtn" data-rete="x" href="#" target="_blank" rel="noopener" aria-label="Condividi su X" title="X"><i class="bi bi-twitter-x"></i></a>
       <a class="sbtn" data-rete="threads" href="#" target="_blank" rel="noopener" aria-label="Condividi su Threads" title="Threads"><i class="bi bi-threads"></i></a>
       <a class="sbtn" data-rete="facebook" href="#" target="_blank" rel="noopener" aria-label="Condividi su Facebook" title="Facebook"><i class="bi bi-facebook"></i></a>
@@ -416,6 +428,7 @@ footer a{color:var(--t2)}
       <a class="sbtn" data-rete="telegram" href="#" target="_blank" rel="noopener" aria-label="Condividi su Telegram" title="Telegram"><i class="bi bi-telegram"></i></a>
       <a class="sbtn" data-rete="whatsapp" href="#" target="_blank" rel="noopener" aria-label="Condividi su WhatsApp" title="WhatsApp"><i class="bi bi-whatsapp"></i></a>
       <button class="sbtn" id="sLink" type="button" aria-label="Copia il link" title="Copia il link"><i class="bi bi-link-45deg"></i></button>
+      </div>
       <span class="social-esito" id="sEsito" role="status"></span>
     </div>
   </header>
