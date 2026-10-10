@@ -262,14 +262,17 @@ tr.tot td{font-weight:700;border-top:1px solid var(--line-2);border-bottom:0}
 #locMap.drag{cursor:grabbing}
 #baseLayer path{stroke:#2c3a58;stroke-width:.8;pointer-events:none;vector-effect:non-scaling-stroke;transition:fill .3s;stroke-linejoin:round}
 #locMap.sd #baseLayer path{pointer-events:auto;cursor:pointer;stroke:#08101f;stroke-width:1}
-#locMap.sd #baseLayer path:hover,#locMap #baseLayer path.sel{stroke:#fff;stroke-width:1.6}
 #locMap.hassel #baseLayer path:not(.sel){opacity:.55}
 #locLayer path{stroke:#08101f;stroke-width:.5;stroke-linejoin:round;cursor:pointer;vector-effect:non-scaling-stroke;transition:fill .3s,opacity .3s}
-#locLayer path:hover{stroke:#fff;stroke-width:1.2}
-#locLayer path.sel{stroke:#fff;stroke-width:2}
 #locMap.hassel #locLayer path:not(.sel){opacity:.5}
 #locMap.area #baseLayer path.fuori,#locMap.area #locLayer path.fuori{opacity:.32}
-#locMap.area #baseLayer path.aperta{stroke:#f4f7ff;stroke-width:1.6;pointer-events:none}
+#locMap.area #baseLayer path.aperta{pointer-events:none}
+/* i contorni evidenziati stanno su uno strato sopra tutto: i vicini non li coprono */
+#hiLayer{pointer-events:none}
+#hiLayer path{fill:none;stroke:#fff;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
+#hiLayer path.ov-aperta{stroke:#f4f7ff;stroke-width:1.8}
+#hiLayer path.ov-sel{stroke-width:2.2}
+#hiLayer path.ov-hover{stroke-width:1.6;opacity:.9}
 #locMap.area #locLayer path:not(.fuori){stroke:#0a1324;stroke-width:.7}
 .mapzoom{position:absolute;top:10px;right:10px;z-index:2;display:grid;gap:4px}
 .mapzoom button{width:34px;height:34px;padding:0;font:500 17px/1 var(--sans);border-radius:var(--r-s);background:rgba(10,20,40,.94)}
@@ -547,7 +550,7 @@ footer a{color:var(--t2)}
       <div class="mapside l maplist"><h4 id="listTitle">Le aree</h4><input id="cerca" class="cerca" placeholder="Cerca una località…" autocomplete="off"><div id="locList" class="rows"></div></div>
       <div class="mapcol">
         <div class="mapstage" id="mapStage">
-          <svg id="locMap" role="img" aria-label="Mappa delle località israeliane"><g id="baseLayer"></g><g id="locLayer"></g></svg>
+          <svg id="locMap" role="img" aria-label="Mappa delle località israeliane"><g id="baseLayer"></g><g id="locLayer"></g><g id="hiLayer"></g></svg>
           <span class="maphint" id="mapHint">Tocca un’area per vedere le sue località</span>
           <button id="mapBack" class="sm mapback hidden">← Tutto il paese</button>
           <div class="mapzoom">
@@ -1383,6 +1386,8 @@ function costruisciMappa() {
     svg.classList.remove('drag'); drag = null;
   };
   svg.addEventListener('pointerup', fine); svg.addEventListener('pointercancel', fine);
+  svg.addEventListener('pointerover', e => { if (e.pointerType !== 'touch') puntatoreSu(e.target); });
+  svg.addEventListener('pointerleave', () => puntatoreSu(null));
   svg.addEventListener('wheel', e => {
     e.preventDefault();
     const r = svg.getBoundingClientRect(), v = vista;
@@ -1402,9 +1407,30 @@ function evidenzia() {
       const i = Number(id.slice(2));
       sel = i === SD_GS ? [...document.querySelectorAll('#locLayer path[data-gs]')] : [document.querySelector('#baseLayer path[data-sd="' + i + '"]')];
     } else sel = [document.querySelector('#locLayer path[data-id="' + id + '"]')];
-    sel.filter(Boolean).forEach(p => { p.classList.add('sel'); p.parentNode.appendChild(p); });
+    sel.filter(Boolean).forEach(p => p.classList.add('sel'));
   }
   $('locMap').classList.toggle('hassel', id != null && !(S.focusSD != null && typeof id === 'string'));
+  contorni();
+}
+/* Contorni sopra tutto: l'area aperta, la selezione e quella sotto il puntatore */
+let sottoPuntatore = null;
+function contorni() {
+  const out = [];
+  const add = (p, cls) => { if (p && p.getAttribute('display') !== 'none') out.push('<path class="' + cls + '" d="' + p.getAttribute('d') + '"></path>'); };
+  if (S.focusSD != null && S.focusSD !== SD_GS) add(document.querySelector('#baseLayer path[data-sd="' + S.focusSD + '"]'), 'ov-aperta');
+  document.querySelectorAll('#locMap path.sel').forEach(p => add(p, 'ov-sel'));
+  if (sottoPuntatore && !sottoPuntatore.classList.contains('sel')) add(sottoPuntatore, 'ov-hover');
+  $('hiLayer').innerHTML = out.join('');
+}
+function puntatoreSu(el) {
+  let p = el && el.tagName === 'path' && el.closest('#baseLayer, #locLayer') ? el : null;
+  if (p) {
+    const inBase = !!p.closest('#baseLayer');
+    if (livello() === 'loc' && inBase) p = null;                         /* nelle località lo sfondo non è cliccabile */
+    else if (inBase && S.focusSD != null && Number(p.dataset.sd) === S.focusSD) p = null;
+    else if (!inBase && livello() === 'sd' && (S.focusSD == null || sdDi(Number(p.dataset.id)) !== S.focusSD)) p = null;
+  }
+  if (p !== sottoPuntatore) { sottoPuntatore = p; contorni(); }
 }
 function seleziona(id, centra) {
   S.sel = id;
