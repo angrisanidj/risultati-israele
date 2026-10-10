@@ -11,6 +11,7 @@
    - nessuna lista ha da 1 a 3 seggi (sotto la soglia del 3,25% non se ne prendono: è un errore di battitura);
    - gli accordi di eccedenza sono coppie di lettere valide;
    - la proiezione del modello, se c'è, somma a 120.
+   L'ora degli exit poll si scrive com'è nei grafici, in ora israeliana: la pagina la mostra in ora italiana.
    Poi: commit, pull --rebase (il workflow del modello può aver scritto nel frattempo), push,
    e attesa finché il stime.json servito da GitHub Pages è identico a quello appena pubblicato. */
 import fs from 'node:fs';
@@ -52,7 +53,7 @@ for (const [k, x] of Object.entries(j.exit || {})) {
   const t = somma(s);
   if (t !== 120) errori.push(RETI[k] + ': i seggi sommano a ' + t + ', non a 120');
   const b = { N: 0, O: 0, A: 0, X: 0 }; for (const [l, n] of Object.entries(s)) b[BLOCCO[l] || 'X'] += n;
-  righe.push(RETI[k].padEnd(10) + ' ore ' + (x.ora || '?').padEnd(6) + ' Netanyahu ' + b.N + ' · opposizione ' + b.O + ' · arabi ' + b.A + (b.X ? ' · altri ' + b.X : '') + '   (' +
+  righe.push(RETI[k].padEnd(10) + ' ore ' + (x.ora || '?').padEnd(5) + ' (Israele)  Netanyahu ' + b.N + ' · opposizione ' + b.O + ' · arabi ' + b.A + (b.X ? ' · altri ' + b.X : '') + '   (' +
     Object.entries(s).filter(([, n]) => n > 0).sort((a, c) => c[1] - a[1]).map(([l, n]) => (NOMI[l] || l) + ' ' + n).join(', ') + ')');
 }
 for (const c of j.accordi || []) if (!Array.isArray(c) || c.length !== 2 || !c.every(l => LETTERE.has(l))) errori.push('accordo non valido: ' + JSON.stringify(c));

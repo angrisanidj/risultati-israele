@@ -105,6 +105,8 @@ Non è una protezione vera, perché la pagina è statica. Ma quello che vedono i
 
 Le reti aggiornano i numeri nella notte: si ripete con la nuova ora.
 
+**L'ora.** In `stime.json`, e nelle caselle della redazione, l'ora va scritta com'è nei grafici delle reti, cioè in ora israeliana: per esempio «נכון לשעה 01:00» si scrive `01:00`. La pagina la mostra ai lettori in ora italiana, un'ora indietro (01:00 → 00:00). Le ore prima di mezzogiorno valgono per la notte dopo il voto.
+
 **Come compaiono le liste nei grafici delle reti**
 
 | Lettera | Nella dashboard | Nei grafici (ebraico) | In inglese |

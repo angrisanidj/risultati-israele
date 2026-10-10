@@ -573,7 +573,7 @@ footer a{color:var(--t2)}
       <div class="feedprog solo-red" id="boxStime"><div><b>Stime pubblicate nel repository</b><span id="statoStime">lettura di stime.json…</span></div><button id="copyStime" class="sm">Copia per stime.json</button></div>
       <div class="exit-wrap">
         <div class="exit-head"><span style="text-align:left">Lista</span><span>Kan 11</span><span>Can. 12</span><span>Can. 13</span><span>Can. 14</span></div>
-        <div class="exit-row ore"><div class="partylabel"><span class="muted">Ora</span></div><input data-src="kan" data-ora placeholder="22:00"><input data-src="c12" data-ora placeholder="22:00"><input data-src="c13" data-ora placeholder="22:00"><input data-src="c14" data-ora placeholder="22:00"></div>
+        <div class="exit-row ore"><div class="partylabel"><span class="muted" title="Come nei grafici delle reti: ai lettori si mostra in ora italiana">Ora in Israele</span></div><input data-src="kan" data-ora placeholder="22:00"><input data-src="c12" data-ora placeholder="22:00"><input data-src="c13" data-ora placeholder="22:00"><input data-src="c14" data-ora placeholder="22:00"></div>
         <div id="exitInputs"></div>
       </div>
  <div class="exit-actions solo-red"><button id="saveExit" class="primary">Salva stime</button><button id="clearExit" class="sm">Torna a stime.json</button></div>
@@ -1041,12 +1041,27 @@ function avanzamento(R) {
   if (seg && seg.tot) return { f: seg.fatti / seg.tot, tipo: 'seggi', fatti: seg.fatti, tot: seg.tot, ord };
   return { f: clamp(ord / VAL22_ORD, 0, 1), tipo: 'volumi', ord };
 }
+/* L'ORA DEGLI EXIT POLL si scrive com'è nei grafici delle reti, cioè in ora israeliana
+   (stime.json e caselle della redazione), e si mostra ai lettori in ora italiana. Le ore
+   prima di mezzogiorno sono della notte dopo il voto. */
+const GIORNO_VOTO = { '26': [2026, 9, 27], '25': [2022, 10, 1] };
+function scartoFuso(tz, ms) {
+  const p = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(new Date(ms));
+  const g = t => +p.find(x => x.type === t).value;
+  return Date.UTC(g('year'), g('month') - 1, g('day'), g('hour'), g('minute')) - ms;
+}
+function oraItaliana(s) {
+  const m = String(s || '').trim().match(/^(\d{1,2})[:.](\d{2})$/);
+  if (!m) return String(s || '').trim();
+  const [a, me, g] = GIORNO_VOTO[ED] || GIORNO_VOTO['26'];
+  const locale = Date.UTC(a, me, g + (+m[1] < 12 ? 1 : 0), +m[1], +m[2]);
+  const ms = locale - scartoFuso('Asia/Jerusalem', locale);
+  return new Intl.DateTimeFormat('it-IT', { timeZone: 'Europe/Rome', hour: '2-digit', minute: '2-digit' }).format(new Date(ms));
+}
 function exitDi(k) {
   const loc = REDAZIONE ? S.exitLocale[k] : null;
-  if (loc && sum(loc.seggi) > 0) return { ...loc, locale: true };
-  const st = S.stime.exit && S.stime.exit[k];
-  if (st && sum(st.seggi) > 0) return { ...st, locale: false };
-  return null;
+  const x = loc && sum(loc.seggi) > 0 ? { ...loc, locale: true } : (S.stime.exit && S.stime.exit[k] && sum(S.stime.exit[k].seggi) > 0 ? { ...S.stime.exit[k], locale: false } : null);
+  return x ? { ...x, oraIL: x.ora || '', ora: oraItaliana(x.ora) } : null;
 }
 /* Seggi del 2022 ricalcolati dal file definitivo: controprova del riparto */
 const SEGGI22 = baderOfer(BASE22.naz, ACCORDI_BASE['25']).seggi;
@@ -1433,7 +1448,7 @@ function riempiExit() {
   EXIT.forEach(e => {
     const x = exitDi(e.k);
     document.querySelectorAll('input[data-src="' + e.k + '"]').forEach(inp => {
-      const v = inp.hasAttribute('data-ora') ? (x && x.ora || '') : (x && x.seggi[inp.dataset.l] != null ? x.seggi[inp.dataset.l] : '');
+      const v = inp.hasAttribute('data-ora') ? (x && x.oraIL || '') : (x && x.seggi[inp.dataset.l] != null ? x.seggi[inp.dataset.l] : '');
       inp.value = v; inp.classList.toggle('dafile', !!x && !x.locale); inp.classList.remove('dawiki');
       inp.readOnly = !REDAZIONE; inp.tabIndex = REDAZIONE ? 0 : -1;
       if (!REDAZIONE) inp.placeholder = '';
@@ -2274,7 +2289,7 @@ function eventi() {
   $('saveExit').onclick = () => { S.exitLocale = leggiExit(); salva(); riempiExit(); render(); };
   $('clearExit').onclick = () => { S.exitLocale = {}; salva(); riempiExit(); render(); };
   $('copyStime').onclick = () => {
-    const exit = {}; EXIT.forEach(e => { const x = exitDi(e.k); if (x) exit[e.k] = { ora: x.ora || '', seggi: x.seggi }; });
+    const exit = {}; EXIT.forEach(e => { const x = exitDi(e.k); if (x) exit[e.k] = { ora: x.oraIL || '', seggi: x.seggi }; });   /* in stime.json resta l'ora israeliana */
     const j = { aggiornato: new Intl.DateTimeFormat('it-IT', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }).format(new Date()), accordi: accordi(), exit };
     if (S.stime.modello) j.modello = S.stime.modello;   /* l'incolla non deve far perdere la proiezione */
     const t = JSON.stringify(j, null, 2);
@@ -2493,7 +2508,7 @@ window.CARD = (function () {
     const cols = s.ex.map(e => ({ n: e.n, ora: e.x.ora, seggi: e.x.seggi }));
     if (s.bo && s.R.fonte !== 'prova') cols.push({ n: 'Scrutinio', ora: nf(s.av.f * 100, 0) + '%', seggi: s.bo.seggi, reale: true });
     frame(x, { badge: 'EXIT POLL', kicker: s.ambito, title: g('t3').value, sub: 'Seggi su 120 secondo ' + (s.ex.length === 4 ? 'le quattro reti' : s.ex.length === 1 ? 'l’exit poll disponibile' : 'gli exit poll disponibili') + (cols.some(c => c.reale) ? ', e il riparto sui voti contati' : ''),
-      nota: 'Gli exit poll israeliani sono pubblicati in seggi alla chiusura dei seggi, alle 22 israeliane, e aggiornati nella notte con i voti reali. Le liste sotto la soglia del 3,25% non hanno seggi.',
+      nota: 'Gli exit poll israeliani sono pubblicati in seggi alla chiusura dei seggi, alle 21 italiane (le 22 in Israele), e aggiornati nella notte con i voti reali. Le liste sotto la soglia del 3,25% non hanno seggi.',
       fonte: (s.ex.map(e => e.n).join(', ') || 'Reti israeliane') + ' (' + s.data + ')', n: N.n, tot: N.tot });
     if (!cols.length) return attesa(x, 'In attesa degli exit poll', 'Alle 21 italiane, le 22 in Israele.');
     const liste = L.filter(p => cols.some(c => (c.seggi[p.l] || 0) > 0)).sort((a, b) => (cols[0].seggi[b.l] || 0) - (cols[0].seggi[a.l] || 0));
@@ -2728,7 +2743,7 @@ window.CARD = (function () {
     const cols = s.ex.map(e => ({ n: e.s === 'Kan' ? 'Kan 11' : e.n.replace('Canale ', 'Can. '), ora: e.x.ora, seggi: e.x.seggi }));
     if (s.bo && s.R.fonte !== 'prova') cols.push({ n: 'Scrutinio', ora: nf(s.av.f * 100, 0) + '%', seggi: s.bo.seggi, reale: true });
     const z = frameIG(x, { badge: 'EXIT POLL', kicker: s.ambito, title: g('t3').value, sub: 'Seggi su 120' + (cols.some(c => c.reale) ? ', e il riparto sui voti contati' : ''),
-      nota: 'Gli exit poll israeliani sono pubblicati in seggi alla chiusura dei seggi, alle 22 israeliane, e aggiornati nella notte con i voti reali.',
+      nota: 'Gli exit poll israeliani sono pubblicati in seggi alla chiusura dei seggi, alle 21 italiane (le 22 in Israele), e aggiornati nella notte con i voti reali.',
       fonte: (s.ex.map(e => e.n).join(', ') || 'Reti israeliane') + ' (' + s.data + ')', n: N.n, tot: N.tot });
     if (!cols.length) return attesaIG(x, z, 'In attesa degli exit poll', 'Alle 21 italiane, le 22 in Israele.');
     const M = IG.M, Rr = IG.W - M;
