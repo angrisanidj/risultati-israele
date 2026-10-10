@@ -394,6 +394,30 @@ footer a{color:var(--t2)}
   .magg-lab .n b{font-size:19px}
 }
 @media(max-width:560px){
+  /* tabella compatta: lista, %, seggi e solo gli exit poll con dati */
+  table{min-width:0}
+  .c-v,.c-r,.c-x-vuota{display:none}
+  td .pname{display:none}
+  td .partylabel{flex-wrap:wrap;row-gap:1px;align-items:baseline}
+  td .partylabel span{white-space:normal}
+  td .partylabel .partydot{align-self:center}
+  th,td{padding-left:6px;padding-right:6px;font-size:13px}
+  .tablewrap{padding-top:6px}
+  /* mappa larga quanto lo schermo, altezza dal rapporto dei lati */
+  .maparea{padding-left:10px;padding-right:10px}
+  .mapstage{width:100%}
+  #locMap{width:100%;height:auto;max-height:76vh}
+  .mapside.r .landetail{order:-1}
+  .mapfonte button{padding:8px 11px;font-size:12.5px}
+  .cardhead{padding:14px 14px 0}
+  .subcopy{padding:0 14px}
+  .methodnote{padding:6px 14px 14px}
+  .bars,.blocchi,.scenari,.seat-legend{padding-left:14px;padding-right:14px}
+  .verdetto{padding:16px 14px 18px}
+  .hero{padding:18px 0 16px}
+  .hero p{font-size:13.5px}
+  /* niente zoom automatico di iOS sui campi */
+  .cerca,.fld input,.exit-row input,.manual-row input,select{font-size:16px}
   .social{display:grid;gap:8px;justify-items:start;width:100%}
   .social-btns{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;width:100%;max-width:330px}
   .sbtn{width:auto;height:auto;aspect-ratio:1;flex:none;font-size:15px}
@@ -402,6 +426,11 @@ footer a{color:var(--t2)}
   .social{justify-items:stretch;grid-template-columns:minmax(0,1fr)}
 }
 @media(max-width:420px){
+  .kpi{padding:12px 14px}
+  .kpi strong{font-size:21px}
+  .kpi small{font-size:11.5px}
+}
+@media(max-width:340px){
   .kpis{grid-template-columns:1fr}
   .kpi+.kpi{border-left:0;border-top:1px solid var(--line)}
 }
@@ -1119,6 +1148,13 @@ function renderTabella() {
   h += '<tr class="tot"><td>Totale</td><td>' + (R ? nf(R.val) : '—') + '</td><td>' + (R ? '100%' : '—') + '</td><td>' + (bo ? SEGGI : '—') + '</td>' +
     ex.map(x => { const t = x ? sum(x.seggi) : null; return '<td>' + (t == null ? '—' : (t === SEGGI ? t : '<span class="minus">' + t + '</span>')) + '</td>'; }).join('') + '<td>120</td></tr></tbody>';
   $('natTable').innerHTML = h;
+  /* classi per colonna: da telefono si nascondono voti assoluti, riferimento 2022 ed exit
+     poll senza dati, così la tabella sta nello schermo senza scorrere di lato */
+  $('natTable').querySelectorAll('tr').forEach(tr => [...tr.children].forEach((c, j) => {
+    if (j === 1) c.classList.add('c-v');
+    else if (j >= 4 && j < 4 + EXIT.length) { c.classList.add('c-x'); if (!ex[j - 4]) c.classList.add('c-x-vuota'); }
+    else if (j === 4 + EXIT.length) c.classList.add('c-r');
+  }));
   /* nota sugli accordi */
   const acc = accordi().map(([a, b]) => nomeBreve(infoLista(a)) + '–' + nomeBreve(infoLista(b))).join(', ');
   let nota = 'Accordi di eccedenza considerati: ' + acc + '. ' + (ED === '26' ? 'Il termine per depositarli è il 16 ottobre; l’elenco si aggiorna da stime.json. ' : '');
@@ -1253,6 +1289,7 @@ function leggiExit() {
 }
 function renderValidazione() {
   const parti = EXIT.map(e => { const x = exitDi(e.k); if (!x) return e.s + ' —'; const t = sum(x.seggi); return e.s + ' <b class="' + (t === SEGGI ? 'okk' : 'ko') + '">' + t + '</b>'; });
+  document.querySelector('.exit-wrap').classList.toggle('hidden', !REDAZIONE && !EXIT.some(e => exitDi(e.k)));
   if (REDAZIONE) $('exitValidation').innerHTML = 'Totali (devono fare 120): ' + parti.join(' · ');
   else {
     const pubbl = EXIT.map(e => ({ e, x: exitDi(e.k) })).filter(o => o.x);
@@ -1356,11 +1393,30 @@ function costruisciMappa() {
   layer.innerHTML = MAPPA.geo.map(g => '<path d="' + g.d + '" data-id="' + g.id + '"' + (sdDi(g.id) === SD_GS ? ' data-gs="1"' : '') + '></path>').join('');
   setVista(VISTA0());
   const svg = $('locMap');
-  let drag = null;
+  let drag = null, pinch = null;
+  const dita = new Map();
+  const inSvg = (cx, cy) => { const r = svg.getBoundingClientRect(); return [vista.x + (cx - r.left) / r.width * vista.w, vista.y + (cy - r.top) / r.height * vista.h]; };
   svg.addEventListener('pointerdown', e => {
+    dita.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (dita.size === 2) {
+      /* due dita: si ingrandisce intorno al punto medio, il trascinamento si ferma */
+      const [a, b] = [...dita.values()];
+      pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, v: { ...vista }, m: inSvg((a.x + b.x) / 2, (a.y + b.y) / 2) };
+      drag = null; return;
+    }
     drag = { x: e.clientX, y: e.clientY, v: { ...vista }, mosso: false, id: e.pointerId };
   });
+  const viaDito = e => { dita.delete(e.pointerId); if (dita.size < 2) pinch = null; };
+  svg.addEventListener('pointerup', viaDito); svg.addEventListener('pointercancel', viaDito);
   svg.addEventListener('pointermove', e => {
+    if (dita.has(e.pointerId)) dita.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && dita.size === 2) {
+      e.preventDefault();
+      const [a, b] = [...dita.values()], d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+      const w = clamp(pinch.v.w * pinch.d / d, MAPPA.W / 40, MAPPA.W), h = w * MAPPA.H / MAPPA.W, [mx, my] = pinch.m;
+      setVista({ x: mx - (mx - pinch.v.x) * w / pinch.v.w, y: my - (my - pinch.v.y) * h / pinch.v.h, w, h });
+      return;
+    }
     if (!drag) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     if (!drag.mosso && Math.hypot(dx, dy) < 5) return;
@@ -1432,9 +1488,23 @@ function puntatoreSu(el) {
   }
   if (p !== sottoPuntatore) { sottoPuntatore = p; contorni(); }
 }
+/* Sulla mappa, in alto, il riassunto di quello che è selezionato: da telefono il pannello
+   del dettaglio sta sotto la mappa, e così il risultato si legge senza scorrere. */
+function aggiornaHint() {
+  const R = risultato(), loc = R && R.loc ? R.loc : new Map(), id = S.sel, foc = livello() === 'sd' ? S.focusSD : null;
+  let t;
+  if (id != null) {
+    let nome, a;
+    if (typeof id === 'string') { const i = Number(id.slice(2)); nome = NOMI_SD[i]; a = aggregaSD(loc)[i]; }
+    else { const g = MAPPA.byId[id], b = BASE22.loc[id]; a = loc.get(id); nome = g ? g.en : nomeLoc(id, a ? a.nome : b && b[0]); }
+    const q = quote(a);
+    t = nome + (q ? ': ' + nomeBreve(infoLista(q.arr[0].l)) + ' ' + nf(q.arr[0].q * 100, 1) + '%' : ', nessun voto contato') + (foc != null && typeof id === 'string' ? ' · tocca una località' : '');
+  } else t = foc != null ? NOMI_SD[foc] + ' · tocca una località' : (livello() === 'sd' ? 'Tocca un’area per vedere le sue località' : 'Tocca una località per il risultato');
+  $('mapHint').textContent = t;
+}
 function seleziona(id, centra) {
   S.sel = id;
-  evidenzia();
+  evidenzia(); aggiornaHint();
   if (id != null && centra && typeof id === 'number') zoomSu(id);
   renderDettaglio(); renderLista();
 }
@@ -1509,7 +1579,7 @@ function renderMappa() {
   document.querySelectorAll('#baseLayer path').forEach((p, i) => { p.classList.toggle('fuori', foc != null && i !== foc); p.classList.toggle('aperta', foc === i); });
   $('locMap').classList.toggle('area', foc != null);
   $('mapBack').classList.toggle('hidden', foc == null);
-  $('mapHint').textContent = foc != null ? NOMI_SD[foc] + ' · tocca una località' : (liv === 'sd' ? 'Tocca un’area per vedere le sue località' : 'Tocca una località · rotellina o +/− per ingrandire');
+
   document.querySelectorAll('#baseLayer path').forEach((p, i) => { p.style.fill = col.base[i]; });
   document.querySelectorAll('#locLayer path').forEach((p, i) => {
     const c = col.locs[i];
@@ -1553,7 +1623,7 @@ function renderMappa() {
     const ok = typeof S.sel === 'string' ? liv === 'sd' : (liv === 'loc' || (foc != null && sdDi(S.sel) === foc));
     if (!ok) S.sel = foc != null ? 'sd' + foc : null;
   }
-  evidenzia();
+  evidenzia(); aggiornaHint();
   renderDettaglio(); renderLista();
 }
 function stessaLocalita22(code) { const b = BASE22.loc[code]; return b ? { nome: b[0], bzb: b[1], vot: b[2], val: b[3], lead: b[4], leadQ: b[5] / 1000, N: b[6] / 1000, O: b[7] / 1000, A: b[8] / 1000 } : null; }
