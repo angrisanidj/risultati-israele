@@ -7,7 +7,7 @@ Dashboard per seguire in diretta lo spoglio delle elezioni della 26ª Knesset (2
 | File | A cosa serve |
 |---|---|
 | `index.html` | La dashboard, file unico. Mappa e base 2022 sono già incorporate. |
-| `stime.json` | Exit poll (in seggi) e accordi di eccedenza. Si modifica a mano la sera del voto. |
+| `stime.json` | Exit poll (in seggi), accordi di eccedenza e ultima proiezione del modello previsionale. Si modifica a mano. |
 | `dati/prova/expc-2022.csv` | Il file definitivo del 2022, usato per la prova generale. |
 | `proxy/` | Il progetto Vercel: `api/cec.js` più la configurazione. |
 
@@ -100,7 +100,31 @@ Se Wikipedia non ha ancora le righe, inserisci i seggi a mano. Per provare il pu
 
 ### Emiciclo
 
-Con la fonte su «Automatica», l'emiciclo segue l'exit poll (prima Canale 12, poi Kan, 13 e 14) fino a metà scrutinio. Da lì passa ai voti contati. Il selettore «Fonte» forza una fonte qualsiasi.
+Con la fonte su «Automatica», l'emiciclo mostra la proiezione del [modello previsionale](https://angrisanidj.github.io/modello-israele/) fino agli exit poll. Poi segue l'exit poll (prima Canale 12, poi Kan, 13 e 14) fino a metà scrutinio, e da lì passa ai voti contati. Il selettore «Fonte» forza una fonte qualsiasi.
+
+### Il modello alla prova
+
+Il riquadro confronta la proiezione del modello con le fonti della notte, lista per lista e per blocco. Accanto a ogni numero c'è lo scarto dal modello. «Seggi spostati» è la metà della somma degli scarti.
+
+- **Exit poll:** entrano appena sono in `stime.json`.
+- **Scrutinio:** entra solo al 50% dei seggi contati (`CONFRONTO_DA`). Nel 2022 lo spoglio era al 44,4% alle 6:38 e al 62% alle 7:34 del mattino israeliano, cioè circa nove ore dopo la chiusura. Prima di quella soglia, le località che riportano per prime non rappresentano il paese.
+
+**Aggiornare la proiezione.** Il campo `modello` di `stime.json` contiene:
+
+- la data della proiezione;
+- la data dell'ultimo sondaggio;
+- il numero di rilevazioni;
+- i seggi per lettera di scheda, che devono sommare 120;
+- le quote di voto stimate.
+
+Va aggiornato con l'ultima proiezione prima del voto. Se manca o non somma a 120, la pagina usa la copia incorporata nel codice (`MODELLO_BASE`).
+
+### Blocchi
+
+Le pastiglie e i totali seguono le stesse ipotesi del modello:
+
+- **Popolo d'Israele (Ofer Winter)** è nel blocco Netanyahu: Winter si è impegnato a raccomandare solo Netanyahu ed esclude governi dei suoi rivali.
+- **Riservisti e Partito economico** sono fra le «altre liste»: non si schierano e non escludono nessuno.
 
 ### Accordi di eccedenza
 

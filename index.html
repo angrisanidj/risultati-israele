@@ -163,6 +163,8 @@ select{background:var(--s2);color:var(--t1);border:1px solid var(--line-2);borde
 .seat-legend{display:flex;gap:6px;flex-wrap:wrap;padding:6px 18px 2px}
 .seat-chip{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:var(--r-s);padding:4px 8px;background:transparent;font-size:12px;font-weight:500;color:var(--t1);cursor:pointer}
 .seat-chip.att{border-color:var(--acc);background:rgba(169,196,255,.1)}
+.seat-legend.filtro .seat-chip:not(.att){opacity:.42}
+.seat-chip{transition:opacity .2s,border-color .2s,background .2s}
 .seat-chip i{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
 .seat-chip strong{font-weight:700;font-variant-numeric:tabular-nums}
 .seatsrc{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -242,6 +244,23 @@ td.seat{font-weight:700}
 td.mute,td .mute{color:var(--t3)}
 tr.sotto td{color:var(--t2)}
 tr.tot td{font-weight:700;border-top:1px solid var(--line-2);border-bottom:0}
+/* il modello alla prova */
+table.conf{min-width:0}
+table.conf th:first-child,table.conf td:first-child{text-align:left}
+table.conf td:first-child{white-space:normal}
+table.conf td b{font-weight:600}
+table.conf td small{display:block;color:var(--t3);font-size:11.5px;font-weight:500;margin-top:1px}
+table.conf .dlt{color:var(--t2);font-size:12px;font-weight:600;margin-left:5px}
+table.conf .dlt.zero{color:var(--t3);font-weight:500}
+table.conf .dlt.forte{color:var(--amber)}
+table.conf tr.rbl-sep td{border-top:1px solid var(--line-2)}
+table.conf tr.rbl td:first-child{color:var(--t2)}
+table.conf tr.rbl td:first-child i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:7px;vertical-align:0}
+table.conf td.attesa{color:var(--t3);font-size:12px;white-space:normal}
+table.conf .partylabel{display:flex;align-items:center;gap:7px}
+table.conf .partydot{flex:0 0 8px}
+table.conf th .corto{display:none}
+.solo-tel{display:none}
 .bl{font-size:11.5px;font-weight:500;color:var(--t3);white-space:nowrap;margin-left:4px}
 .bl:before{content:"";display:inline-block;width:6px;height:6px;border-radius:1px;margin-right:5px;vertical-align:1px}
 .bl.N:before{background:#3a7bec}.bl.O:before{background:#f0506e}.bl.A:before{background:#2fb36f}.bl.X:before{background:#d8a83f}
@@ -401,6 +420,17 @@ footer a{color:var(--t2)}
   td .partylabel{flex-wrap:wrap;row-gap:1px;align-items:baseline}
   td .partylabel span{white-space:normal}
   td .partylabel .partydot{align-self:center}
+  table.conf .dlt{display:block;margin:1px 0 0}
+  table.conf th .lungo{display:none}
+  table.conf .qv{display:none}
+  table.conf .m-off{display:none}
+  .solo-tel{display:inline}
+  table.conf th .corto{display:inline}
+  table.conf td .partylabel{flex-wrap:nowrap;align-items:center;gap:6px}
+  table.conf th,table.conf td{padding-left:5px;padding-right:5px}
+  table.conf th:first-child,table.conf td:first-child{padding-left:14px}
+  table.conf th:last-child,table.conf td:last-child{padding-right:14px}
+  table.conf td small{font-size:11px}
   th,td{padding-left:6px;padding-right:6px;font-size:13px}
   .tablewrap{padding-top:6px}
   /* mappa larga quanto lo schermo, altezza dal rapporto dei lati */
@@ -546,6 +576,13 @@ footer a{color:var(--t2)}
  <div class="exit-actions solo-red"><button id="saveExit" class="primary">Salva stime</button><button id="clearExit" class="sm">Torna a stime.json</button></div>
       <div id="exitValidation" class="validation">Totali: —</div>
     </article>
+  </section>
+
+  <section class="card" id="confrontoCard" style="margin-bottom:14px">
+    <div class="cardhead"><div><h2>Il modello alla prova</h2></div><span class="cmeta" id="confrontoMeta">—</span></div>
+    <p class="subcopy" id="confrontoSub"></p>
+    <div class="tablewrap"><table id="confrontoTable" class="conf"></table></div>
+    <p class="methodnote" id="confrontoNote"></p>
   </section>
 
   <section class="card" style="margin-bottom:14px">
@@ -719,8 +756,14 @@ const LISTE = {
     { l: 'כן', n: 'Blu e Bianco', b: 'O', c: '#e070d6', ld: 'Benny Gantz', r22: { p: 9.08, s: 12, nota: 'Unità nazionale nel 2022' } },
     { l: 'עם', n: "Ra'am", b: 'A', c: '#2fb36f', ld: 'Mansour Abbas', r22: { p: 4.07, s: 5 } },
     { l: 'ודם', n: 'Lista unita', b: 'A', c: '#9bd650', ld: "Hadash–Ta'al–Balad", r22: { p: 6.66, s: 5, nota: "Hadash–Ta'al e Balad nel 2022" } },
+    /* I Riservisti non si schierano: «non escludono di lavorare con nessuno», Netanyahu
+       compreso, e chiedono un governo di unità sionista. Restano fra le altre liste,
+       come nel modello («ago della bilancia»). */
     { l: 'די', n: 'Riservisti e Partito economico', s: 'Riservisti', b: 'X', c: '#d8a83f', ld: 'Hendel · Zelekha' },
-    { l: 'ך', n: 'Amcha Yisrael', b: 'X', c: '#b98a3c', ld: 'Ofer Winter' },
+    /* Popolo d'Israele (עם כ ישראל, «Amcha Yisrael»): Winter si è impegnato a raccomandare
+       solo Netanyahu ed esclude governi dei suoi rivali (Times of Israel, 8 ottobre 2026).
+       Il modello previsionale la conta nel blocco Netanyahu per la stessa ragione. */
+    { l: 'ך', n: "Popolo d'Israele", b: 'N', c: '#b98a3c', ld: 'Ofer Winter · Yoseph Haddad' },
     { l: 'י', n: 'Israel First', b: 'X', c: '#a8a060', ld: 'Sharren Haskel' },
     { l: 'זך', n: 'Pubblico haredi', s: 'Haredi', b: 'X', c: '#8f9bb0', ld: 'Moti Leitner' }
   ],
@@ -754,6 +797,26 @@ const ACCORDI_BASE = {
   '26': [['רק', 'ל'], ['דרך', 'אמת'], ['מחל', 'ט'], ['ודם', 'עם']],
   '25': [['שס', 'ג'], ['מחל', 'ט'], ['מרצ', 'אמת'], ['פה', 'כן'], ['נק', 'ף']]
 };
+/* L'ultima proiezione del modello previsionale (angrisanidj.github.io/modello-israele):
+   seggi centrali e quote di voto stimate, con le stesse ipotesi della pagina del modello
+   (Popolo d'Israele nel blocco Netanyahu, i quattro accordi di eccedenza firmati applicati).
+   Fa da base all'emiciclo fino agli exit poll e da termine di confronto per tutta la notte.
+   stime.json può sostituirla con un campo «modello» della stessa forma, senza toccare il codice. */
+const MODELLO_BASE = {
+  data: '2026-10-10', ultimo: '2026-10-08', rilevazioni: 45,
+  seggi: { 'דרך': 22, 'מחל': 21, 'רק': 12, 'אמת': 9, 'ודם': 8, 'ל': 8, 'ב': 7, 'שס': 7, 'ג': 7, 'ט': 6, 'עם': 5, 'די': 4, 'ך': 4 },
+  voti: { 'דרך': 16.94, 'מחל': 16.57, 'רק': 9.41, 'אמת': 7.16, 'ודם': 6.21, 'ל': 6.62, 'ב': 6.16, 'שס': 6.00, 'ג': 6.06, 'ט': 4.79, 'עם': 4.35, 'די': 3.32, 'ך': 3.43, 'כן': 1.16, 'זך': 0.82 }
+};
+const URL_MODELLO = 'https://angrisanidj.github.io/modello-israele/';
+const modello = () => ED !== '26' ? null : (S.stime.modello && S.stime.modello.seggi ? S.stime.modello : MODELLO_BASE);
+const MESI_IT = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+const dataIT = iso => { const [a, m, g] = String(iso || '').split('-').map(Number); return g ? (g === 1 ? '1º' : g) + ' ' + MESI_IT[m - 1] : ''; };
+/* «del 10 ottobre», «dell'8 ottobre», «all'11 ottobre» */
+const conData = (prep, iso) => { const d = dataIT(iso); return /^(8|11) /.test(d) ? prep.replace(/l$/, 'll’') + d : prep + ' ' + d; };
+/* Il confronto con lo scrutinio parte a metà dei seggi contati. Nel 2022 il 50% è arrivato
+   fra le 6:38 (44,4%) e le 7:34 (62%) del mattino israeliano, nove ore dopo la chiusura;
+   prima, le località che riportano per prime non rappresentano il paese. */
+const CONFRONTO_DA = 0.5;
 const EXIT = [
   { k: 'kan', n: 'Kan 11', s: 'Kan' },
   { k: 'c12', n: 'Canale 12', s: 'C12' },
@@ -989,6 +1052,8 @@ function fontiSeggi() {
   const R = risultato(), out = [];
   if (R) { const bo = baderOfer(R.voti, accordi()); out.push({ k: 'scrutinio', n: R.fonte === 'manuale' ? 'Voti inseriti a mano' : 'Scrutinio', seggi: bo.seggi, liste: L, bo }); }
   EXIT.forEach(e => { const x = exitDi(e.k); if (x) out.push({ k: e.k, n: 'Exit poll ' + e.n, s: e.n, ora: x.ora, seggi: x.seggi, liste: L, locale: x.locale }); });
+  const M = modello();
+  if (M) out.push({ k: 'modello', n: 'Modello previsionale', s: 'Modello', quando: dataIT(M.data), seggi: M.seggi, liste: L });
   out.push({ k: 'k22', n: 'Knesset 2022', seggi: SEGGI22, liste: LISTE['25'], bloc: BLOC22 });
   return out;
 }
@@ -998,6 +1063,7 @@ function fonteAttiva() {
   const R = risultato(), av = avanzamento(R);
   if (by.scrutinio && (R.fonte === 'manuale' || av.f >= AUTO_SCRUTINIO)) return by.scrutinio;
   for (const k of ORD_AUTO_EXIT) if (by[k]) return by[k];
+  if (by.modello) return by.modello;
   if (by.scrutinio) return by.scrutinio;
   return by.k22;
 }
@@ -1013,6 +1079,13 @@ function totBlocchi(f) {
   for (const l in f.seggi) t[bloccoDi(f, l)] += f.seggi[l] || 0;
   return t;
 }
+/* Il nome di una fonte nel selettore e nella tabella dei blocchi */
+function nomeFonte(x, lungo) {
+  if (x.k === 'scrutinio') return x.n;
+  if (x.k === 'k22') return 'Knesset 2022';
+  if (x.k === 'modello') return (lungo ? x.n : x.s) + ' · ' + x.quando;
+  return lungo ? x.n : x.s + (x.ora ? ' · ' + x.ora : '');
+}
 function infoPer(f, l) { return f.k === 'k22' ? (L25MAP[l] || { l, n: l, c: '#5f6b7e', b: 'X' }) : infoLista(l); }
 
 /* =====================================================================
@@ -1020,7 +1093,7 @@ function infoPer(f, l) { return f.k === 'k22' ? (L25MAP[l] || { l, n: l, c: '#5f
    ===================================================================== */
 function render() {
   renderHero(); renderKpi(); renderVerdetto(); renderTabella(); renderEmiciclo();
-  renderBarre(); renderValidazione(); renderMappa(); renderScrutinio(); renderManca();
+  renderBarre(); renderValidazione(); renderMappa(); renderScrutinio(); renderManca(); renderConfronto();
   if (window.CARD) window.CARD.segnaSporco();
 }
 
@@ -1057,6 +1130,7 @@ function renderKpi() {
   $('kFonte').textContent = f.k === 'scrutinio' ? 'Scrutinio' : f.k === 'k22' ? 'Knesset 2022' : (f.s || f.n);
   $('kFonteMeta').textContent = f.k === 'scrutinio' ? (R.fonte === 'manuale' ? 'voti inseriti a mano' : 'Bader-Ofer sui voti contati, ' + pct(av.f, 0) + ' scrutinato')
     : f.k === 'k22' ? 'composizione uscente fino ai primi dati'
+    : f.k === 'modello' ? 'proiezione ' + conData('del', modello().data) + (S.seatSrc === 'auto' ? ' · gli exit poll subentrano alle 21' : '')
       : 'exit poll' + (f.ora ? ' delle ' + f.ora : '') + (S.seatSrc === 'auto' ? ' · i voti contati subentrano a metà scrutinio' : '');
   const env = R && R.env;
   if (env && env.val > 0) {
@@ -1093,6 +1167,7 @@ function renderVerdetto() {
   }
   const t = totBlocchi(f), n = t.N, win = n >= MAGG;
   const chi = f.k === 'scrutinio' ? (R.fonte === 'manuale' ? 'Con i voti inseriti a mano' : 'Con il ' + pct(av.f, 0) + ' dei voti contati')
+    : f.k === 'modello' ? 'Secondo il modello previsionale'
     : 'Secondo l’exit poll di ' + f.s + (f.ora ? ' (ore ' + esc(f.ora) + ')' : '');
   const titolo = win ? chi + ', il blocco Netanyahu ha la maggioranza: ' + n + ' seggi'
     : chi + ', il blocco Netanyahu si ferma a ' + n + ' seggi, ' + (MAGG - n) + ' sotto la maggioranza';
@@ -1106,6 +1181,9 @@ function renderVerdetto() {
   if (f.k === 'scrutinio' && R.fonte !== 'manuale') {
     if (av.f < 0.97) cav = 'Scrutinio parziale: le prime località a riportare non rappresentano il paese';
     else if (!(R.env && R.env.val > 0)) cav = 'Mancano ancora le doppie buste, circa 460.000 voti nel 2022';
+  } else if (f.k === 'modello') {
+    cav = 'Proiezione sui sondaggi fino ' + conData('al', modello().ultimo) + ', non voti contati';
+    if (S.seatSrc === 'auto') det += ' I seggi chiudono alle <b>22 in Israele, le 21 in Italia</b>: da lì gli exit poll di Kan 11, Canale 12, 13 e 14 prendono il posto del modello.';
   } else if (f.k !== 'scrutinio') cav = 'Stima, non voti contati';
   box.className = 'verdetto ' + (win ? 'win' : 'hung');
   box.innerHTML = '<div class="vw">Chi ha la maggioranza, a 61 seggi</div><h2>' + esc(titolo) + '</h2><div class="vd">' + det + '</div>' + barraMaggioranza(t) + (cav ? '<span class="vcav">' + esc(cav) + '</span>' : '');
@@ -1187,7 +1265,7 @@ function renderEmiciclo() {
   const F = fontiSeggi(), f = fonteAttiva();
   /* selettore della fonte */
   const sel = $('seatSrc');
-  const opts = [['auto', 'Automatica']].concat(F.map(x => [x.k, x.k === 'scrutinio' ? x.n : x.k === 'k22' ? 'Knesset 2022' : x.s + (x.ora ? ' · ' + x.ora : '')]));
+  const opts = [['auto', 'Automatica']].concat(F.map(x => [x.k, nomeFonte(x)]));
   sel.innerHTML = opts.map(([k, n]) => '<option value="' + k + '"' + (k === S.seatSrc ? ' selected' : '') + '>' + esc(n) + '</option>').join('');
   if (!opts.some(o => o[0] === S.seatSrc)) sel.value = 'auto';
   /* ordine dei seggi: per blocco, poi per dimensione */
@@ -1204,7 +1282,7 @@ function renderEmiciclo() {
     '<text x="280" y="272" text-anchor="middle" fill="#98a7c0" style="font:500 12px Inter,sans-serif">blocco Netanyahu</text>';
   const H = $('hemicycle'); H.innerHTML = svg;
   applicaFiltro();
-  $('seatLegend').innerHTML = elenco.map(e => '<button class="seat-chip" data-l="' + esc(e.l) + '"><i style="background:' + e.p.c + '"></i>' + esc(nomeBreve(e.p)) + ' <strong>' + e.n + '</strong></button>').join('');
+  $('seatLegend').innerHTML = elenco.map(e => '<button class="seat-chip" data-l="' + esc(e.l) + '" data-b="' + e.b + '"><i style="background:' + e.p.c + '"></i>' + esc(nomeBreve(e.p)) + ' <strong>' + e.n + '</strong></button>').join('');
   const t = totBlocchi(f);
   $('blocchi').innerHTML = ['N', 'O', 'A', 'X'].filter(b => b !== 'X' || t.X).map(b => {
     const membri = elenco.filter(e => e.b === b).map(e => nomeBreve(e.p)).join(', ');
@@ -1215,7 +1293,7 @@ function renderEmiciclo() {
   let sc = '<div class="scen scen-head"><span>Fonte</span><span class="sn">Net.</span><span class="sn">Opp.</span><span class="sn">Arabi</span><span class="sn">Altri</span></div>';
   F.forEach(x => {
     const tb = totBlocchi(x);
-    sc += '<div class="scen' + (x.k === f.k ? ' att' : '') + '"><span class="sf">' + esc(x.k === 'scrutinio' ? x.n : x.k === 'k22' ? 'Knesset 2022' : x.n) + (x.ora ? ' <i>' + esc(x.ora) + '</i>' : '') + (x.locale ? ' <i>· locale</i>' : '') + '</span><span class="sn' + (tb.N >= MAGG ? ' m' : '') + '">' + tb.N + '</span><span class="sn">' + tb.O + '</span><span class="sn">' + tb.A + '</span><span class="sn">' + tb.X + '</span></div>';
+    sc += '<div class="scen' + (x.k === f.k ? ' att' : '') + '"><span class="sf">' + esc(x.k === 'modello' ? x.n : nomeFonte(x, true)) + (x.ora ? ' <i>' + esc(x.ora) + '</i>' : '') + (x.quando ? ' <i>' + esc(x.quando) + '</i>' : '') + (x.locale ? ' <i>· locale</i>' : '') + '</span><span class="sn' + (tb.N >= MAGG ? ' m' : '') + '">' + tb.N + '</span><span class="sn">' + tb.O + '</span><span class="sn">' + tb.A + '</span><span class="sn">' + tb.X + '</span></div>';
   });
   $('scenari').innerHTML = sc;
   let m;
@@ -1224,8 +1302,9 @@ function renderEmiciclo() {
     m = 'Riparto Bader-Ofer sui ' + nf(bo.valid) + ' voti validi contati: soglia a ' + nf(Math.ceil(bo.min)) + ' voti, ' + bo.pass.length + ' liste sopra soglia' +
       (bo.coppie.length ? ', accordi applicati: ' + bo.coppie.map(([a, b]) => nomeBreve(infoLista(a)) + '–' + nomeBreve(infoLista(b))).join(', ') : '') + '. ';
   } else if (f.k === 'k22') m = 'Knesset uscente, eletta il 1º novembre 2022. Il riparto è ricalcolato dal file definitivo della Commissione e coincide con quello ufficiale. ';
+  else if (f.k === 'modello') { const M = modello(); m = 'Proiezione del modello previsionale ' + conData('del', M.data) + ': media ponderata di ' + M.rilevazioni + ' sondaggi, l’ultimo ' + conData('del', M.ultimo) + ', riparto Bader-Ofer. '; }
   else m = 'Seggi pubblicati da ' + f.s + (f.ora ? ' alle ' + f.ora : '') + '. ';
-  m += 'In automatico l’emiciclo segue l’exit poll (prima Canale 12, poi Kan, 13, 14) fino a metà scrutinio, poi i voti contati.';
+  m += 'In automatico l’emiciclo mostra il modello fino agli exit poll, poi l’exit poll (prima Canale 12, poi Kan, 13, 14) fino a metà scrutinio, poi i voti contati.';
   $('seatMethod').textContent = m;
 }
 function applicaFiltro() {
@@ -1235,8 +1314,73 @@ function applicaFiltro() {
     const on = !filtroEmi || (filtroEmi.t === 'l' ? c.dataset.l === filtroEmi.v : c.dataset.b === filtroEmi.v);
     c.classList.toggle('on', !!filtroEmi && on); c.classList.toggle('off', !!filtroEmi && !on);
   });
-  document.querySelectorAll('.seat-chip').forEach(c => c.classList.toggle('att', !!filtroEmi && filtroEmi.t === 'l' && c.dataset.l === filtroEmi.v));
+  /* il filtro per blocco accende anche le liste del blocco nell'elenco sopra */
+  $('seatLegend').classList.toggle('filtro', !!filtroEmi);
+  document.querySelectorAll('.seat-chip').forEach(c => c.classList.toggle('att', !!filtroEmi && (filtroEmi.t === 'l' ? c.dataset.l === filtroEmi.v : c.dataset.b === filtroEmi.v)));
   document.querySelectorAll('.bloc').forEach(c => c.classList.toggle('att', !!filtroEmi && filtroEmi.t === 'b' && c.dataset.b === filtroEmi.v));
+}
+
+/* ---------- il modello alla prova ----------
+   La proiezione del modello previsionale contro gli exit poll, appena escono, e contro lo
+   scrutinio da metà dei seggi contati (CONFRONTO_DA). Gli scarti sono fonte meno modello. */
+function renderConfronto() {
+  const card = $('confrontoCard'), M = modello();
+  card.classList.toggle('hidden', !M);
+  if (!M) return;
+  const R = risultato(), av = avanzamento(R);
+  const conScr = !!R && (R.fonte === 'manuale' || av.f >= CONFRONTO_DA);
+  const col = [];
+  EXIT.forEach(e => { const x = exitDi(e.k); if (x) col.push({ k: e.k, n: e.n, c: e.s, sub: x.ora || 'exit poll', seggi: x.seggi }); });
+  if (conScr) col.push({ k: 'scrutinio', n: 'Scrutinio', c: 'Scrut.', sub: R.fonte === 'manuale' ? 'a mano' : 'al ' + pct(av.f, 0), seggi: baderOfer(R.voti, accordi()).seggi, voti: R.voti, val: R.val });
+  const attesaScr = !conScr && ED === '26';
+  /* da telefono stanno al massimo tre colonne oltre al modello: prima lo scrutinio, poi gli
+     exit poll nell'ordine dell'emiciclo; le altre si nascondono sotto i 560 px */
+  const prio = c => c.k === 'scrutinio' ? -1 : ORD_AUTO_EXIT.indexOf(c.k);
+  const tenute = new Set(col.slice().sort((a, b) => prio(a) - prio(b)).slice(0, attesaScr ? 2 : 3).map(c => c.k));
+  const cls = c => tenute.has(c.k) ? '' : ' class="m-off"';
+  /* righe: le liste con seggi nel modello o in una fonte del confronto */
+  const lett = new Set(Object.keys(M.seggi).filter(l => M.seggi[l] > 0));
+  col.forEach(c => Object.keys(c.seggi).forEach(l => { if (+c.seggi[l] > 0) lett.add(l); }));
+  const ultima = col.length ? col[col.length - 1] : null;
+  const righe = [...lett].sort((a, b) => (M.seggi[b] || 0) - (M.seggi[a] || 0) || ((ultima && +ultima.seggi[b] || 0) - (ultima && +ultima.seggi[a] || 0)));
+  const scarto = (v, m) => { const d = v - m; return '<span class="dlt' + (d === 0 ? ' zero' : Math.abs(d) >= 3 ? ' forte' : '') + '">' + (d === 0 ? '=' : (d > 0 ? '+' : '−') + Math.abs(d)) + '</span>'; };
+  let h = '<thead><tr><th>Lista</th><th>Modello<small>' + esc(dataIT(M.data)) + '</small></th>' +
+    col.map(c => '<th' + cls(c) + '><span class="lungo">' + esc(c.n) + '</span><span class="corto">' + esc(c.c) + '</span><small>' + esc(c.sub) + '</small></th>').join('') +
+    (attesaScr ? '<th><span class="lungo">Scrutinio</span><span class="corto">Scrut.</span><small>dal ' + pct(CONFRONTO_DA, 0) + '</small></th>' : '') + '</tr></thead><tbody>';
+  const mv = l => M.voti && M.voti[l] != null ? '<small>' + nf(M.voti[l], 1) + '%</small>' : '';
+  righe.forEach(l => {
+    const p = infoLista(l), m = M.seggi[l] || 0;
+    h += '<tr><td><div class="partylabel"><i class="partydot" style="background:' + p.c + '"></i><span>' + esc(nomeBreve(p)) + '</span></div></td>' +
+      '<td><b>' + m + '</b>' + mv(l) + '</td>' +
+      col.map(c => {
+        const v = +c.seggi[l] || 0;
+        let x = '<b>' + v + '</b>' + scarto(v, m);
+        if (c.voti) { const q = (c.voti[l] || 0) / c.val * 100; const dq = M.voti && M.voti[l] != null ? Math.round((q - M.voti[l]) * 10) / 10 : null;
+          x += '<small><span class="qv">' + nf(q, 1) + '%' + (dq == null ? '' : ' · </span>' + (dq === 0 ? '=' : (dq > 0 ? '+' : '−') + nf(Math.abs(dq), 1) + ' pt')) + '</small>'; }
+        return '<td' + cls(c) + '>' + x + '</td>';
+      }).join('') +
+      (attesaScr ? '<td><span class="mute">—</span></td>' : '') + '</tr>';
+  });
+  /* blocchi */
+  const tm = totBlocchi({ seggi: M.seggi }), tc = col.map(c => totBlocchi({ seggi: c.seggi }));
+  ['N', 'O', 'A', 'X'].filter(b => b !== 'X' || tm.X || tc.some(t => t.X)).forEach((b, i) => {
+    h += '<tr class="rbl' + (i ? '' : ' rbl-sep') + '"><td><i style="background:' + BLOCCHI[b].c + '"></i>' + esc(BLOCCHI[b].n) + '</td><td><b>' + tm[b] + '</b></td>' +
+      tc.map((t, j) => '<td' + cls(col[j]) + '><b>' + t[b] + '</b>' + scarto(t[b], tm[b]) + '</td>').join('') + (attesaScr ? '<td></td>' : '') + '</tr>';
+  });
+  /* seggi spostati: metà della somma degli scarti assoluti */
+  const spost = col.map(c => [...new Set([...Object.keys(M.seggi), ...Object.keys(c.seggi)])].reduce((s, l) => s + Math.abs((+c.seggi[l] || 0) - (M.seggi[l] || 0)), 0) / 2);
+  if (col.length) h += '<tr class="tot"><td>Seggi spostati</td><td>—</td>' + spost.map((v, j) => '<td' + cls(col[j]) + '>' + nf(v, 0) + '</td>').join('') + (attesaScr ? '<td></td>' : '') + '</tr>';
+  $('confrontoTable').innerHTML = h + '</tbody>';
+  $('confrontoMeta').textContent = 'proiezione ' + conData('del', M.data);
+  let sub = 'La proiezione del <a href="' + URL_MODELLO + '" target="_blank" rel="noopener">modello previsionale</a> (media ponderata di ' + M.rilevazioni + ' sondaggi, l’ultimo ' + conData('del', M.ultimo) + ') messa a confronto con i numeri della notte. ';
+  if (!col.length) sub += 'Gli exit poll entrano appena pubblicati, alle 21 italiane; lo scrutinio quando è contata metà dei seggi.';
+  else if (!conScr) sub += 'Gli scarti accanto ai seggi sono la differenza dal modello. Lo scrutinio entra quando è contata metà dei seggi' + (R && R.fonte !== 'manuale' ? ': ora siamo al ' + pct(av.f, 0) + '.' : '.');
+  else sub += 'Gli scarti accanto ai seggi sono la differenza dal modello; sotto i seggi dello scrutinio, la quota di voto e lo scarto in punti dalla quota stimata.';
+  const nascoste = col.filter(c => !tenute.has(c.k)).map(c => c.n);
+  if (nascoste.length) sub += '<span class="solo-tel"> Da telefono non entrano ' + esc(nascoste.join(' e ')) + ': si vedono da computer o girando lo schermo.</span>';
+  $('confrontoSub').innerHTML = sub;
+  $('confrontoNote').textContent = 'Lo scrutinio entra nel confronto al ' + pct(CONFRONTO_DA, 0) + ' dei seggi contati: nel 2022 è successo verso le 7 del mattino israeliano (le 6 in Italia), nove ore dopo la chiusura; prima, le località che riportano per prime non rappresentano il paese. ' +
+    'Ipotesi del modello: Popolo d’Israele contata nel blocco Netanyahu, i quattro accordi di eccedenza firmati applicati. «Seggi spostati» è la metà della somma degli scarti, cioè quanti seggi andrebbero spostati per passare dal modello alla fonte.';
 }
 
 /* ---------- barre ---------- */
@@ -1844,7 +1988,8 @@ async function leggiStime() {
     const r = await fetch('stime.json?t=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) throw 0;
     const j = await r.json();
-    S.stime = { exit: j.exit || {}, accordi: Array.isArray(j.accordi) && j.accordi.length ? j.accordi : null, aggiornato: j.aggiornato || '' };
+    S.stime = { exit: j.exit || {}, accordi: Array.isArray(j.accordi) && j.accordi.length ? j.accordi : null, aggiornato: j.aggiornato || '',
+      modello: j.modello && j.modello.seggi && sum(j.modello.seggi) === SEGGI ? j.modello : null };
     riempiExit(); render();
   } catch (_) { $('statoStime').textContent = 'stime.json non leggibile (pagina aperta dal disco?)'; }
   setTimeout(leggiStime, STIME_MS);
@@ -2039,7 +2184,7 @@ async function cercaWiki() {
 const URL_PAGINA = 'https://angrisanidj.github.io/risultati-israele/';
 function testoCondivisione() {
   const f = fonteAttiva();
-  if (f.k === 'k22') return 'Israele, elezioni del 27 ottobre: lo spoglio in diretta, con i 120 seggi, gli exit poll e la mappa';
+  if (f.k === 'k22' || f.k === 'modello') return 'Israele, elezioni del 27 ottobre: lo spoglio in diretta, con i 120 seggi, gli exit poll e la mappa';
   const t = totBlocchi(f), R = risultato(), av = avanzamento(R);
   const chi = f.k === 'scrutinio' ? (R && R.fonte !== 'manuale' ? 'scrutinio al ' + nf(av.f * 100, 0) + '%' : 'voti contati') : 'exit poll di ' + f.s;
   return 'Israele, ' + chi + ': blocco Netanyahu a ' + t.N + ' seggi su 120 (maggioranza a 61). Lo spoglio in diretta';
@@ -2109,6 +2254,7 @@ function eventi() {
   $('copyStime').onclick = () => {
     const exit = {}; EXIT.forEach(e => { const x = exitDi(e.k); if (x) exit[e.k] = { ora: x.ora || '', seggi: x.seggi }; });
     const j = { aggiornato: new Intl.DateTimeFormat('it-IT', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }).format(new Date()), accordi: accordi(), exit };
+    if (S.stime.modello) j.modello = S.stime.modello;   /* l'incolla non deve far perdere la proiezione */
     const t = JSON.stringify(j, null, 2);
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => { $('copyStime').textContent = 'Copiato'; setTimeout(() => $('copyStime').textContent = 'Copia per stime.json', 1600); })
       .catch(() => { window.prompt('Copia il contenuto per stime.json', t); });
@@ -2249,7 +2395,13 @@ window.CARD = (function () {
     const ex = EXIT.map(e => ({ ...e, x: exitDi(e.k) })).filter(e => e.x);
     return { R, av, f, fonti: F_, bo, ex, tb: totBlocchi(f), ambito: g('ambito').value.trim() || 'Israele · 27 ottobre 2026', data: g('dataFonte').value.trim() || '27 ottobre 2026' };
   }
-  const nomeF = s => s.f.k === 'scrutinio' ? (s.R.fonte === 'manuale' ? 'voti inseriti a mano' : 'voti contati') : s.f.k === 'k22' ? 'Knesset 2022' : 'exit poll di ' + s.f.s;
+  const nomeF = s => s.f.k === 'scrutinio' ? (s.R.fonte === 'manuale' ? 'voti inseriti a mano' : 'voti contati') : s.f.k === 'k22' ? 'Knesset 2022' : s.f.k === 'modello' ? 'modello previsionale' : 'exit poll di ' + s.f.s;
+  /* testata, sottotitolo e fonte della card dei seggi, uguali nei due formati */
+  const badgeSeggi = f => f.k === 'scrutinio' ? 'SEGGI · SCRUTINIO' : f.k === 'k22' ? 'KNESSET 2022' : f.k === 'modello' ? 'PROIEZIONE · MODELLO' : 'SEGGI · EXIT POLL';
+  const subSeggi = (f, s, lungo) => f.k === 'scrutinio' ? scr(s) + (lungo ? ' · riparto Bader-Ofer con gli accordi di eccedenza' : ' · riparto Bader-Ofer') : f.k === 'k22' ? 'Composizione uscente'
+    : f.k === 'modello' ? 'Modello previsionale, proiezione ' + conData('del', modello().data) : 'Exit poll di ' + f.s + (f.ora ? ', ore ' + f.ora : '');
+  const fonteSeggi = (f, s) => f.k === 'scrutinio' ? fonteCEC(s) : f.k === 'k22' ? 'Commissione elettorale centrale (2022)'
+    : f.k === 'modello' ? 'Modello previsionale Knesset 2026, media dei sondaggi (' + f.quando + ')' : f.s + ' (' + s.data + ')';
   const fonteCEC = s => (s.R && s.R.fonte === 'prova' ? 'Commissione elettorale centrale, Knesset 2022 (prova)' : 'Commissione elettorale centrale') + ' (' + s.data + ')';
   const scr = s => s.R && s.R.fonte !== 'manuale' ? 'Scrutinio al ' + nf(s.av.f * 100, 0) + '%' : 'Voti inseriti a mano';
   function ordinaVoti(s) { return Object.keys(s.R.voti).map(l => ({ l, p: infoLista(l), q: s.R.voti[l] / s.R.val, v: s.R.voti[l], seg: s.bo ? s.bo.seggi[l] || 0 : 0 })).sort((a, b) => b.v - a.v); }
@@ -2280,10 +2432,10 @@ window.CARD = (function () {
   /* ---------- CARD 2 — seggi e blocchi ---------- */
   function card2(x, s, N) {
     const f = s.f, t = s.tb, win = t.N >= MAGG;
-    frame(x, { badge: f.k === 'scrutinio' ? 'SEGGI · SCRUTINIO' : f.k === 'k22' ? 'KNESSET 2022' : 'SEGGI · EXIT POLL', kicker: s.ambito, title: g('t2').value,
-      sub: f.k === 'scrutinio' ? scr(s) + ' · riparto Bader-Ofer con gli accordi di eccedenza' : f.k === 'k22' ? 'Composizione uscente' : 'Exit poll di ' + f.s + (f.ora ? ', ore ' + f.ora : ''),
+    frame(x, { badge: badgeSeggi(f), kicker: s.ambito, title: g('t2').value,
+      sub: subSeggi(f, s, true),
       nota: descriviBlocchi(),
-      fonte: f.k === 'scrutinio' ? fonteCEC(s) : f.k === 'k22' ? 'Commissione elettorale centrale (2022)' : f.s + ' (' + s.data + ')', n: N.n, tot: N.tot });
+      fonte: fonteSeggi(f, s), n: N.n, tot: N.tot });
     /* emiciclo */
     const ox = 70, oy = 262, k = 1.28;
     const el = Object.keys(f.seggi).filter(l => f.seggi[l] > 0).map(l => ({ l, n: f.seggi[l], p: infoPer(f, l), b: bloccoDi(f, l) }));
@@ -2469,9 +2621,9 @@ window.CARD = (function () {
   }
   function ig2(x, s, N) {
     const f = s.f, t = s.tb, win = t.N >= MAGG, M = IG.M;
-    const z = frameIG(x, { badge: f.k === 'scrutinio' ? 'SEGGI · SCRUTINIO' : f.k === 'k22' ? 'KNESSET 2022' : 'SEGGI · EXIT POLL', kicker: s.ambito, title: g('t2').value,
-      sub: f.k === 'scrutinio' ? scr(s) + ' · riparto Bader-Ofer' : f.k === 'k22' ? 'Composizione uscente' : 'Exit poll di ' + f.s + (f.ora ? ', ore ' + f.ora : ''),
-      nota: descriviBlocchi(), fonte: f.k === 'scrutinio' ? fonteCEC(s) : f.k === 'k22' ? 'Commissione elettorale centrale (2022)' : f.s + ' (' + s.data + ')', n: N.n, tot: N.tot });
+    const z = frameIG(x, { badge: badgeSeggi(f), kicker: s.ambito, title: g('t2').value,
+      sub: subSeggi(f, s, false),
+      nota: descriviBlocchi(), fonte: fonteSeggi(f, s), n: N.n, tot: N.tot });
     const el = Object.keys(f.seggi).filter(l => f.seggi[l] > 0).map(l => ({ l, n: f.seggi[l], p: infoPer(f, l), b: bloccoDi(f, l) }));
     el.sort((a, b) => ORD_BLOCCHI.indexOf(a.b) - ORD_BLOCCHI.indexOf(b.b) || (a.b === 'N' ? a.n - b.n : b.n - a.n));
     const blocchi = [['N', t.N], ['O', t.O], ['A', t.A], ['X', t.X]].filter(([b, v]) => b !== 'X' || v);
@@ -2590,7 +2742,8 @@ window.CARD = (function () {
     const t = {};
     if (s.R) { const o = ordinaVoti(s), n = o.filter(r => r.q >= SOGLIA).length; t.t1 = nomeBreve(o[0].p) + ' primo con il ' + nf(o[0].q * 100, 1) + '%, ' + n + ' liste sopra la soglia'; }
     else t.t1 = 'Il voto in Israele, lista per lista';
-    t.t2 = s.tb.N >= MAGG ? 'Netanyahu ha la maggioranza: ' + s.tb.N + ' seggi su 120' : 'Il blocco Netanyahu si ferma a ' + s.tb.N + ' seggi: ne servono 61';
+    t.t2 = s.f.k === 'modello' ? 'Il modello stima il blocco Netanyahu a ' + s.tb.N + ' seggi: ne servono 61'
+      : s.tb.N >= MAGG ? 'Netanyahu ha la maggioranza: ' + s.tb.N + ' seggi su 120' : 'Il blocco Netanyahu si ferma a ' + s.tb.N + ' seggi: ne servono 61';
     if (s.ex.length) { const v = s.ex.map(e => totBlocchi({ seggi: e.x.seggi }).N), a = Math.min(...v), b = Math.max(...v); t.t3 = 'Gli exit poll: blocco Netanyahu ' + (a === b ? 'a ' + a : 'fra ' + a + ' e ' + b) + ' seggi'; }
     else t.t3 = 'Gli exit poll delle reti israeliane';
     t.t4 = 'Chi vince dove: la prima lista area per area';
@@ -2605,7 +2758,7 @@ window.CARD = (function () {
       const n = ordinaVoti(s).filter(r => r.q >= SOGLIA).length;
       p.c1 = 'Israele, ' + scr(s).toLowerCase() + ': ' + o + '. Sopra la soglia del 3,25% ci sono ' + n + ' liste; i seggi sono ricalcolati con il metodo Bader-Ofer e possono ancora cambiare.';
     }
-    const t = s.tb, chi = s.f.k === 'scrutinio' ? 'Con i ' + nomeF(s) + ' (' + nf(s.av.f * 100, 0) + '%)' : 'Secondo l’' + nomeF(s);
+    const t = s.tb, chi = s.f.k === 'scrutinio' ? 'Con i ' + nomeF(s) + ' (' + nf(s.av.f * 100, 0) + '%)' : s.f.k === 'modello' ? 'Secondo il ' + nomeF(s) + ' ' + conData('del', modello().data) : 'Secondo l’' + nomeF(s);
     p.c2 = chi + ', il blocco Netanyahu ha ' + t.N + ' seggi su 120: ' + (t.N >= MAGG ? 'basta per la maggioranza.' : 'ne servono 61.') + ' Opposizione ' + t.O + ', partiti arabi ' + t.A + (t.X ? ', altre liste ' + t.X : '') + '.';
     if (s.ex.length) p.c3 = 'Gli exit poll in Israele, seggi del blocco Netanyahu: ' + s.ex.map(e => e.n + ': ' + totBlocchi({ seggi: e.x.seggi }).N).join(', ') + '. La maggioranza alla Knesset è a 61 seggi su 120.';
     if (s.R && s.R.loc) {
