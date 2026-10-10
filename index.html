@@ -1244,22 +1244,39 @@ function renderTabella() {
   $('accordiNote').textContent = nota;
 }
 
-/* ---------- emiciclo ---------- */
-function posti(n) {
-  /* posti in semicerchi concentrici, ordinati per angolo da sinistra a destra */
-  const righe = 6, r0 = 92, r1 = 252, cx = 280, cy = 278;
-  const raggi = Array.from({ length: righe }, (_, i) => r0 + (r1 - r0) * i / (righe - 1));
-  const lung = raggi.reduce((s, r) => s + r, 0);
-  let cont = raggi.map(r => Math.round(n * r / lung));
-  let diff = n - cont.reduce((a, b) => a + b, 0); cont[righe - 1] += diff;
-  const pts = [];
-  raggi.forEach((r, i) => {
-    const k = cont[i];
-    for (let j = 0; j < k; j++) { const a = Math.PI - Math.PI * (j / (k - 1)); pts.push({ x: cx + r * Math.cos(a), y: cy - r * Math.sin(a), a }); }
+/* ---------- emiciclo ----------
+   Ogni blocco ha il suo spicchio, separato dagli altri da un corridoio vuoto. Lo spicchio è
+   largo in proporzione ai seggi, e dentro lo spicchio ogni fila riceve seggi in proporzione al
+   suo raggio, così la densità resta uguale in tutto l'emiciclo. Il blocco Netanyahu parte
+   sempre dal bordo destro: la linea tratteggiata segna dove arriverebbe con 61 seggi. */
+const EMI = { cx: 280, cy: 278, raggi: [92, 124, 156, 188, 220, 252], varco: 0.085 };
+function disegnoEmiciclo(el) {
+  const { cx, cy, raggi, varco } = EMI, sr = raggi.reduce((a, b) => a + b, 0);
+  const gruppi = [];
+  el.forEach(e => { const g = gruppi[gruppi.length - 1]; if (g && g.b === e.b) { g.n += e.n; g.el.push(e); } else gruppi.push({ b: e.b, n: e.n, el: [e] }); });
+  const tot = gruppi.reduce((a, g) => a + g.n, 0);
+  if (tot < SEGGI) {   /* i seggi non assegnati stanno subito prima del blocco Netanyahu */
+    const iN = gruppi.findIndex(g => g.b === 'N'), vuoto = { b: '_', n: SEGGI - tot, el: [], vuoto: true };
+    if (iN < 0) gruppi.push(vuoto); else gruppi.splice(iN, 0, vuoto);
+  }
+  const disp = Math.PI - varco * (gruppi.length - 1);
+  const pts = []; let th = Math.PI;
+  gruppi.forEach(g => {
+    const amp = disp * g.n / SEGGI;
+    const q = raggi.map(r => g.n * r / sr), k = q.map(Math.floor);
+    q.map((v, i) => [v - k[i], i]).sort((a, b) => b[0] - a[0]).slice(0, g.n - k.reduce((a, b) => a + b, 0)).forEach(([, i]) => k[i]++);
+    const sp = [];
+    raggi.forEach((r, i) => { for (let j = 0; j < k[i]; j++) { const a = th - amp * (j + 0.5) / k[i]; sp.push({ x: cx + r * Math.cos(a), y: cy - r * Math.sin(a), a }); } });
+    sp.sort((p, q2) => q2.a - p.a);
+    let i = 0;
+    for (const e of g.el) for (let j = 0; j < e.n; j++, i++) Object.assign(sp[i], { l: e.l, b: e.b, c: e.p.c });
+    for (; i < sp.length; i++) sp[i].vuoto = true;
+    pts.push(...sp);
+    th -= amp + varco;
   });
-  return pts.sort((p, q) => q.a - p.a);
+  const aM = disp * MAGG / SEGGI, r0 = raggi[0] - 10, r1 = raggi[raggi.length - 1] + 14;
+  return { pts, linea: { x1: cx + r0 * Math.cos(aM), y1: cy - r0 * Math.sin(aM), x2: cx + r1 * Math.cos(aM), y2: cy - r1 * Math.sin(aM) } };
 }
-const POSTI = posti(SEGGI);
 let filtroEmi = null;
 function renderEmiciclo() {
   const F = fontiSeggi(), f = fonteAttiva();
@@ -1271,13 +1288,10 @@ function renderEmiciclo() {
   /* ordine dei seggi: per blocco, poi per dimensione */
   const elenco = Object.keys(f.seggi).filter(l => f.seggi[l] > 0).map(l => ({ l, n: f.seggi[l], p: infoPer(f, l), b: bloccoDi(f, l) }));
   elenco.sort((a, b) => ORD_BLOCCHI.indexOf(a.b) - ORD_BLOCCHI.indexOf(b.b) || (a.b === 'N' ? a.n - b.n : b.n - a.n));
-  let svg = '', i = 0;
-  for (const e of elenco) for (let k = 0; k < e.n && i < POSTI.length; k++, i++) {
-    const p = POSTI[i];
-    svg += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="8.6" fill="' + e.p.c + '" data-l="' + esc(e.l) + '" data-b="' + e.b + '"></circle>';
-  }
-  for (; i < POSTI.length; i++) svg += '<circle cx="' + POSTI[i].x.toFixed(1) + '" cy="' + POSTI[i].y.toFixed(1) + '" r="8.6" fill="rgba(255,255,255,.08)"></circle>';
-  svg += '<line x1="280" y1="16" x2="280" y2="292" stroke="rgba(255,255,255,.28)" stroke-dasharray="3 5"/>' +
+  const D = disegnoEmiciclo(elenco), ln = D.linea;
+  let svg = D.pts.map(p => p.vuoto ? '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="8.6" fill="rgba(255,255,255,.08)"></circle>'
+    : '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="8.6" fill="' + p.c + '" data-l="' + esc(p.l) + '" data-b="' + p.b + '"></circle>').join('');
+  svg += '<line x1="' + ln.x1.toFixed(1) + '" y1="' + ln.y1.toFixed(1) + '" x2="' + ln.x2.toFixed(1) + '" y2="' + ln.y2.toFixed(1) + '" stroke="rgba(255,255,255,.28)" stroke-dasharray="3 5"/>' +
     '<text x="280" y="250" text-anchor="middle" fill="#f2f5fb" style="font:600 42px Inter,sans-serif">' + (sum(f.seggi) ? totBlocchi(f).N : '') + '</text>' +
     '<text x="280" y="272" text-anchor="middle" fill="#98a7c0" style="font:500 12px Inter,sans-serif">blocco Netanyahu</text>';
   const H = $('hemicycle'); H.innerHTML = svg;
@@ -1293,7 +1307,7 @@ function renderEmiciclo() {
   let sc = '<div class="scen scen-head"><span>Fonte</span><span class="sn">Net.</span><span class="sn">Opp.</span><span class="sn">Arabi</span><span class="sn">Altri</span></div>';
   F.forEach(x => {
     const tb = totBlocchi(x);
-    sc += '<div class="scen' + (x.k === f.k ? ' att' : '') + '"><span class="sf">' + esc(x.k === 'modello' ? x.n : nomeFonte(x, true)) + (x.ora ? ' <i>' + esc(x.ora) + '</i>' : '') + (x.quando ? ' <i>' + esc(x.quando) + '</i>' : '') + (x.locale ? ' <i>· locale</i>' : '') + '</span><span class="sn' + (tb.N >= MAGG ? ' m' : '') + '">' + tb.N + '</span><span class="sn">' + tb.O + '</span><span class="sn">' + tb.A + '</span><span class="sn">' + tb.X + '</span></div>';
+    sc += '<div class="scen' + (x.k === f.k ? ' att' : '') + '"><span class="sf">' + esc(x.k === 'modello' ? 'Modello' : nomeFonte(x, true)) + (x.ora ? ' <i>' + esc(x.ora) + '</i>' : '') + (x.quando ? ' <i>' + esc(x.quando) + '</i>' : '') + (x.locale ? ' <i>· locale</i>' : '') + '</span><span class="sn' + (tb.N >= MAGG ? ' m' : '') + '">' + tb.N + '</span><span class="sn">' + tb.O + '</span><span class="sn">' + tb.A + '</span><span class="sn">' + tb.X + '</span></div>';
   });
   $('scenari').innerHTML = sc;
   let m;
@@ -2429,6 +2443,13 @@ window.CARD = (function () {
     x.save(); x.setLineDash([4, 6]); line(x, sx, 276, sx, 308 + (R.length - 1) * h + 12, 'rgba(255,255,255,.3)', 1.2); x.restore();
   }
 
+  /* l'emiciclo della pagina, con gli stessi spicchi separati, ridisegnato sulla tela */
+  function emicicloSu(x, el, ox, oy, k, r) {
+    const D = disegnoEmiciclo(el), ln = D.linea;
+    D.pts.forEach(p => { x.beginPath(); x.arc(ox + p.x * k, oy + p.y * k, r, 0, 7); x.fillStyle = p.vuoto ? 'rgba(255,255,255,.08)' : p.c; x.fill(); });
+    x.save(); x.setLineDash([4, 6]); line(x, ox + ln.x1 * k, oy + ln.y1 * k, ox + ln.x2 * k, oy + ln.y2 * k, 'rgba(255,255,255,.3)', 1.2); x.restore();
+  }
+
   /* ---------- CARD 2 — seggi e blocchi ---------- */
   function card2(x, s, N) {
     const f = s.f, t = s.tb, win = t.N >= MAGG;
@@ -2440,10 +2461,7 @@ window.CARD = (function () {
     const ox = 70, oy = 262, k = 1.28;
     const el = Object.keys(f.seggi).filter(l => f.seggi[l] > 0).map(l => ({ l, n: f.seggi[l], p: infoPer(f, l), b: bloccoDi(f, l) }));
     el.sort((a, b) => ORD_BLOCCHI.indexOf(a.b) - ORD_BLOCCHI.indexOf(b.b) || (a.b === 'N' ? a.n - b.n : b.n - a.n));
-    let i = 0;
-    el.forEach(e => { for (let j = 0; j < e.n && i < POSTI.length; j++, i++) { x.beginPath(); x.arc(ox + POSTI[i].x * k, oy + POSTI[i].y * k, 10.4, 0, 7); x.fillStyle = e.p.c; x.fill(); } });
-    for (; i < POSTI.length; i++) { x.beginPath(); x.arc(ox + POSTI[i].x * k, oy + POSTI[i].y * k, 10.4, 0, 7); x.fillStyle = 'rgba(255,255,255,.08)'; x.fill(); }
-    x.save(); x.setLineDash([4, 6]); line(x, ox + 280 * k, oy + 12 * k, ox + 280 * k, oy + 292 * k, 'rgba(255,255,255,.3)', 1.2); x.restore();
+    emicicloSu(x, el, ox, oy, k, 10.4);
     T(x, String(t.N), ox + 280 * k, oy + 246 * k, { font: F(700, 62, 'serif'), align: 'center' });
     T(x, 'BLOCCO NETANYAHU', ox + 280 * k, oy + 272 * k, { font: F(800, 15), color: C.t2, ls: 2, align: 'center' });
     /* blocchi */
@@ -2629,10 +2647,7 @@ window.CARD = (function () {
     const blocchi = [['N', t.N], ['O', t.O], ['A', t.A], ['X', t.X]].filter(([b, v]) => b !== 'X' || v);
     const ph = 92, gap = 10, hp = blocchi.length * (ph + gap);
     const k = Math.min(1.7, (z.y1 - z.y0 - hp - 64) / 300), ox = IG.W / 2 - 280 * k, oy = z.y0 - 10 * k;
-    let i = 0;
-    el.forEach(e => { for (let j = 0; j < e.n && i < POSTI.length; j++, i++) { x.beginPath(); x.arc(ox + POSTI[i].x * k, oy + POSTI[i].y * k, 8.6 * k, 0, 7); x.fillStyle = e.p.c; x.fill(); } });
-    for (; i < POSTI.length; i++) { x.beginPath(); x.arc(ox + POSTI[i].x * k, oy + POSTI[i].y * k, 8.6 * k, 0, 7); x.fillStyle = 'rgba(255,255,255,.08)'; x.fill(); }
-    x.save(); x.setLineDash([4, 6]); line(x, IG.W / 2, oy + 14 * k, IG.W / 2, oy + 292 * k, 'rgba(255,255,255,.3)', 1.2); x.restore();
+    emicicloSu(x, el, ox, oy, k, 8.6 * k);
     T(x, String(t.N), IG.W / 2, oy + 244 * k, { font: F(700, Math.round(46 * k), 'serif'), align: 'center' });
     T(x, 'BLOCCO NETANYAHU', IG.W / 2, oy + 272 * k, { font: F(800, 14), color: C.t2, ls: 2, align: 'center' });
     const msg = win ? (t.N === MAGG ? 'Esattamente la maggioranza di 61 seggi' : (t.N - MAGG) + (t.N - MAGG === 1 ? ' seggio' : ' seggi') + ' oltre la maggioranza di 61') : 'Alla maggioranza di 61 mancano ' + (MAGG - t.N) + (MAGG - t.N === 1 ? ' seggio' : ' seggi');
