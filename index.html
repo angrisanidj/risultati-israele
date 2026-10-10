@@ -578,13 +578,6 @@ footer a{color:var(--t2)}
     </article>
   </section>
 
-  <section class="card" id="confrontoCard" style="margin-bottom:14px">
-    <div class="cardhead"><div><h2>Il modello alla prova</h2></div><span class="cmeta" id="confrontoMeta">—</span></div>
-    <p class="subcopy" id="confrontoSub"></p>
-    <div class="tablewrap"><table id="confrontoTable" class="conf"></table></div>
-    <p class="methodnote" id="confrontoNote"></p>
-  </section>
-
   <section class="card" style="margin-bottom:14px">
     <div class="cardhead">
       <h2>Il voto, lista per lista</h2>
@@ -633,6 +626,13 @@ footer a{color:var(--t2)}
     </div>
     <div id="mapEmpty" class="mapempty">Nessuna località scrutinata: la mappa si colora appena il file della Commissione riporta i primi voti.</div>
     <p class="methodnote" id="mapNote">Intensità del colore proporzionale alla quota della prima lista. Le tribù beduine non riconosciute non hanno un poligono ma entrano nell’area di Be’er Sheva; le doppie buste e sette campi militari (circa 600 voti nel 2022) entrano solo nei totali nazionali. Gaza non vota.</p>
+  </section>
+
+  <section class="card" id="confrontoCard" style="margin-bottom:14px">
+    <div class="cardhead"><div><h2>Il modello alla prova</h2></div><span class="cmeta" id="confrontoMeta">—</span></div>
+    <p class="subcopy" id="confrontoSub"></p>
+    <div class="tablewrap"><table id="confrontoTable" class="conf"></table></div>
+    <p class="methodnote" id="confrontoNote"></p>
   </section>
 
   <section class="grid2">
@@ -1337,26 +1337,34 @@ function applicaFiltro() {
 /* ---------- il modello alla prova ----------
    La proiezione del modello previsionale contro gli exit poll, appena escono, e contro lo
    scrutinio da metà dei seggi contati (CONFRONTO_DA). Gli scarti sono fonte meno modello. */
-function renderConfronto() {
-  const card = $('confrontoCard'), M = modello();
-  card.classList.toggle('hidden', !M);
-  if (!M) return;
+/* I dati del confronto, condivisi dal riquadro della pagina e dalla card 6 */
+function datiConfronto() {
+  const M = modello();
+  if (!M) return null;
   const R = risultato(), av = avanzamento(R);
   const conScr = !!R && (R.fonte === 'manuale' || av.f >= CONFRONTO_DA);
   const col = [];
-  EXIT.forEach(e => { const x = exitDi(e.k); if (x) col.push({ k: e.k, n: e.n, c: e.s, sub: x.ora || 'exit poll', seggi: x.seggi }); });
-  if (conScr) col.push({ k: 'scrutinio', n: 'Scrutinio', c: 'Scrut.', sub: R.fonte === 'manuale' ? 'a mano' : 'al ' + pct(av.f, 0), seggi: baderOfer(R.voti, accordi()).seggi, voti: R.voti, val: R.val });
-  const attesaScr = !conScr && ED === '26';
+  EXIT.forEach(e => { const x = exitDi(e.k); if (x) col.push({ k: e.k, n: e.n, c: e.s, sub: x.ora || 'exit poll', ora: x.ora, seggi: x.seggi }); });
+  if (conScr) col.push({ k: 'scrutinio', n: 'Scrutinio', c: 'Scrut.', sub: R.fonte === 'manuale' ? 'a mano' : 'al ' + pct(av.f, 0), seggi: baderOfer(R.voti, accordi()).seggi, voti: R.voti, val: R.val, reale: true });
+  const lett = new Set(Object.keys(M.seggi).filter(l => M.seggi[l] > 0));
+  col.forEach(c => Object.keys(c.seggi).forEach(l => { if (+c.seggi[l] > 0) lett.add(l); }));
+  const ultima = col.length ? col[col.length - 1] : null;
+  const righe = [...lett].sort((a, b) => (M.seggi[b] || 0) - (M.seggi[a] || 0) || ((ultima && +ultima.seggi[b] || 0) - (ultima && +ultima.seggi[a] || 0)));
+  const tm = totBlocchi({ seggi: M.seggi }), tc = col.map(c => totBlocchi({ seggi: c.seggi }));
+  /* seggi spostati: metà della somma degli scarti assoluti */
+  const spost = col.map(c => [...new Set([...Object.keys(M.seggi), ...Object.keys(c.seggi)])].reduce((a, l) => a + Math.abs((+c.seggi[l] || 0) - (M.seggi[l] || 0)), 0) / 2);
+  return { M, R, av, conScr, attesaScr: !conScr && ED === '26', col, righe, tm, tc, spost };
+}
+function renderConfronto() {
+  const card = $('confrontoCard'), D = datiConfronto();
+  card.classList.toggle('hidden', !D);
+  if (!D) return;
+  const { M, R, av, conScr, attesaScr, col, righe, tm, tc, spost } = D;
   /* da telefono stanno al massimo tre colonne oltre al modello: prima lo scrutinio, poi gli
      exit poll nell'ordine dell'emiciclo; le altre si nascondono sotto i 560 px */
   const prio = c => c.k === 'scrutinio' ? -1 : ORD_AUTO_EXIT.indexOf(c.k);
   const tenute = new Set(col.slice().sort((a, b) => prio(a) - prio(b)).slice(0, attesaScr ? 2 : 3).map(c => c.k));
   const cls = c => tenute.has(c.k) ? '' : ' class="m-off"';
-  /* righe: le liste con seggi nel modello o in una fonte del confronto */
-  const lett = new Set(Object.keys(M.seggi).filter(l => M.seggi[l] > 0));
-  col.forEach(c => Object.keys(c.seggi).forEach(l => { if (+c.seggi[l] > 0) lett.add(l); }));
-  const ultima = col.length ? col[col.length - 1] : null;
-  const righe = [...lett].sort((a, b) => (M.seggi[b] || 0) - (M.seggi[a] || 0) || ((ultima && +ultima.seggi[b] || 0) - (ultima && +ultima.seggi[a] || 0)));
   const scarto = (v, m) => { const d = v - m; return '<span class="dlt' + (d === 0 ? ' zero' : Math.abs(d) >= 3 ? ' forte' : '') + '">' + (d === 0 ? '=' : (d > 0 ? '+' : '−') + Math.abs(d)) + '</span>'; };
   let h = '<thead><tr><th>Lista</th><th>Modello<small>' + esc(dataIT(M.data)) + '</small></th>' +
     col.map(c => '<th' + cls(c) + '><span class="lungo">' + esc(c.n) + '</span><span class="corto">' + esc(c.c) + '</span><small>' + esc(c.sub) + '</small></th>').join('') +
@@ -1376,13 +1384,10 @@ function renderConfronto() {
       (attesaScr ? '<td><span class="mute">—</span></td>' : '') + '</tr>';
   });
   /* blocchi */
-  const tm = totBlocchi({ seggi: M.seggi }), tc = col.map(c => totBlocchi({ seggi: c.seggi }));
   ['N', 'O', 'A', 'X'].filter(b => b !== 'X' || tm.X || tc.some(t => t.X)).forEach((b, i) => {
     h += '<tr class="rbl' + (i ? '' : ' rbl-sep') + '"><td><i style="background:' + BLOCCHI[b].c + '"></i>' + esc(BLOCCHI[b].n) + '</td><td><b>' + tm[b] + '</b></td>' +
       tc.map((t, j) => '<td' + cls(col[j]) + '><b>' + t[b] + '</b>' + scarto(t[b], tm[b]) + '</td>').join('') + (attesaScr ? '<td></td>' : '') + '</tr>';
   });
-  /* seggi spostati: metà della somma degli scarti assoluti */
-  const spost = col.map(c => [...new Set([...Object.keys(M.seggi), ...Object.keys(c.seggi)])].reduce((s, l) => s + Math.abs((+c.seggi[l] || 0) - (M.seggi[l] || 0)), 0) / 2);
   if (col.length) h += '<tr class="tot"><td>Seggi spostati</td><td>—</td>' + spost.map((v, j) => '<td' + cls(col[j]) + '>' + nf(v, 0) + '</td>').join('') + (attesaScr ? '<td></td>' : '') + '</tr>';
   $('confrontoTable').innerHTML = h + '</tbody>';
   $('confrontoMeta').textContent = 'proiezione ' + conData('del', M.data);
@@ -2407,7 +2412,7 @@ window.CARD = (function () {
     const R = risultato(), av = avanzamento(R), f = fonteAttiva(), F_ = fontiSeggi();
     const bo = R ? baderOfer(R.voti, accordi()) : null;
     const ex = EXIT.map(e => ({ ...e, x: exitDi(e.k) })).filter(e => e.x);
-    return { R, av, f, fonti: F_, bo, ex, tb: totBlocchi(f), ambito: g('ambito').value.trim() || 'Israele · 27 ottobre 2026', data: g('dataFonte').value.trim() || '27 ottobre 2026' };
+    return { R, av, f, fonti: F_, bo, ex, cf: datiConfronto(), tb: totBlocchi(f), ambito: g('ambito').value.trim() || 'Israele · 27 ottobre 2026', data: g('dataFonte').value.trim() || '27 ottobre 2026' };
   }
   const nomeF = s => s.f.k === 'scrutinio' ? (s.R.fonte === 'manuale' ? 'voti inseriti a mano' : 'voti contati') : s.f.k === 'k22' ? 'Knesset 2022' : s.f.k === 'modello' ? 'modello previsionale' : 'exit poll di ' + s.f.s;
   /* testata, sottotitolo e fonte della card dei seggi, uguali nei due formati */
@@ -2514,6 +2519,58 @@ window.CARD = (function () {
         T(x, String(v), cx0 + cw * j + cw / 2, y, { font: F(800, 24, 'serif'), color: (b === 'N' && v >= MAGG) || (b === 'O' && v >= MAGG) ? C.acc : C.t1, align: 'center' });
       });
     });
+  }
+
+  /* ---------- CARD 6 — il modello alla prova ----------
+     La prima colonna è il modello; nelle altre, i seggi di ogni fonte e lo scarto dal modello. */
+  const scartoTxt = d => d === 0 ? '=' : (d > 0 ? '+' : '−') + Math.abs(d);
+  const scartoCol = d => d === 0 ? C.t3 : Math.abs(d) >= 3 ? C.amber : C.t2;
+  function testiConfronto(s) {
+    const D = s.cf, ex = D.col.filter(c => !c.reale), scr = D.col.find(c => c.reale);
+    const contro = [ex.length ? (ex.length === 1 ? 'l’exit poll di ' + ex[0].n : 'gli exit poll') : '', scr ? 'lo scrutinio ' + scr.sub : ''].filter(Boolean).join(' e ');
+    return {
+      sub: 'Seggi su 120: la proiezione ' + conData('del', D.M.data) + ' contro ' + (contro || 'le fonti della notte'),
+      nota: 'Il modello è la media ponderata di ' + D.M.rilevazioni + ' sondaggi, l’ultimo ' + conData('del', D.M.ultimo) + '. Accanto ai seggi lo scarto dal modello; lo scrutinio entra nel confronto dal 50% dei seggi contati. Seggi spostati: quanti ne andrebbero spostati per passare dal modello alla fonte.',
+      fonte: 'Modello previsionale' + (ex.length ? '; exit poll ' + ex.map(c => c.c).join(', ') : '') + (scr ? '; Commissione elettorale' : '') + ' (' + s.data + ')'
+    };
+  }
+  function card6(x, s, N) {
+    const D = s.cf, tt = testiConfronto(s);
+    frame(x, { badge: 'IL MODELLO ALLA PROVA', kicker: s.ambito, title: g('t6').value, sub: tt.sub, nota: tt.nota, fonte: tt.fonte, n: N.n, tot: N.tot });
+    if (!D.col.length) return attesa(x, 'In attesa degli exit poll', 'Alle 21 italiane, le 22 in Israele.');
+    const cols = [{ n: 'Modello', sub: dataIT(D.M.data), seggi: D.M.seggi, mod: true }].concat(D.col.map(c => ({ n: c.n, sub: c.reale ? c.sub.replace(/^al /, '') + ' contato' : (c.ora ? 'ore ' + c.ora : 'exit poll'), seggi: c.seggi, reale: c.reale })));
+    const rows = D.righe.slice(0, 13), nb = 3, h = Math.min(34, 420 / (rows.length + nb));
+    const x0 = 62, cw = Math.min(200, (1538 - 560) / cols.length), cx0 = 1538 - cw * cols.length;
+    cols.forEach((c, j) => {
+      const cx = cx0 + cw * j + cw / 2;
+      if (c.mod || c.reale) fillRR(x, cx0 + cw * j + 8, 236, cw - 16, (rows.length + nb) * h + 86, 12, c.mod ? 'rgba(255,255,255,.045)' : 'rgba(169,196,255,.07)');
+      T(x, c.n, cx, 266, { font: fit(x, c.n, cw - 16, 21, 15, 800), color: c.reale ? C.acc : C.t1, align: 'center' });
+      T(x, c.sub, cx, 290, { font: F(400, 16), color: C.t3, align: 'center' });
+    });
+    const fz = Math.min(22, h * .64), fd = Math.round(fz * .74);
+    const cella = (c, j, v, m, y, font) => {
+      const cx = cx0 + cw * j + cw / 2;
+      if (c.mod) return T(x, String(v), cx, y, { font, color: C.t1, align: 'center' });
+      T(x, String(v), cx + 4, y, { font, color: C.t1, align: 'right' });
+      T(x, scartoTxt(v - m), cx + 12, y, { font: F(700, fd), color: scartoCol(v - m) });
+    };
+    rows.forEach((l, i) => {
+      const y = 330 + i * h, p = infoLista(l), m = D.M.seggi[l] || 0;
+      fillRR(x, x0, y - 12, 11, 11, 5.5, p.c);
+      T(x, cut(x, p.n, cx0 - 110, F(600, fz)), x0 + 24, y, { font: F(600, fz), color: C.t1 });
+      cols.forEach((c, j) => cella(c, j, +c.seggi[l] || 0, m, y, F(700, fz + 1)));
+    });
+    const yb = 330 + rows.length * h + 10;
+    line(x, x0, yb - h * .55, 1538, yb - h * .55, C.line, 1);
+    const tot = c => totBlocchi({ seggi: c.seggi }), tm = tot(cols[0]);
+    [['N', 'Blocco Netanyahu', t => t.N], ['O', 'Opposizione + arabi', t => t.O + t.A]].forEach(([b, n, f], i) => {
+      const y = yb + i * h + 6;
+      T(x, n, x0 + 24, y, { font: F(800, fz), color: BLOCCHI[b].c });
+      cols.forEach((c, j) => cella(c, j, f(tot(c)), f(tm), y, F(800, fz + 2, 'serif')));
+    });
+    const ys = yb + 2 * h + 10;
+    T(x, 'Seggi spostati', x0 + 24, ys, { font: F(700, fz), color: C.t2 });
+    cols.forEach((c, j) => T(x, c.mod ? '—' : nf(D.spost[j - 1], 0), cx0 + cw * j + cw / 2, ys, { font: F(700, fz), color: C.t2, align: 'center' }));
   }
 
   /* ---------- CARD 4 — la mappa ---------- */
@@ -2696,6 +2753,46 @@ window.CARD = (function () {
       cols.forEach((c, j) => { const tb = totBlocchi({ seggi: c.seggi }), v = b === 'N' ? tb.N : tb.O + tb.A; T(x, String(v), cx0 + cw * j + cw / 2, y, { font: F(700, fz + 2, 'serif'), color: v >= MAGG ? C.acc : C.t1, align: 'center' }); });
     });
   }
+  function ig6(x, s, N) {
+    const D = s.cf, tt = testiConfronto(s);
+    const z = frameIG(x, { badge: 'IL MODELLO ALLA PROVA', kicker: s.ambito, title: g('t6').value, sub: tt.sub, nota: tt.nota, fonte: tt.fonte, n: N.n, tot: N.tot });
+    if (!D.col.length) return attesaIG(x, z, 'In attesa degli exit poll', 'Alle 21 italiane, le 22 in Israele.');
+    const M = IG.M, Rr = IG.W - M;
+    const cols = [{ n: 'Modello', sub: dataIT(D.M.data).replace(/ottobre/, 'ott.'), seggi: D.M.seggi, mod: true }].concat(D.col.map(c => ({ n: c.k === 'kan' ? 'Kan 11' : c.n.replace('Canale ', 'Can. '), sub: c.reale ? c.sub.replace(/^al /, '') : (c.ora ? 'ore ' + c.ora : ''), seggi: c.seggi, reale: c.reale })));
+    const liste = D.righe.slice(0, 14);
+    const cw = Math.min(130, (Rr - 360) / cols.length), cx0 = Rr - cw * cols.length;
+    const h = Math.min(48, (z.y1 - z.y0 - 70) / (liste.length + 3.6));
+    cols.forEach((c, j) => {
+      const cx = cx0 + cw * j + cw / 2;
+      if (c.mod || c.reale) fillRR(x, cx0 + cw * j + 5, z.y0 - 28, cw - 10, (liste.length + 3.6) * h + 76, 12, c.mod ? 'rgba(255,255,255,.045)' : 'rgba(169,196,255,.07)');
+      T(x, c.n, cx, z.y0, { font: fit(x, c.n, cw - 10, 20, 13, 800), color: c.reale ? C.acc : C.t1, align: 'center' });
+      T(x, c.sub, cx, z.y0 + 24, { font: F(400, 15), color: C.t3, align: 'center' });
+    });
+    const fz = Math.min(23, h * .56), fd = Math.round(fz * .72);
+    const cella = (c, j, v, m, y, font) => {
+      const cx = cx0 + cw * j + cw / 2;
+      if (c.mod) return T(x, String(v), cx, y, { font, color: C.t1, align: 'center' });
+      T(x, String(v), cx + 2, y, { font, color: C.t1, align: 'right' });
+      T(x, scartoTxt(v - m), cx + 8, y, { font: F(700, fd), color: scartoCol(v - m) });
+    };
+    liste.forEach((l, i) => {
+      const y = z.y0 + 68 + i * h, p = infoLista(l), m = D.M.seggi[l] || 0;
+      fillRR(x, M, y - 12, 11, 11, 5.5, p.c);
+      T(x, cut(x, nomeBreve(p), cx0 - M - 30, F(600, fz)), M + 22, y, { font: F(600, fz) });
+      cols.forEach((c, j) => cella(c, j, +c.seggi[l] || 0, m, y, F(700, fz)));
+    });
+    const yb = z.y0 + 68 + liste.length * h + 6;
+    line(x, M, yb - h * .55, Rr, yb - h * .55, C.line, 1);
+    const tot = c => totBlocchi({ seggi: c.seggi }), tm = tot(cols[0]);
+    [['N', 'Blocco Netanyahu', t => t.N], ['O', 'Opposizione + arabi', t => t.O + t.A]].forEach(([b, n, f], i) => {
+      const y = yb + i * h + 8;
+      T(x, n, M + 22, y, { font: F(800, fz), color: BLOCCHI[b].c });
+      cols.forEach((c, j) => cella(c, j, f(tot(c)), f(tm), y, F(700, fz + 2, 'serif')));
+    });
+    const ys = yb + 2 * h + 12;
+    T(x, 'Seggi spostati', M + 22, ys, { font: F(700, fz), color: C.t2 });
+    cols.forEach((c, j) => T(x, c.mod ? '—' : nf(D.spost[j - 1], 0), cx0 + cw * j + cw / 2, ys, { font: F(700, fz), color: C.t2, align: 'center' }));
+  }
   function ig4(x, s, N) {
     const z = frameIG(x, { badge: 'LA MAPPA', kicker: s.ambito, title: g('t4').value, sub: s.R ? scr(s) + ' · la prima lista area per area' : '',
       nota: 'Le aree sono i 15 sottodistretti; in Cisgiordania gli insediamenti, presi insieme. Colore più pieno dove la prima lista è più forte.',
@@ -2747,7 +2844,8 @@ window.CARD = (function () {
     { id: 'c2', tid: 't2', nome: 'Card 2 — Seggi e blocchi', file: 'israele_2_seggi.png', fn: card2, fig: ig2, ok: s => s.f.k !== 'k22' },
     { id: 'c3', tid: 't3', nome: 'Card 3 — Exit poll a confronto', file: 'israele_3_exit_poll.png', fn: card3, fig: ig3, ok: s => s.ex.length > 0 },
     { id: 'c4', tid: 't4', nome: 'Card 4 — La mappa', file: 'israele_4_mappa.png', fn: card4, fig: ig4, ok: s => !!(s.R && s.R.loc && s.R.loc.size) },
-    { id: 'c5', tid: 't5', nome: 'Card 5 — La soglia', file: 'israele_5_soglia.png', fn: card5, fig: ig5, ok: s => !!s.R }
+    { id: 'c5', tid: 't5', nome: 'Card 5 — La soglia', file: 'israele_5_soglia.png', fn: card5, fig: ig5, ok: s => !!s.R },
+    { id: 'c6', tid: 't6', nome: 'Card 6 — Il modello alla prova', file: 'israele_6_modello.png', fn: card6, fig: ig6, ok: s => !!(s.cf && s.cf.col.length) }
   ];
 
   /* ---------- titoli e testi automatici ---------- */
@@ -2764,6 +2862,12 @@ window.CARD = (function () {
     t.t4 = 'Chi vince dove: la prima lista area per area';
     if (s.R) { const f = sulFilo(s.R); t.t5 = f.length ? 'Sul filo della soglia: ' + f.map(x => nomeBreve(infoLista(x.l))).join(', ') : 'La soglia del 3,25%: chi entra e chi resta fuori'; }
     else t.t5 = 'La soglia del 3,25%';
+    if (s.cf) {
+      const D = s.cf, scr = D.col.findIndex(c => c.reale), ex = D.tc.filter((_, j) => !D.col[j].reale).map(b => b.N);
+      if (scr >= 0) { const sp = D.spost[scr]; t.t6 = 'Il modello alla prova: ' + nf(sp, 0) + (sp === 1 ? ' seggio' : ' seggi') + ' di scarto dallo scrutinio ' + D.col[scr].sub; }
+      else if (ex.length) { const a = Math.min(...ex), b = Math.max(...ex); t.t6 = 'Il modello dava ' + D.tm.N + ' seggi al blocco Netanyahu, gli exit poll ' + (a === b ? a : 'fra ' + a + ' e ' + b); }
+      else t.t6 = 'Il modello alla prova';
+    }
     return t;
   }
   function autoPost(s) {
@@ -2784,6 +2888,12 @@ window.CARD = (function () {
     if (s.R) {
       const v = ordinaVoti(s).filter(r => r.q >= 0.015 && r.q < 0.06).slice(0, 5);
       p.c5 = 'La soglia del 3,25% in Israele vale ' + nf(Math.ceil(s.R.val * SOGLIA)) + ' voti. ' + v.map(r => nomeBreve(r.p) + ' ' + nf(r.q * 100, 2) + '%').join(', ') + '. ' + scr(s) + (s.R.env && s.R.env.val > 0 ? '.' : ', mancano ancora le doppie buste.');
+    }
+    if (s.cf && s.cf.col.length) {
+      const D = s.cf;
+      const nomeC = c => c.reale ? 'scrutinio' : D.col.length > 3 ? c.c : c.n;
+      p.c6 = 'Israele, il modello previsionale alla prova. Blocco Netanyahu: ' + D.tm.N + ' seggi nel modello; ' + D.col.map((c, j) => nomeC(c) + ' ' + D.tc[j].N).join(', ') +
+        '. Seggi spostati rispetto al modello: ' + D.col.map((c, j) => nomeC(c) + ' ' + nf(D.spost[j], 0)).join(', ') + (D.conScr ? ' (scrutinio ' + D.col[D.col.length - 1].sub + ').' : '.');
     }
     Object.keys(p).forEach(k => p[k] = taglia(p[k]));
     return p;

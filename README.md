@@ -153,7 +153,7 @@ Il proxy Vercel non ha una regione in Israele, quindi un blocco geografico va ag
 
 - **Pulsanti per i lettori.** Sono sette, in testa alla pagina: X, Threads, Facebook, LinkedIn, Telegram, WhatsApp e il link. Il testo segue i dati: prima del voto presenta la pagina, poi riporta i seggi del blocco Netanyahu. Il pulsante del link sul telefono apre il menu di condivisione del sistema, altrove copia l'indirizzo. Le icone vengono da [Bootstrap Icons](https://icons.getbootstrap.com) (licenza MIT), caricate da jsDelivr.
 - **Anteprima del link.** Quando l'indirizzo viene condiviso su X, WhatsApp, Facebook o Telegram compare `condivisione.jpg`, 1200×630, attraverso i tag Open Graph e Twitter Card.
-- **Card per X e Instagram.** Si trovano nella scheda in modalità redazione. «Formato» passa da X (16:9, 1600×900) a Instagram (4:5, 1080×1350), con un'impaginazione propria. Per ogni card ci sono tre pulsanti:
+- **Card per X e Instagram.** Si trovano nella scheda in modalità redazione. «Formato» passa da X (16:9, 1600×900) a Instagram (4:5, 1080×1350), con un'impaginazione propria. Le card sono sei: il voto, seggi e blocchi, gli exit poll, la mappa, la soglia e «Il modello alla prova». Quest'ultima si attiva con il primo exit poll: confronta il modello con exit poll e scrutinio e riporta gli scarti e i seggi spostati. Per ogni card ci sono tre pulsanti:
   - **Scarica PNG** scarica l'immagine;
   - **Condividi** apre il menu del sistema con immagine e testo, da cui scegli Instagram, X o WhatsApp; dove il menu non c'è, scarica e copia il testo;
   - **Pubblica su X** apre X con il testo già scritto; l'immagine va allegata a mano.
@@ -164,10 +164,10 @@ Lettere di scheda approvate dalla Commissione per il 2026, fonti Ynet e Kan del 
 
 | Blocco | Liste |
 |---|---|
-| Netanyahu | Likud (מחל), Sionismo religioso–Zehut (ט), Otzma Yehudit (ב), Shas (שס), UTJ (ג), Noam (ני) |
+| Netanyahu | Likud (מחל), Sionismo religioso–Zehut (ט), Otzma Yehudit (ב), Shas (שס), UTJ (ג), Noam (ני), Popolo d'Israele (ך) |
 | Opposizione | Beyachad (רק), Yashar (דרך), Democratici (אמת), Yisrael Beitenu (ל), Blu e Bianco (כן) |
 | Partiti arabi | Ra'am (עם), Lista unita (ודם) |
-| Altri | Riservisti e Partito economico (די), Amcha Yisrael (ך), Israel First (י), Pubblico haredi (זך) |
+| Altri | Riservisti e Partito economico (די), Israel First (י), Pubblico haredi (זך) |
 
 Liste, colori e blocchi stanno in testa allo script, nella costante `LISTE['26']`.
 
