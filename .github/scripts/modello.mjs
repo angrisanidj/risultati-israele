@@ -17,7 +17,8 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const [, , DIR, STIME] = process.argv;
+const [, , DIR_ARG, STIME] = process.argv;
+const DIR = path.resolve(DIR_ARG);   /* assoluto: il confronto qui sotto lo pretende */
 const ULTIMO_GIORNO = '2026-10-26';
 const oggi = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome' }).format(new Date());
 if (oggi > ULTIMO_GIORNO) { console.log('Dopo il ' + ULTIMO_GIORNO + ': la proiezione resta quella della vigilia.'); process.exit(0); }
@@ -40,7 +41,7 @@ const srv = http.createServer((req, res) => {
   const p = decodeURIComponent(req.url.split('?')[0]);
   if (p === '/' || p === '/index.html') { res.writeHead(200, { 'Content-Type': 'text/html' }); return res.end(html); }
   const f = path.join(DIR, path.normalize(p));
-  if (!f.startsWith(path.resolve(DIR)) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+  if (!f.startsWith(DIR + path.sep) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { console.log('404 ' + p); res.writeHead(404); return res.end(); }
   res.writeHead(200, { 'Content-Type': TIPI[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(res);
 });
 await new Promise(r => srv.listen(0, '127.0.0.1', r));
@@ -56,6 +57,14 @@ try {
   await p.waitForFunction(() => window.__M && window.__M.SEG, null, { timeout: 90000 });
   M = await p.evaluate(() => JSON.parse(JSON.stringify(window.__M)));
 } finally { await b.close(); srv.close(); }
+
+/* IL CONTROLLO CHE MANCAVA: se l'archivio non si carica, il modello ripiega in silenzio sui
+   dati incorporati nella sua pagina, fermi a mesi prima. L'ultimo sondaggio usato deve essere
+   quello più recente dell'archivio, a meno di qualche giorno. */
+const arch = JSON.parse(fs.readFileSync(path.join(DIR, 'dati', 'archivio.json'), 'utf8'));
+const recente = arch.map(r => r.data).sort().pop();
+const giorni = (Date.parse(recente) - Date.parse(M.ultimo)) / 864e5;
+if (!(giorni <= 3)) throw new Error('Il modello ha usato sondaggi fino al ' + M.ultimo + ', ma l’archivio arriva al ' + recente + ': l’archivio non si è caricato.');
 
 const seggi = {}, voti = {};
 for (const [id, n] of Object.entries(M.SEG)) {
