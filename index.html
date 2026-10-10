@@ -7,9 +7,25 @@
 <meta name="theme-color" content="#050b18">
 <title>Israele 2026 — Lo spoglio in diretta</title>
 <meta name="description" content="Elezioni della 26ª Knesset, 27 ottobre 2026: voti, seggi con il metodo Bader-Ofer, exit poll e mappa delle località in diretta dai dati della Commissione elettorale centrale.">
+<link rel="canonical" href="https://angrisanidj.github.io/risultati-israele/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="it_IT">
+<meta property="og:url" content="https://angrisanidj.github.io/risultati-israele/">
+<meta property="og:title" content="Israele 2026 — Lo spoglio in diretta">
+<meta property="og:description" content="Elezioni della 26ª Knesset, 27 ottobre: i voti dalla Commissione elettorale centrale, i 120 seggi con il metodo Bader-Ofer, gli exit poll e la mappa.">
+<meta property="og:image" content="https://angrisanidj.github.io/risultati-israele/condivisione.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Israele 2026, lo spoglio in diretta: emiciclo della Knesset con la maggioranza a 61 seggi">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:creator" content="@putino">
+<meta name="twitter:title" content="Israele 2026 — Lo spoglio in diretta">
+<meta name="twitter:description" content="Voti, i 120 seggi con il metodo Bader-Ofer, gli exit poll e la mappa delle località.">
+<meta name="twitter:image" content="https://angrisanidj.github.io/risultati-israele/condivisione.jpg">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 16'%3E%3Crect width='22' height='16' fill='%23fff'/%3E%3Crect y='1.6' width='22' height='2.4' fill='%230038b8'/%3E%3Crect y='12' width='22' height='2.4' fill='%230038b8'/%3E%3Cpath d='M11 4.9l2.75 4.75h-5.5zM11 11.1l-2.75-4.75h5.5z' fill='none' stroke='%230038b8' stroke-width='.75'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -80,6 +96,13 @@ select{background:rgba(0,0,0,.32);color:var(--t1);border:1px solid var(--line-2)
 .eyebrow{color:var(--acc);font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
 .hero h1{font-size:clamp(34px,7.2vw,60px);line-height:.98;letter-spacing:-.045em;margin:10px 0 12px}
 .hero p{color:#b5c3db;max-width:76ch;margin:0;font-size:clamp(14px,1.6vw,16.5px)}
+.social{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:14px;position:relative;z-index:1}
+.social-lab{color:var(--t3);font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-right:3px}
+.sbtn{width:40px;height:40px;flex:0 0 40px;padding:0;border-radius:50%;border:1.5px solid rgba(242,245,251,.34);background:transparent;color:var(--t1);
+  display:inline-flex;align-items:center;justify-content:center;font-size:17px;line-height:1;text-decoration:none;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.sbtn:hover,.sbtn:focus-visible{background:var(--white);border-color:var(--white);color:#071436}
+.sbtn .bi-link-45deg{font-size:21px}
+.social-esito{color:var(--green);font-size:12px;font-weight:600}
 .hero .metaline{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;position:relative;z-index:1;align-items:center}
 
 /* ---------- kpi ---------- */
@@ -302,6 +325,7 @@ footer a{color:var(--t2)}
 .fld input{width:100%;background:rgba(0,0,0,.32);border:1px solid var(--line-2);color:var(--t1);border-radius:9px;padding:9px 11px;font-size:14px;font-family:var(--sans)}
 .gencard{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:rgba(255,255,255,.03);margin:0 0 18px}
 .gencard canvas{display:block;width:100%;height:auto;background:#081022}
+.gencard.ig canvas{max-width:560px;margin:0 auto}
 .gencard .bar2{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 13px;border-top:1px solid var(--line);flex-wrap:wrap}
 .gencard .bar2 b{font-size:13px}
 .gencard .bar2 em{font-style:normal;color:var(--t3);font-size:11.5px}
@@ -378,6 +402,17 @@ footer a{color:var(--t2)}
       <span id="testBadge" class="pill danger hidden">PROVA · DATI 2022</span>
       <button id="refreshBtn" class="sm">Aggiorna ora</button>
       <button id="pauseBtn" class="sm">Metti in pausa</button>
+    </div>
+    <div class="social" aria-label="Condividi la pagina">
+      <span class="social-lab">Condividi</span>
+      <a class="sbtn" data-rete="x" href="#" target="_blank" rel="noopener" aria-label="Condividi su X" title="X"><i class="bi bi-twitter-x"></i></a>
+      <a class="sbtn" data-rete="threads" href="#" target="_blank" rel="noopener" aria-label="Condividi su Threads" title="Threads"><i class="bi bi-threads"></i></a>
+      <a class="sbtn" data-rete="facebook" href="#" target="_blank" rel="noopener" aria-label="Condividi su Facebook" title="Facebook"><i class="bi bi-facebook"></i></a>
+      <a class="sbtn" data-rete="linkedin" href="#" target="_blank" rel="noopener" aria-label="Condividi su LinkedIn" title="LinkedIn"><i class="bi bi-linkedin"></i></a>
+      <a class="sbtn" data-rete="telegram" href="#" target="_blank" rel="noopener" aria-label="Condividi su Telegram" title="Telegram"><i class="bi bi-telegram"></i></a>
+      <a class="sbtn" data-rete="whatsapp" href="#" target="_blank" rel="noopener" aria-label="Condividi su WhatsApp" title="WhatsApp"><i class="bi bi-whatsapp"></i></a>
+      <button class="sbtn" id="sLink" type="button" aria-label="Copia il link" title="Copia il link"><i class="bi bi-link-45deg"></i></button>
+      <span class="social-esito" id="sEsito" role="status"></span>
     </div>
   </header>
 
@@ -519,9 +554,9 @@ footer a{color:var(--t2)}
 <!-- ============================ TAB 2 — CARD ============================ -->
 <section id="tab-card" role="tabpanel" aria-labelledby="tabbtn-card" class="hidden">
   <header class="hero" style="padding:22px clamp(18px,3.2vw,30px)">
-    <div class="eyebrow">1600×900 · export PNG 3200×1800</div>
-    <h1 style="font-size:clamp(28px,5vw,44px);margin:9px 0 10px">Card per X</h1>
-    <p>Le card si compilano da sole con i dati della dashboard: scrutinio, seggi, blocchi, exit poll, soglia del 3,25% e mappa. Nessun dato va reinserito.</p>
+    <div class="eyebrow">X 1600×900 · Instagram 1080×1350 · export PNG in doppia risoluzione</div>
+    <h1 style="font-size:clamp(28px,5vw,44px);margin:9px 0 10px">Card per X e Instagram</h1>
+    <p>Le card si compilano da sole con i dati della dashboard: scrutinio, seggi, blocchi, exit poll, soglia del 3,25% e mappa. Scegli il formato, poi scarica o condividi: «Condividi» apre il menu del sistema con immagine e testo (da lì Instagram, X, WhatsApp); «Pubblica su X» apre X con il testo, e l’immagine si allega a mano.</p>
   </header>
   <div class="card-grid">
     <aside class="side">
@@ -541,6 +576,7 @@ footer a{color:var(--t2)}
     </aside>
     <div>
       <div class="toolbar">
+        <div class="mapfonte" id="formato" role="group" aria-label="Formato delle card"><button data-f="x" aria-pressed="true">X · 16:9</button><button data-f="ig" aria-pressed="false">Instagram · 4:5</button></div>
         <button class="primary" id="dlAll">Scarica le card pronte</button>
         <button id="redraw">Aggiorna anteprima</button>
         <button id="copyAll">Copia tutti i testi</button>
@@ -1783,6 +1819,55 @@ async function cercaWiki() {
   } finally { btn.disabled = false; }
 }
 
+
+/* =====================================================================
+   CONDIVISIONE
+   Sette pulsanti: X, Threads, Facebook, LinkedIn, Telegram, WhatsApp e il link. Il testo
+   segue i dati: prima del voto presenta la pagina, poi riporta i seggi del blocco
+   Netanyahu secondo la fonte dell'emiciclo. Il link, come nell'emiciclo: sui telefoni apre
+   il menu di condivisione del sistema (da lì Instagram, Messaggi…), altrove va negli appunti.
+   ===================================================================== */
+const URL_PAGINA = 'https://angrisanidj.github.io/risultati-israele/';
+function testoCondivisione() {
+  const f = fonteAttiva();
+  if (f.k === 'k22') return 'Israele, elezioni del 27 ottobre: lo spoglio in diretta, con i 120 seggi, gli exit poll e la mappa';
+  const t = totBlocchi(f), R = risultato(), av = avanzamento(R);
+  const chi = f.k === 'scrutinio' ? (R && R.fonte !== 'manuale' ? 'scrutinio al ' + nf(av.f * 100, 0) + '%' : 'voti contati') : 'exit poll di ' + f.s;
+  return 'Israele, ' + chi + ': blocco Netanyahu a ' + t.N + ' seggi su 120 (maggioranza a 61). Lo spoglio in diretta';
+}
+function linkSocial(rete) {
+  const u = encodeURIComponent(URL_PAGINA), t = testoCondivisione(), tu = encodeURIComponent(t + ' ' + URL_PAGINA), te = encodeURIComponent(t);
+  return {
+    x: 'https://x.com/intent/post?text=' + te + '&url=' + u,
+    threads: 'https://www.threads.net/intent/post?text=' + tu,
+    facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + u,
+    linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + u,
+    telegram: 'https://t.me/share/url?url=' + u + '&text=' + te,
+    whatsapp: 'https://wa.me/?text=' + tu
+  }[rete];
+}
+const MENU_CONDIVISIONE = !!navigator.share && !!window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+function esitoSocial(msg) { const e = $('sEsito'); e.textContent = msg; clearTimeout(esitoSocial.t); esitoSocial.t = setTimeout(() => e.textContent = '', 2600); }
+function copiaLink() {
+  const ok = () => esitoSocial('Link copiato');
+  if (navigator.clipboard) navigator.clipboard.writeText(URL_PAGINA).then(ok, () => window.prompt('Copia il link', URL_PAGINA));
+  else window.prompt('Copia il link', URL_PAGINA);
+}
+function eventiSocial() {
+  /* l'indirizzo si calcola al clic, così il testo riflette i dati di quel momento */
+  document.querySelectorAll('.sbtn[data-rete]').forEach(a => {
+    const agg = () => { a.href = linkSocial(a.dataset.rete); };
+    a.addEventListener('pointerdown', agg); a.addEventListener('focus', agg); a.addEventListener('click', agg);
+    agg();
+  });
+  if (MENU_CONDIVISIONE) $('sLink').setAttribute('aria-label', 'Condividi il link');
+  $('sLink').onclick = () => {
+    if (!MENU_CONDIVISIONE) { copiaLink(); return; }
+    navigator.share({ title: 'Israele 2026 — Lo spoglio in diretta', text: testoCondivisione(), url: URL_PAGINA })
+      .catch(e => { if (!e || e.name !== 'AbortError') copiaLink(); });
+  };
+}
+
 /* =====================================================================
    7 · EVENTI E AVVIO
    ===================================================================== */
@@ -1869,7 +1954,7 @@ async function avvio() {
   REDAZIONE = await verificaRedazione();
   document.body.classList.toggle('redazione', REDAZIONE);
   if (REDAZIONE) $('exitSub').textContent += ' Modalità redazione: «Cerca su Wikipedia» precompila le caselle, tu le verifichi con la diretta e premi «Salva stime»; valgono solo in questo browser finché non le copi in stime.json.';
-  costruisciExit(); costruisciManuale(); eventi();
+  costruisciExit(); costruisciManuale(); eventi(); eventiSocial();
   $('footProxy').textContent = 'Proxy: ' + (() => { try { return new URL(PROXY).host; } catch (_) { return PROXY; } })();
   render();
   leggiStime();
@@ -1881,7 +1966,7 @@ async function avvio() {
 <script>
 'use strict';
 /* =====================================================================
-   CARD PER X — 1600×900, export PNG 3200×1800
+   CARD PER X E INSTAGRAM — 1600×900 (export 3200×1800) e 1080×1350 (export 2160×2700)
    Tutte le card leggono lo stato della dashboard: nessun dato si reinserisce.
    ===================================================================== */
 window.CARD = (function () {
@@ -2100,12 +2185,185 @@ window.CARD = (function () {
     T(x, '3,25% = ' + nf(Math.ceil(s.R.val * SOGLIA)) + ' voti', sx, 270, { font: F(700, 16), color: C.t2, align: 'center' });
   }
 
+
+  /* =====================================================================
+     FORMATO INSTAGRAM — 1080×1350 (4:5), export PNG 2160×2700
+     Stessi dati e stessi titoli delle card per X, impaginati in verticale: il formato
+     4:5 è quello che Instagram mostra per intero nel feed, e va bene anche per Facebook,
+     Threads e LinkedIn.
+     ===================================================================== */
+  const IG = { W: 1080, H: 1350, M: 60 };
+  function frameIG(x, o) {
+    const { W: Wd, H: Hd, M } = IG, R = Wd - M;
+    const gr = x.createLinearGradient(0, 0, 700, Hd);
+    gr.addColorStop(0, '#0C1A38'); gr.addColorStop(.55, '#081022'); gr.addColorStop(1, '#070E1E');
+    x.fillStyle = gr; x.fillRect(0, 0, Wd, Hd);
+    const r = x.createRadialGradient(880, -120, 0, 880, -120, 900);
+    r.addColorStop(0, 'rgba(0,56,184,.45)'); r.addColorStop(.65, 'rgba(0,56,184,0)');
+    x.fillStyle = r; x.fillRect(0, 0, Wd, Hd);
+    x.fillStyle = '#F4F7FF'; x.fillRect(0, 0, Wd, 14);
+    x.fillStyle = C.blue; x.fillRect(0, 2.5, Wd, 3.5); x.fillRect(0, 8, Wd, 3.5);
+    const bf = F(800, 19), bw = W(x, o.badge, bf, 2.4) + 44;
+    fillRR(x, M, 58, bw, 46, 9, C.white);
+    T(x, o.badge, M + 22, 88, { font: bf, ls: 2.4, color: '#071436' });
+    T(x, cut(x, o.kicker, R - (M + bw + 22), F(700, 19)), M + bw + 22, 88, { font: F(700, 19), color: C.t2 });
+    let y = 186;
+    righe(x, o.title, R - M, F(700, 54, 'serif'), 3).forEach(l => { T(x, l, M, y, { font: F(700, 54, 'serif') }); y += 62; });
+    if (o.sub) { y += 2; righe(x, o.sub, R - M, F(400, 24), 2).forEach(l => { T(x, l, M, y, { font: F(400, 24), color: C.t2 }); y += 32; }); }
+    const yLine = 1236;
+    const nota = o.nota ? righe(x, o.nota, R - M, F(400, 18), 3) : [];
+    nota.forEach((l, i) => T(x, l, M, yLine - 22 - (nota.length - 1 - i) * 25, { font: F(400, 18), color: C.t3 }));
+    line(x, M, yLine, R, yLine, C.line, 1);
+    T(x, cut(x, 'Fonte: ' + o.fonte, R - M, F(400, 19)), M, yLine + 38, { font: F(400, 19), color: C.t3 });
+    const pre = 'Elaborazione: ';
+    T(x, pre, M, yLine + 72, { font: F(400, 19), color: C.t3 });
+    T(x, FIRMA, M + W(x, pre, F(400, 19)), yLine + 72, { font: F(700, 19), color: C.acc });
+    const pill = o.n + ' / ' + o.tot, pw = W(x, pill, F(700, 18)) + 34;
+    rr(x, R - pw, yLine + 48, pw, 34, 17); x.strokeStyle = C.line; x.lineWidth = 1; x.stroke();
+    T(x, pill, R - pw / 2, yLine + 71, { font: F(700, 18), color: C.t2, align: 'center' });
+    return { y0: y + 34, y1: yLine - 22 - nota.length * 25 - 18 };
+  }
+  function attesaIG(x, z, msg, sub) {
+    const h = 240, y = Math.max(z.y0, (z.y0 + z.y1) / 2 - h / 2);
+    panel(x, IG.M, y, IG.W - 2 * IG.M, h);
+    T(x, msg, IG.W / 2, y + 112, { font: F(700, 38, 'serif'), color: C.t2, align: 'center' });
+    T(x, sub || 'I dati arrivano dalla dashboard.', IG.W / 2, y + 156, { font: F(400, 22), color: C.t3, align: 'center' });
+  }
+  const NOTA1 = 'La soglia è il 3,25% dei voti validi. I seggi sono ricalcolati sui voti contati, con gli accordi di eccedenza, e possono cambiare fino alla fine dello scrutinio e alle doppie buste.';
+  function ig1(x, s, N) {
+    const z = frameIG(x, { badge: s.R && s.R.fonte === 'prova' ? 'PROVA 2022' : 'SCRUTINIO', kicker: s.ambito, title: g('t1').value,
+      sub: s.R ? scr(s) + ' · ' + nf(s.R.val) + ' voti validi' : '', nota: NOTA1, fonte: fonteCEC(s), n: N.n, tot: N.tot });
+    if (!s.R) return attesaIG(x, z, 'In attesa dei voti contati');
+    const R = ordinaVoti(s).filter(r => r.q >= 0.008).slice(0, 10), M = IG.M, Rr = IG.W - M;
+    const max = Math.max(0.05, R[0].q) * 1.04, bw = Rr - M, sx = M + SOGLIA / max * bw;
+    const h = Math.min(80, (z.y1 - z.y0 - 30) / R.length);
+    T(x, 'SEGGI', Rr, z.y0, { font: F(800, 15), color: C.t3, ls: 2, align: 'right' });
+    R.forEach((r, i) => {
+      const y = z.y0 + 40 + i * h, sotto = r.q < SOGLIA;
+      fillRR(x, M, y - 15, 13, 13, 6.5, r.p.c);
+      T(x, cut(x, r.p.n, 600, F(700, 25)), M + 24, y, { font: F(700, 25), color: sotto ? C.t2 : C.t1 });
+      T(x, nf(r.q * 100, 1) + '%', Rr - 92, y + 1, { font: F(700, 29, 'serif'), color: C.t1, align: 'right' });
+      T(x, sotto ? '—' : String(r.seg), Rr, y + 1, { font: F(800, 29), color: sotto ? C.t3 : C.t1, align: 'right' });
+      fillRR(x, M, y + 13, bw, 16, 5, C.track);
+      x.save(); if (sotto) x.globalAlpha = .5; fillRR(x, M, y + 13, Math.max(6, r.q / max * bw), 16, 5, r.p.c); x.restore();
+    });
+    x.save(); x.setLineDash([4, 6]); line(x, sx, z.y0 + 44, sx, z.y0 + 40 + (R.length - 1) * h + 34, 'rgba(255,255,255,.4)', 1.3); x.restore();
+    T(x, '3,25%', sx, z.y0, { font: F(800, 15), color: C.t3, align: 'center' });
+  }
+  function ig2(x, s, N) {
+    const f = s.f, t = s.tb, win = t.N >= MAGG, M = IG.M;
+    const z = frameIG(x, { badge: f.k === 'scrutinio' ? 'SEGGI · SCRUTINIO' : f.k === 'k22' ? 'KNESSET 2022' : 'SEGGI · EXIT POLL', kicker: s.ambito, title: g('t2').value,
+      sub: f.k === 'scrutinio' ? scr(s) + ' · riparto Bader-Ofer' : f.k === 'k22' ? 'Composizione uscente' : 'Exit poll di ' + f.s + (f.ora ? ', ore ' + f.ora : ''),
+      nota: descriviBlocchi(), fonte: f.k === 'scrutinio' ? fonteCEC(s) : f.k === 'k22' ? 'Commissione elettorale centrale (2022)' : f.s + ' (' + s.data + ')', n: N.n, tot: N.tot });
+    const el = Object.keys(f.seggi).filter(l => f.seggi[l] > 0).map(l => ({ l, n: f.seggi[l], p: infoPer(f, l), b: bloccoDi(f, l) }));
+    el.sort((a, b) => ORD_BLOCCHI.indexOf(a.b) - ORD_BLOCCHI.indexOf(b.b) || (a.b === 'N' ? a.n - b.n : b.n - a.n));
+    const blocchi = [['N', t.N], ['O', t.O], ['A', t.A], ['X', t.X]].filter(([b, v]) => b !== 'X' || v);
+    const ph = 92, gap = 10, hp = blocchi.length * (ph + gap);
+    const k = Math.min(1.7, (z.y1 - z.y0 - hp - 64) / 300), ox = IG.W / 2 - 280 * k, oy = z.y0 - 10 * k;
+    let i = 0;
+    el.forEach(e => { for (let j = 0; j < e.n && i < POSTI.length; j++, i++) { x.beginPath(); x.arc(ox + POSTI[i].x * k, oy + POSTI[i].y * k, 8.6 * k, 0, 7); x.fillStyle = e.p.c; x.fill(); } });
+    for (; i < POSTI.length; i++) { x.beginPath(); x.arc(ox + POSTI[i].x * k, oy + POSTI[i].y * k, 8.6 * k, 0, 7); x.fillStyle = 'rgba(255,255,255,.08)'; x.fill(); }
+    x.save(); x.setLineDash([4, 6]); line(x, IG.W / 2, oy + 14 * k, IG.W / 2, oy + 292 * k, 'rgba(255,255,255,.3)', 1.2); x.restore();
+    T(x, String(t.N), IG.W / 2, oy + 244 * k, { font: F(700, Math.round(46 * k), 'serif'), align: 'center' });
+    T(x, 'BLOCCO NETANYAHU', IG.W / 2, oy + 272 * k, { font: F(800, 14), color: C.t2, ls: 2, align: 'center' });
+    const msg = win ? (t.N === MAGG ? 'Esattamente la maggioranza di 61 seggi' : (t.N - MAGG) + (t.N - MAGG === 1 ? ' seggio' : ' seggi') + ' oltre la maggioranza di 61') : 'Alla maggioranza di 61 mancano ' + (MAGG - t.N) + (MAGG - t.N === 1 ? ' seggio' : ' seggi');
+    const ym = oy + 300 * k + 40;
+    T(x, msg, IG.W / 2, ym, { font: F(700, 24), color: win ? C.acc : C.red, align: 'center' });
+    blocchi.forEach(([b, v], j) => {
+      const y = ym + 28 + j * (ph + gap), w = IG.W - 2 * M;
+      panel(x, M, y, w, ph);
+      if (b === 'N' && win) { x.save(); rr(x, M + .5, y + .5, w - 1, ph - 1, 14); x.strokeStyle = 'rgba(111,156,255,.7)'; x.lineWidth = 2; x.stroke(); x.restore(); }
+      fillRR(x, M + 22, y + 24, 14, 14, 4, BLOCCHI[b].c);
+      T(x, BLOCCHI[b].n.toUpperCase(), M + 46, y + 37, { font: F(800, 16), color: C.t2, ls: 1.5 });
+      const membri = el.filter(e => e.b === b).sort((p, q) => q.n - p.n).map(e => nomeBreve(e.p) + ' ' + e.n).join(' · ');
+      T(x, cut(x, membri || '—', w - 170, F(400, 18)), M + 22, y + 70, { font: F(400, 18), color: C.t3 });
+      T(x, String(v), M + w - 22, y + 64, { font: F(700, 48, 'serif'), align: 'right' });
+    });
+  }
+  function ig3(x, s, N) {
+    const cols = s.ex.map(e => ({ n: e.s === 'Kan' ? 'Kan 11' : e.n.replace('Canale ', 'Can. '), ora: e.x.ora, seggi: e.x.seggi }));
+    if (s.bo && s.R.fonte !== 'prova') cols.push({ n: 'Scrutinio', ora: nf(s.av.f * 100, 0) + '%', seggi: s.bo.seggi, reale: true });
+    const z = frameIG(x, { badge: 'EXIT POLL', kicker: s.ambito, title: g('t3').value, sub: 'Seggi su 120' + (cols.some(c => c.reale) ? ', e il riparto sui voti contati' : ''),
+      nota: 'Gli exit poll israeliani sono pubblicati in seggi alla chiusura dei seggi, alle 22 israeliane, e aggiornati nella notte con i voti reali.',
+      fonte: (s.ex.map(e => e.n).join(', ') || 'Reti israeliane') + ' (' + s.data + ')', n: N.n, tot: N.tot });
+    if (!cols.length) return attesaIG(x, z, 'In attesa degli exit poll', 'Alle 21 italiane, le 22 in Israele.');
+    const M = IG.M, Rr = IG.W - M;
+    const liste = L.filter(p => cols.some(c => (c.seggi[p.l] || 0) > 0)).sort((a, b) => (cols[0].seggi[b.l] || 0) - (cols[0].seggi[a.l] || 0)).slice(0, 14);
+    const cw = Math.min(140, (Rr - 420) / cols.length), cx0 = Rr - cw * cols.length;
+    const h = Math.min(50, (z.y1 - z.y0 - 70) / (liste.length + 2.6));
+    cols.forEach((c, j) => {
+      const cx = cx0 + cw * j + cw / 2;
+      if (c.reale) fillRR(x, cx0 + cw * j + 6, z.y0 - 28, cw - 12, (liste.length + 2.6) * h + 76, 12, 'rgba(169,196,255,.07)');
+      T(x, c.n, cx, z.y0, { font: fit(x, c.n, cw - 10, 20, 14, 800), color: c.reale ? C.acc : C.t1, align: 'center' });
+      T(x, c.ora ? (c.reale ? c.ora : 'ore ' + c.ora) : '', cx, z.y0 + 24, { font: F(400, 15), color: C.t3, align: 'center' });
+    });
+    const fz = Math.min(23, h * .58);
+    liste.forEach((p, i) => {
+      const y = z.y0 + 68 + i * h;
+      fillRR(x, M, y - 12, 11, 11, 5.5, p.c);
+      T(x, cut(x, p.n, cx0 - M - 40, F(600, fz)), M + 22, y, { font: F(600, fz) });
+      cols.forEach((c, j) => { const v = c.seggi[p.l]; T(x, v ? String(v) : '—', cx0 + cw * j + cw / 2, y, { font: F(700, fz), color: v ? C.t1 : C.t3, align: 'center' }); });
+    });
+    const yb = z.y0 + 68 + liste.length * h + 6;
+    line(x, M, yb - h * .55, Rr, yb - h * .55, C.line, 1);
+    [['N', 'Blocco Netanyahu'], ['O', 'Opposizione + arabi']].forEach(([b, n], i) => {
+      const y = yb + i * h + 8;
+      T(x, n, M + 22, y, { font: F(800, fz), color: BLOCCHI[b].c });
+      cols.forEach((c, j) => { const tb = totBlocchi({ seggi: c.seggi }), v = b === 'N' ? tb.N : tb.O + tb.A; T(x, String(v), cx0 + cw * j + cw / 2, y, { font: F(700, fz + 2, 'serif'), color: v >= MAGG ? C.acc : C.t1, align: 'center' }); });
+    });
+  }
+  function ig4(x, s, N) {
+    const z = frameIG(x, { badge: 'LA MAPPA', kicker: s.ambito, title: g('t4').value, sub: s.R ? scr(s) + ' · la prima lista area per area' : '',
+      nota: 'Le aree sono i 15 sottodistretti; in Cisgiordania gli insediamenti, presi insieme. Colore più pieno dove la prima lista è più forte.',
+      fonte: fonteCEC(s) + '; confini CBS', n: N.n, tot: N.tot });
+    if (!s.R || !s.R.loc) return attesaIG(x, z, 'In attesa delle prime località');
+    const col = coloriMappa(s.R.loc, 'sd', 'primo');
+    const Hm = z.y1 - z.y0 + 10, k = Hm / MAPPA.H, wm = MAPPA.W * k, ox = 40, oy = z.y0 - 18;
+    x.save(); x.translate(ox, oy); x.scale(k, k);
+    x.lineWidth = .9 / k; x.strokeStyle = '#08101f';
+    MAPPA.base.forEach((gm, i) => { const p = new Path2D(gm.d); x.fillStyle = col.base[i]; x.fill(p); x.stroke(p); });
+    x.lineWidth = .4 / k;
+    MAPPA.geo.forEach((gm, i) => { if (col.locs[i] == null) return; const p = new Path2D(gm.d); x.fillStyle = col.locs[i]; x.fill(p); x.stroke(p); });
+    x.restore();
+    const lx = Math.max(ox + wm + 10, 520), Rr = IG.W - IG.M;
+    const aree = col.sd.map((o, i) => [o, i]).sort((a, b) => BASE22_SD[b[1]].val - BASE22_SD[a[1]].val);
+    const h = Math.min(48, (z.y1 - z.y0 - 30) / aree.length);
+    T(x, 'PRIMA LISTA · AREE', lx, z.y0, { font: F(800, 14), color: C.t3, ls: 2 });
+    aree.forEach(([o, i], j) => {
+      const y = z.y0 + 40 + j * h, q = quote(o);
+      T(x, cut(x, NOMI_SD[i], 210, F(600, 19)), lx, y, { font: F(600, 19), color: q ? C.t1 : C.t3 });
+      if (q) { const p = infoLista(q.arr[0].l); fillRR(x, lx + 222, y - 14, 14, 14, 4, p.c); T(x, cut(x, nomeBreve(p), Rr - lx - 310, F(700, 19)), lx + 244, y, { font: F(700, 19) }); T(x, nf(q.arr[0].q * 100, 0) + '%', Rr, y, { font: F(800, 19), align: 'right' }); }
+      else T(x, 'non ancora', Rr, y, { font: F(400, 18), color: C.t3, align: 'right' });
+    });
+  }
+  function ig5(x, s, N) {
+    const z = frameIG(x, { badge: 'SOGLIA 3,25%', kicker: s.ambito, title: g('t5').value, sub: s.R ? scr(s) + ' · le liste vicine alla soglia' : '',
+      nota: 'Sotto il 3,25% dei voti validi una lista non entra alla Knesset e i suoi voti si perdono.', fonte: fonteCEC(s), n: N.n, tot: N.tot });
+    if (!s.R) return attesaIG(x, z, 'In attesa dei voti contati');
+    const R = ordinaVoti(s).filter(r => r.q >= 0.012 && r.q <= 0.075).slice(0, 8);
+    if (!R.length) return attesaIG(x, z, 'Nessuna lista vicina alla soglia');
+    const M = IG.M, Rr = IG.W - M, bw = Rr - M, max = 0.075, sx = M + SOGLIA / max * bw;
+    const h = Math.min(96, (z.y1 - z.y0 - 40) / R.length);
+    T(x, '3,25% = ' + nf(Math.ceil(s.R.val * SOGLIA)) + ' voti', sx, z.y0, { font: F(700, 17), color: C.t2, align: 'center' });
+    R.forEach((r, i) => {
+      const y = z.y0 + 50 + i * h, sotto = r.q < SOGLIA, d = Math.round((r.q - SOGLIA) * s.R.val);
+      fillRR(x, M, y - 15, 13, 13, 6.5, r.p.c);
+      T(x, cut(x, r.p.n, 560, F(700, 25)), M + 24, y, { font: F(700, 25), color: sotto ? C.t2 : C.t1 });
+      T(x, (d >= 0 ? '+' : '−') + nf(Math.abs(d)) + ' voti', Rr, y, { font: F(800, 23), color: d >= 0 ? C.green : C.red, align: 'right' });
+      fillRR(x, M, y + 14, bw, 24, 6, C.track);
+      x.save(); if (sotto) x.globalAlpha = .5; fillRR(x, M, y + 14, Math.max(6, r.q / max * bw), 24, 6, r.p.c); x.restore();
+      const px = M + Math.min(bw - 90, r.q / max * bw) + 10;
+      T(x, nf(r.q * 100, 2) + '%', px, y + 33, { font: F(700, 19), color: C.t1 });
+    });
+    x.save(); x.setLineDash([4, 6]); line(x, sx, z.y0 + 14, sx, z.y0 + 50 + (R.length - 1) * h + 44, 'rgba(255,255,255,.45)', 1.4); x.restore();
+  }
+
   const CARDS = [
-    { id: 'c1', tid: 't1', nome: 'Card 1 — Il voto', file: 'israele_1_voto.png', fn: card1, ok: s => !!s.R },
-    { id: 'c2', tid: 't2', nome: 'Card 2 — Seggi e blocchi', file: 'israele_2_seggi.png', fn: card2, ok: s => s.f.k !== 'k22' },
-    { id: 'c3', tid: 't3', nome: 'Card 3 — Exit poll a confronto', file: 'israele_3_exit_poll.png', fn: card3, ok: s => s.ex.length > 0 },
-    { id: 'c4', tid: 't4', nome: 'Card 4 — La mappa', file: 'israele_4_mappa.png', fn: card4, ok: s => !!(s.R && s.R.loc && s.R.loc.size) },
-    { id: 'c5', tid: 't5', nome: 'Card 5 — La soglia', file: 'israele_5_soglia.png', fn: card5, ok: s => !!s.R }
+    { id: 'c1', tid: 't1', nome: 'Card 1 — Il voto', file: 'israele_1_voto.png', fn: card1, fig: ig1, ok: s => !!s.R },
+    { id: 'c2', tid: 't2', nome: 'Card 2 — Seggi e blocchi', file: 'israele_2_seggi.png', fn: card2, fig: ig2, ok: s => s.f.k !== 'k22' },
+    { id: 'c3', tid: 't3', nome: 'Card 3 — Exit poll a confronto', file: 'israele_3_exit_poll.png', fn: card3, fig: ig3, ok: s => s.ex.length > 0 },
+    { id: 'c4', tid: 't4', nome: 'Card 4 — La mappa', file: 'israele_4_mappa.png', fn: card4, fig: ig4, ok: s => !!(s.R && s.R.loc && s.R.loc.size) },
+    { id: 'c5', tid: 't5', nome: 'Card 5 — La soglia', file: 'israele_5_soglia.png', fn: card5, fig: ig5, ok: s => !!s.R }
   ];
 
   /* ---------- titoli e testi automatici ---------- */
@@ -2147,23 +2405,31 @@ window.CARD = (function () {
   }
 
   /* ---------- costruzione e disegno ---------- */
-  let costruito = false, sporco = true;
+  let costruito = false, sporco = true, FORMATO = 'x';
+  const DIM = { x: [1600, 900], ig: [IG.W, IG.H] };
   const modificati = new Set();
   function costruisci() {
     g('titleFields').innerHTML = CARDS.map((c, i) => '<div class="fld"><label for="' + c.tid + '">Card ' + (i + 1) + '</label><input id="' + c.tid + '"></div>').join('');
     g('genCards').innerHTML = CARDS.map(c => '<div class="gencard" id="g' + c.id + '"><canvas id="' + c.id + '" width="3200" height="1800"></canvas>' +
-      '<div class="bar2"><div><b>' + c.nome + '</b> <em id="st' + c.id + '"></em></div><button class="sm" data-dl="' + c.id + '">Scarica PNG</button></div>' +
+      '<div class="bar2"><div><b>' + c.nome + '</b> <em id="st' + c.id + '"></em></div><span style="display:flex;gap:7px;flex-wrap:wrap"><button class="sm" data-dl="' + c.id + '">Scarica PNG</button><button class="sm" data-sh="' + c.id + '">Condividi</button><button class="sm" data-xi="' + c.id + '" title="Apre X con il testo; l’immagine va allegata a mano">Pubblica su X</button></span></div>' +
       '<div class="post"><textarea id="p' + c.id + '" aria-label="Testo per ' + c.nome + '"></textarea><div class="foot"><span class="cnt" id="n' + c.id + '"></span><button class="sm" data-cp="' + c.id + '">Copia testo</button></div></div></div>').join('');
     CARDS.forEach(c => {
       g(c.tid).addEventListener('input', () => { modificati.add(c.tid); disegna(); });
       g('p' + c.id).addEventListener('input', () => { modificati.add('p' + c.id); conta(c.id); });
     });
     g('genCards').addEventListener('click', e => {
-      const d = e.target.closest('[data-dl]'), c = e.target.closest('[data-cp]');
+      const d = e.target.closest('[data-dl]'), c = e.target.closest('[data-cp]'), sh = e.target.closest('[data-sh]'), xi = e.target.closest('[data-xi]');
       if (d) scarica(d.dataset.dl); if (c) copia(g('p' + c.dataset.cp).value, c);
+      if (sh) condividi(sh.dataset.sh, sh);
+      if (xi) window.open('https://x.com/intent/post?text=' + encodeURIComponent(g('p' + xi.dataset.xi).value.trim()), '_blank', 'noopener');
     });
     ['ambito', 'dataFonte', 'firma'].forEach(id => g(id).addEventListener('input', () => { FIRMA = g('firma').value.trim() || '@putino'; disegna(); }));
     g('reauto').onclick = () => { modificati.clear(); riempiTesti(); disegna(); };
+    document.querySelectorAll('#formato button').forEach(b => b.onclick = () => {
+      FORMATO = b.dataset.f;
+      document.querySelectorAll('#formato button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+      disegna();
+    });
     g('redraw').onclick = () => disegna();
     g('copyAll').onclick = () => copia(CARDS.map(c => g('p' + c.id).value).filter(Boolean).join('\n\n'), g('copyAll'));
     g('dlAll').onclick = async () => { const s = snap(); for (const c of CARDS) if (c.ok(s)) { scarica(c.id); await new Promise(r => setTimeout(r, 450)); } };
@@ -2182,23 +2448,41 @@ window.CARD = (function () {
     const ok = () => { if (btn) { const o = btn.textContent; btn.textContent = 'Copiato'; setTimeout(() => btn.textContent = o, 1400); } };
     if (navigator.clipboard) navigator.clipboard.writeText(t).then(ok, () => window.prompt('Copia il testo', t)); else window.prompt('Copia il testo', t);
   }
+  const nomeFile = c => FORMATO === 'ig' ? c.file.replace('.png', '_instagram.png') : c.file;
   function scarica(id) {
     const c = CARDS.find(k => k.id === id), cv = g(id);
-    cv.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = c.file; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800); }, 'image/png');
+    cv.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = nomeFile(c); document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800); }, 'image/png');
+  }
+  /* Sul telefono (e su Windows e Mac con Chrome o Edge) apre il menu di condivisione del
+     sistema con l'immagine e il testo: da lì Instagram, X, WhatsApp. Dove non si può,
+     scarica l'immagine e copia il testo. */
+  function condividi(id, btn) {
+    const c = CARDS.find(k => k.id === id), testo = g('p' + id).value.trim();
+    g(id).toBlob(async b => {
+      const file = new File([b], nomeFile(c), { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], text: testo }); return; }
+        catch (e) { if (e && e.name === 'AbortError') return; }
+      }
+      scarica(id); copia(testo, btn);
+    }, 'image/png');
   }
   function disegna() {
     const s = snap(); FIRMA = g('firma').value.trim() || '@putino';
-    const disp = CARDS.filter(c => c.ok(s));
+    const disp = CARDS.filter(c => c.ok(s)), [Wd, Hd] = DIM[FORMATO];
     CARDS.forEach((c, i) => {
-      const cv = g(c.id), x = cv.getContext('2d');
-      x.setTransform(2, 0, 0, 2, 0, 0); x.clearRect(0, 0, 1600, 900);
-      const ok = c.ok(s), n = disp.indexOf(c) + 1;
-      try { c.fn(x, s, { n: ok ? n : i + 1, tot: ok ? disp.length : CARDS.length, tid: c.tid }); }
-      catch (err) { x.setTransform(2, 0, 0, 2, 0, 0); attesa(x, 'Errore nel disegno', String(err.message || err)); }
+      const cv = g(c.id);
+      if (cv.width !== Wd * 2 || cv.height !== Hd * 2) { cv.width = Wd * 2; cv.height = Hd * 2; }
+      const x = cv.getContext('2d');
+      x.setTransform(2, 0, 0, 2, 0, 0); x.clearRect(0, 0, Wd, Hd);
+      const ok = c.ok(s), n = disp.indexOf(c) + 1, fn = FORMATO === 'ig' ? c.fig : c.fn;
+      try { fn(x, s, { n: ok ? n : i + 1, tot: ok ? disp.length : CARDS.length, tid: c.tid }); }
+      catch (err) { x.setTransform(2, 0, 0, 2, 0, 0); if (FORMATO === 'ig') attesaIG(x, { y0: 400, y1: 1100 }, 'Errore nel disegno', String(err.message || err)); else attesa(x, 'Errore nel disegno', String(err.message || err)); }
       g('g' + c.id).classList.toggle('off', !ok);
+      g('g' + c.id).classList.toggle('ig', FORMATO === 'ig');
       g('st' + c.id).textContent = ok ? '' : '· mancano i dati';
     });
-    g('genStatus').textContent = disp.length + ' card pronte su ' + CARDS.length;
+    g('genStatus').textContent = disp.length + ' card pronte su ' + CARDS.length + (FORMATO === 'ig' ? ' · Instagram 1080×1350' : ' · X 1600×900');
     sporco = false;
   }
   function mostra() {

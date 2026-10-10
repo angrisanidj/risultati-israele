@@ -125,6 +125,15 @@ Il proxy Vercel non ha una regione in Israele, quindi un blocco geografico va ag
 - una funzione equivalente su un servizio con regione israeliana: Google Cloud `me-west1` (Tel Aviv) oppure AWS `il-central-1`. Il codice di `api/cec.js` si adatta in pochi minuti. Poi la si indica con `?proxy=`;
 - in serata, i due fallback qui sopra.
 
+## Condivisione
+
+- **Pulsanti per i lettori.** Sono sette, in testa alla pagina: X, Threads, Facebook, LinkedIn, Telegram, WhatsApp e il link. Il testo segue i dati: prima del voto presenta la pagina, poi riporta i seggi del blocco Netanyahu. Il pulsante del link sul telefono apre il menu di condivisione del sistema, altrove copia l'indirizzo. Le icone vengono da [Bootstrap Icons](https://icons.getbootstrap.com) (licenza MIT), caricate da jsDelivr.
+- **Anteprima del link.** Quando l'indirizzo viene condiviso su X, WhatsApp, Facebook o Telegram compare `condivisione.jpg`, 1200×630, attraverso i tag Open Graph e Twitter Card.
+- **Card per X e Instagram.** Si trovano nella scheda in modalità redazione. «Formato» passa da X (16:9, 1600×900) a Instagram (4:5, 1080×1350), con un'impaginazione propria. Per ogni card ci sono tre pulsanti:
+  - **Scarica PNG** scarica l'immagine;
+  - **Condividi** apre il menu del sistema con immagine e testo, da cui scegli Instagram, X o WhatsApp; dove il menu non c'è, scarica e copia il testo;
+  - **Pubblica su X** apre X con il testo già scritto; l'immagine va allegata a mano.
+
 ## Liste e colori
 
 Lettere di scheda approvate dalla Commissione per il 2026, fonti Ynet e Kan del 27 settembre 2026. Blocchi come nel modello previsionale:
