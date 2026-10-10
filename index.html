@@ -181,6 +181,9 @@ select{background:rgba(0,0,0,.32);color:var(--t1);border:1px solid var(--line-2)
 .exit-row input,.manual-row input{width:100%;background:rgba(0,0,0,.32);color:#fff;border:1px solid var(--line-2);border-radius:8px;padding:7px;text-align:right;font-size:14px;font-variant-numeric:tabular-nums;font-family:var(--sans)}
 .exit-row input.dafile{background:rgba(111,156,255,.10);border-color:rgba(111,156,255,.34);color:#d3e0ff}
 .exit-row input:focus,.manual-row input:focus,.fld input:focus{outline:2px solid rgba(111,156,255,.55);outline-offset:0}
+body:not(.redazione) .solo-red{display:none!important}
+.exit-row input.dawiki{background:rgba(242,193,78,.12);border-color:rgba(242,193,78,.5);color:#f6e2a6}
+.exit-row input[readonly]{background:transparent;border-color:transparent;cursor:default}
 .exit-actions,.manual-actions{display:flex;gap:8px;padding:14px 18px 4px;flex-wrap:wrap}
 .validation{padding:8px 18px 16px;font-size:11.5px;color:var(--t3)}
 .validation b.ko{color:var(--red)}.validation b.okk{color:var(--green)}
@@ -356,7 +359,7 @@ footer a{color:var(--t2)}
   <div class="brand"><span class="flagicon" role="img" aria-label="Israele"></span>Israele 2026 <em>Knesset 26</em></div>
   <div class="tabs" role="tablist">
     <button role="tab" id="tabbtn-live" aria-selected="true" aria-controls="tab-live">Dashboard</button>
-    <button role="tab" id="tabbtn-card" aria-selected="false" aria-controls="tab-card">Card per X</button>
+    <button role="tab" id="tabbtn-card" aria-selected="false" aria-controls="tab-card" class="solo-red">Card per X</button>
   </div>
   <div class="livechip"><span id="feedDot" class="dot"></span><span id="feedStatus">Avvio…</span></div>
 </div></div>
@@ -399,8 +402,8 @@ footer a{color:var(--t2)}
     <div class="cardhead">
       <div><span class="kicker">Confronto</span><h2>Voto nazionale</h2></div>
       <div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end">
-        <label class="uploadbtn sm">Importa CSV<input id="fileInput" type="file" accept=".csv,text/csv" hidden></label>
-        <button id="manualToggle" class="sm">Inserimento manuale</button>
+        <label class="uploadbtn sm solo-red">Importa CSV<input id="fileInput" type="file" accept=".csv,text/csv" hidden></label>
+        <button id="manualToggle" class="sm solo-red">Inserimento manuale</button>
       </div>
     </div>
     <p class="subcopy" id="tableSub">I seggi della colonna «Scrutinio» sono ricalcolati sui voti contati finora: soglia del 3,25% dei voti validi, poi Bader-Ofer con gli accordi di eccedenza. Gli exit poll sono pubblicati direttamente in seggi. La pastiglia indica il blocco.</p>
@@ -408,7 +411,7 @@ footer a{color:var(--t2)}
     <p class="methodnote" id="accordiNote"></p>
   </section>
 
-  <section id="manualPanel" class="card hidden" style="margin-bottom:14px">
+  <section id="manualPanel" class="card hidden solo-red" style="margin-bottom:14px">
     <div class="cardhead"><div><span class="kicker">Fallback</span><h2>Risultato manuale</h2></div><span class="pill neutral">sempre disponibile</span></div>
     <p class="subcopy">Se il feed si blocca, inserisci i voti nazionali che mostra il sito della Commissione: soglia e seggi si ricalcolano qui. Il risultato manuale ha la precedenza sul feed finché non lo rimuovi.</p>
     <div id="manualInputs" class="manual-grid"></div>
@@ -431,14 +434,15 @@ footer a{color:var(--t2)}
 
     <article class="card">
       <div class="cardhead"><div><span class="kicker">Ore 21 in Italia</span><h2>Exit poll</h2></div><span class="pill neutral">seggi su 120</span></div>
-      <p class="subcopy">Kan 11, Canale 12, Canale 13 e Canale 14 pubblicano gli exit poll alla chiusura dei seggi e li aggiornano nella notte con i voti reali. Inserisci i seggi e l'ora dell'aggiornamento: valgono solo in questo browser finché non li copi in <code>stime.json</code>.</p>
-      <div class="feedprog" id="boxStime"><div><b>Stime pubblicate nel repository</b><span id="statoStime">lettura di stime.json…</span></div><button id="copyStime" class="sm">Copia per stime.json</button></div>
+      <p class="subcopy" id="exitSub">Kan 11, Canale 12, Canale 13 e Canale 14 pubblicano gli exit poll in seggi alla chiusura dei seggi, alle 21 italiane, e li aggiornano nella notte con i voti reali.</p>
+      <div class="feedprog solo-red" id="boxWiki"><div><b>Exit poll da Wikipedia</b><span id="statoWiki">legge la tabella dei sondaggi e precompila le caselle, da verificare con la diretta</span></div><button id="cercaWiki" class="sm">Cerca su Wikipedia</button></div>
+      <div class="feedprog solo-red" id="boxStime"><div><b>Stime pubblicate nel repository</b><span id="statoStime">lettura di stime.json…</span></div><button id="copyStime" class="sm">Copia per stime.json</button></div>
       <div class="exit-wrap">
         <div class="exit-head"><span style="text-align:left">Lista</span><span>Kan 11</span><span>Can. 12</span><span>Can. 13</span><span>Can. 14</span></div>
         <div class="exit-row ore"><div class="partylabel"><span class="muted">Ora</span></div><input data-src="kan" data-ora placeholder="22:00"><input data-src="c12" data-ora placeholder="22:00"><input data-src="c13" data-ora placeholder="22:00"><input data-src="c14" data-ora placeholder="22:00"></div>
         <div id="exitInputs"></div>
       </div>
-      <div class="exit-actions"><button id="saveExit" class="primary">Salva stime</button><button id="clearExit" class="sm">Torna a stime.json</button></div>
+ <div class="exit-actions solo-red"><button id="saveExit" class="primary">Salva stime</button><button id="clearExit" class="sm">Torna a stime.json</button></div>
       <div id="exitValidation" class="validation">Totali: —</div>
     </article>
   </section>
@@ -869,7 +873,7 @@ function avanzamento(R) {
   return { f: clamp(ord / VAL22_ORD, 0, 1), tipo: 'volumi', ord };
 }
 function exitDi(k) {
-  const loc = S.exitLocale[k];
+  const loc = REDAZIONE ? S.exitLocale[k] : null;
   if (loc && sum(loc.seggi) > 0) return { ...loc, locale: true };
   const st = S.stime.exit && S.stime.exit[k];
   if (st && sum(st.seggi) > 0) return { ...st, locale: false };
@@ -1142,7 +1146,8 @@ function riempiExit() {
     const x = exitDi(e.k);
     document.querySelectorAll('input[data-src="' + e.k + '"]').forEach(inp => {
       const v = inp.hasAttribute('data-ora') ? (x && x.ora || '') : (x && x.seggi[inp.dataset.l] != null ? x.seggi[inp.dataset.l] : '');
-      inp.value = v; inp.classList.toggle('dafile', !!x && !x.locale);
+      inp.value = v; inp.classList.toggle('dafile', !!x && !x.locale); inp.classList.remove('dawiki');
+      inp.readOnly = !REDAZIONE; inp.tabIndex = REDAZIONE ? 0 : -1;
     });
   });
   renderValidazione();
@@ -1643,6 +1648,141 @@ async function avviaProva() {
   }
 }
 
+
+/* =====================================================================
+   MODALITÀ REDAZIONE
+   Gli strumenti di redazione (exit poll da Wikipedia e a mano, inserimento manuale,
+   importazione del CSV, card per X) compaiono solo con la chiave: si apre una volta
+   ?redazione=CHIAVE e il browser la ricorda; ?redazione=esci la dimentica. Nel codice
+   c'è solo l'impronta SHA-256 della chiave. Non è una protezione: è una pagina statica.
+   Ma quello che vedono i lettori lo decide stime.json, e lì scrive solo chi fa il push.
+   ===================================================================== */
+const REDAZIONE_SHA = 'bfd11a016d34dd661e41de02b0d075d917f6a243704c2f26ace6e878c3ca38da';
+let REDAZIONE = false;
+async function verificaRedazione() {
+  let k = PARAM.get('redazione');
+  try {
+    if (k === 'esci') { localStorage.removeItem(STORAGE + '-red'); k = null; }
+    else if (k) localStorage.setItem(STORAGE + '-red', k);
+    else k = localStorage.getItem(STORAGE + '-red');
+  } catch (_) { }
+  if (PARAM.has('redazione')) {
+    /* la chiave non resta nella barra degli indirizzi, né negli screenshot */
+    const u = new URL(location.href); u.searchParams.delete('redazione');
+    try { history.replaceState(null, '', u.pathname + u.search + u.hash); } catch (_) { }
+  }
+  if (!k || !(window.crypto && crypto.subtle)) return false;
+  try {
+    const h = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(k)))].map(b => b.toString(16).padStart(2, '0')).join('');
+    return h === REDAZIONE_SHA;
+  } catch (_) { return false; }
+}
+
+/* =====================================================================
+   EXIT POLL DA WIKIPEDIA
+   La pagina «Opinion polling for the … Israeli legislative election» mette gli exit
+   poll della sera del voto nella tabella dei seggi, come righe datate il giorno del voto
+   con la rete nella colonna «Publisher» (verificato sul 2022: Kan 11, Channel 12,
+   Channel 13 del 1º novembre). L'API REST di Wikipedia accetta richieste da qualsiasi
+   origine: niente proxy. I valori riempiono le caselle in ambra, da verificare.
+   ===================================================================== */
+const WIKI = {
+  '26': { pagina: 'Opinion_polling_for_the_2026_Israeli_legislative_election', giorno: 27, mese: 10,
+    col: { likud: 'מחל', together: 'רק', beyachad: 'רק', yeshatid: 'רק', bennett2026: 'רק',
+      rzpzehut: 'ט', rzp: 'ט', religiouszionism: 'ט', zehut: 'ט', otzma: 'ב', otzmayehudit: 'ב',
+      bluewhite: 'כן', blueandwhite: 'כן', shas: 'שס', utj: 'ג', unitedtorahjudaism: 'ג',
+      yisraelbeiteinu: 'ל', yisraelbeitenu: 'ל', raam: 'עם', jointlist: 'ודם', hadashtaal: 'ודם', balad: 'ודם',
+      dems: 'אמת', democrats: 'אמת', thedemocrats: 'אמת', yashar: 'דרך',
+      reservnep: 'די', reserv: 'די', reservists: 'די', economic: 'די', amchayisrael: 'ך', amchaisrael: 'ך', amcha: 'ך',
+      israelfirst: 'י', haredipublic: 'זך', noam: 'ני' } },
+  '25': { pagina: 'Opinion_polling_for_the_2022_Israeli_legislative_election', giorno: 1, mese: 11,
+    col: { likud: 'מחל', yeshatid: 'פה', nationalunity: 'כן', shas: 'שס', jewishhome: 'ב', labor: 'אמת', utj: 'ג',
+      yisraelbeiteinu: 'ל', rzpoy: 'ט', religiouszionism: 'ט', hadashtaal: 'ום', meretz: 'מרצ', raam: 'עם', balad: 'ד' } }
+};
+const WIKI_IGNORA = /^(fieldworkdate|date|pollingfirm|publisher|samplesize|others|gov|opp|lead|)$/;
+const WIKI_RETI = [['kan', /\bkan\b/i], ['c12', /channel ?12|hahadashot|\bn12\b|news ?12/i], ['c13', /channel ?13|\b13tv\b/i], ['c14', /channel ?14|now ?14/i]];
+const MESI_EN = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+const wPulisci = s => String(s || '').replace(/\[[^\]]*\]/g, '').replace(/\.mw-parser-output[^}]*\}/g, '').replace(/[‎‏ ]/g, ' ').replace(/\s+/g, ' ').trim();
+const wChiave = s => wPulisci(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+function wGriglia(tab) {
+  const g = [];
+  [...tab.rows].forEach((row, r) => {
+    g[r] = g[r] || []; let c = 0;
+    [...row.cells].forEach(cell => {
+      while (g[r][c] !== undefined) c++;
+      const rs = +cell.rowSpan || 1, cs = +cell.colSpan || 1;
+      const o = { t: wPulisci(cell.textContent), th: cell.tagName === 'TH' };
+      for (let dr = 0; dr < rs; dr++) for (let dc = 0; dc < cs; dc++) { g[r + dr] = g[r + dr] || []; g[r + dr][c + dc] = o; }
+      c += cs;
+    });
+  });
+  return g;
+}
+function wGiornoMese(t) {
+  const m = wPulisci(t).replace(/[–—]/g, '-').match(/(\d{1,2})(?:\s*-\s*(\d{1,2}))?\s+([A-Za-z]{3})/);
+  if (!m) return null;
+  return { g: +(m[2] || m[1]), m: MESI_EN[m[3].toLowerCase()] || 0 };
+}
+function wSeggi(t) { const s = wPulisci(t); return /^\d{1,2}$/.test(s) ? +s : 0; }
+async function exitDaWikipedia(giorno, mese) {
+  const cfg = WIKI[ED];
+  const r = await conTimeout('https://en.wikipedia.org/api/rest_v1/page/html/' + cfg.pagina, { cache: 'no-store' }, 20000);
+  if (!r.ok) throw new Error('Wikipedia ha risposto ' + r.status);
+  const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+  const ignote = new Set(), trovati = {};
+  for (const tab of doc.querySelectorAll('table')) {
+    const g = wGriglia(tab);
+    const intest = g.findIndex(row => row && row.some(c => c && c.th && wChiave(c.t) === 'likud'));
+    if (intest < 0) continue;
+    const head = g[intest];
+    const colDate = head.findIndex(c => c && /date/i.test(c.t));
+    const colPub = head.findIndex(c => c && /publisher/i.test(c.t));
+    const colIst = head.findIndex(c => c && /polling ?firm/i.test(c.t));
+    if (colDate < 0 || colPub < 0) continue;
+    const mappa = head.map(c => { if (!c) return null; const k = wChiave(c.t); if (WIKI_IGNORA.test(k)) return null; const l = WIKI[ED].col[k]; if (!l) ignote.add(c.t); return l || null; });
+    for (let r2 = intest + 1; r2 < g.length; r2++) {
+      const row = g[r2]; if (!row || !row[colDate] || row[colDate].th) continue;
+      const d = wGiornoMese(row[colDate].t);
+      if (!d || d.g !== giorno || d.m !== mese) continue;
+      const pub = row[colPub] ? row[colPub].t : '';
+      const rete = (WIKI_RETI.find(([, re]) => re.test(pub)) || [])[0];
+      if (!rete || trovati[rete]) continue;   /* la tabella va dal più recente: si tiene la prima riga */
+      const seggi = {}, viste = new Set();
+      row.forEach((cell, j) => {
+        const l = mappa[j]; if (!l || !cell || viste.has(cell)) return;
+        viste.add(cell);   /* una cella su due colonne (RZP–Zehut, Riservisti–NEP) vale una volta */
+        seggi[l] = (seggi[l] || 0) + wSeggi(cell.t);
+      });
+      trovati[rete] = { seggi, istituto: colIst >= 0 && row[colIst] ? row[colIst].t : '', pub };
+    }
+    if (Object.keys(trovati).length) break;
+  }
+  return { trovati, ignote: [...ignote] };
+}
+async function cercaWiki() {
+  const cfg = WIKI[ED], btn = $('cercaWiki'), st = $('statoWiki');
+  /* ?wikidata=2026-10-07 cerca un altro giorno: serve per provare il pulsante prima del voto */
+  const alt = (PARAM.get('wikidata') || '').match(/^\d{4}-(\d{2})-(\d{2})$/);
+  const giorno = alt ? +alt[2] : cfg.giorno, mese = alt ? +alt[1] : cfg.mese;
+  btn.disabled = true; st.textContent = 'Leggo Wikipedia…';
+  try {
+    const { trovati, ignote } = await exitDaWikipedia(giorno, mese);
+    const reti = Object.keys(trovati);
+    if (!reti.length) { st.textContent = 'Nessuna riga di Kan, Canale 12, 13 o 14 datata ' + giorno + '/' + mese + ' nella tabella. Riprova fra qualche minuto.'; return; }
+    reti.forEach(k => {
+      const x = trovati[k];
+      document.querySelectorAll('input[data-src="' + k + '"]:not([data-ora])').forEach(inp => {
+        const v = x.seggi[inp.dataset.l];
+        inp.value = v != null ? v : 0; inp.classList.remove('dafile'); inp.classList.add('dawiki');
+      });
+    });
+    const parti = reti.map(k => { const e = EXIT.find(x => x.k === k), t = sum(trovati[k].seggi); return e.n + (trovati[k].istituto ? ' (' + trovati[k].istituto + ')' : '') + ': ' + t + (t === SEGGI ? '' : ' seggi, NON 120'); });
+    st.textContent = 'Trovati ' + parti.join(' · ') + '. Verifica con la diretta, aggiungi l’ora e premi «Salva stime».' + (ignote.length ? ' Colonne non riconosciute: ' + ignote.join(', ') + '.' : '');
+  } catch (e) {
+    st.textContent = 'Wikipedia non raggiungibile (' + (e.name === 'AbortError' ? 'tempo scaduto' : e.message) + '): inserisci i seggi a mano.';
+  } finally { btn.disabled = false; }
+}
+
 /* =====================================================================
    7 · EVENTI E AVVIO
    ===================================================================== */
@@ -1669,6 +1809,7 @@ function eventi() {
   $('hemicycle').onclick = e => { const c = e.target.closest('circle[data-l]'); if (!c) { filtroEmi = null; } else filtroEmi = filtroEmi && filtroEmi.t === 'l' && filtroEmi.v === c.dataset.l ? null : { t: 'l', v: c.dataset.l }; applicaFiltro(); };
   $('seatLegend').onclick = e => { const c = e.target.closest('.seat-chip'); if (!c) return; filtroEmi = filtroEmi && filtroEmi.t === 'l' && filtroEmi.v === c.dataset.l ? null : { t: 'l', v: c.dataset.l }; applicaFiltro(); };
   $('blocchi').onclick = e => { const c = e.target.closest('.bloc'); if (!c) return; filtroEmi = filtroEmi && filtroEmi.t === 'b' && filtroEmi.v === c.dataset.b ? null : { t: 'b', v: c.dataset.b }; applicaFiltro(); };
+  $('cercaWiki').onclick = cercaWiki;
   $('saveExit').onclick = () => { S.exitLocale = leggiExit(); salva(); riempiExit(); render(); };
   $('clearExit').onclick = () => { S.exitLocale = {}; salva(); riempiExit(); render(); };
   $('copyStime').onclick = () => {
@@ -1724,7 +1865,10 @@ function eventi() {
     };
   }
 }
-function avvio() {
+async function avvio() {
+  REDAZIONE = await verificaRedazione();
+  document.body.classList.toggle('redazione', REDAZIONE);
+  if (REDAZIONE) $('exitSub').textContent += ' Modalità redazione: «Cerca su Wikipedia» precompila le caselle, tu le verifichi con la diretta e premi «Salva stime»; valgono solo in questo browser finché non le copi in stime.json.';
   costruisciExit(); costruisciManuale(); eventi();
   $('footProxy').textContent = 'Proxy: ' + (() => { try { return new URL(PROXY).host; } catch (_) { return PROXY; } })();
   render();

@@ -75,12 +75,28 @@ Crea il repository `angrisanidj/risultati-israele` e carica tutto tranne `proxy/
 
 ### Exit poll
 
-Kan 11, Canale 12, 13 e 14 pubblicano gli exit poll in seggi. Inseriscili nel riquadro «Exit poll», con l'ora, e premi **Salva stime**: restano solo nel tuo browser. Per pubblicarli a tutti:
+Kan 11, Canale 12, 13 e 14 pubblicano gli exit poll in seggi. I lettori li vedono in sola lettura, come sono in `stime.json`. Per inserirli serve la **modalità redazione**.
 
-1. premi **Copia per stime.json**;
-2. incolla il contenuto in `stime.json` e fai il commit.
+**Attivarla.** Apri una volta la pagina con `?redazione=CHIAVE`. Il browser ricorda la chiave e la toglie dalla barra degli indirizzi; con `?redazione=esci` la dimentica. La chiave non è in questo repository: nel codice c'è solo la sua impronta SHA-256.
 
-Le pagine aperte rileggono il file ogni due minuti. Le reti aggiornano i numeri nella notte: ripeti l'operazione con la nuova ora.
+In modalità redazione compaiono:
+- il pulsante «Cerca su Wikipedia»;
+- le caselle degli exit poll;
+- l'inserimento manuale;
+- «Importa CSV»;
+- la scheda «Card per X».
+
+Non è una protezione vera, perché la pagina è statica. Ma quello che vedono i lettori lo decide solo `stime.json`, e lì scrive solo chi fa il push.
+
+**La sera del voto:**
+
+1. Premi **Cerca su Wikipedia**. La pagina legge la tabella «Opinion polling for the 2026 Israeli legislative election» e cerca le righe del 27 ottobre di Kan 11, Canale 12, 13 e 14: nel 2022 gli exit poll erano lì, datati il giorno del voto. Le caselle si riempiono in ambra.
+2. Verifica i numeri con la diretta, aggiungi l'ora e premi **Salva stime**.
+3. Per pubblicarli premi **Copia per stime.json**, incolla in `stime.json` e fai il commit. Le pagine aperte rileggono il file ogni due minuti.
+
+Le reti aggiornano i numeri nella notte: ripeti l'operazione con la nuova ora.
+
+Se Wikipedia non ha ancora le righe, inserisci i seggi a mano. Per provare il pulsante prima del voto, `?wikidata=2026-10-07` cerca le righe di un altro giorno.
 
 ### Emiciclo
 
