@@ -571,6 +571,11 @@ const PARAM = new URLSearchParams(location.search);
 const PROVA = PARAM.get('prova') === '2022';
 const ED = (PROVA || PARAM.get('ed') === '25') ? '25' : '26';
 const PROXY = PARAM.get('proxy') || 'https://israele-2026-feed-proxy.vercel.app/api/cec';
+/* Il feed resta spento fino alla sera del voto: prima di allora la pagina non chiama il
+   proxy. Si accende da solo martedì 27 ottobre alle 20 italiane (19 UTC), un'ora prima
+   della chiusura dei seggi. ?feed=1 lo accende subito, per le prove. */
+const ATTIVA_FEED = Date.UTC(2026, 9, 27, 19, 0);
+const FORZA_FEED = PARAM.get('feed') === '1';
 const POLL_MS = 60000;          /* la Commissione aggiorna il file ogni pochi minuti */
 const POLL_EXPB_OGNI = 3;       /* il file per seggio, più pesante, un ciclo cambiato su tre */
 const STIME_MS = 120000;        /* rilettura di stime.json */
@@ -1528,6 +1533,13 @@ function applica(P, fonte, quando) {
 }
 async function poll(forza) {
   if (FEED.busy || PROVA) return;
+  if (ED === '26' && !FORZA_FEED && Date.now() < ATTIVA_FEED) {
+    setFeed('Feed spento fino a martedì 27 ottobre alle 20 (ora italiana): si accende da solo', 'paused');
+    $('refreshBtn').disabled = true; $('pauseBtn').disabled = true;
+    clearTimeout(FEED.timer);
+    FEED.timer = setTimeout(() => { $('refreshBtn').disabled = false; $('pauseBtn').disabled = false; poll(true); }, Math.min(ATTIVA_FEED - Date.now() + 1000, 3600e3));
+    return;
+  }
   if (FEED.pausa && !forza) return;
   FEED.busy = true; clearTimeout(FEED.timer);
   try {

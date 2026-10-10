@@ -67,6 +67,7 @@ Crea il repository `angrisanidj/risultati-israele` e carica tutto tranne `proxy/
 - **`…/risultati-israele/?prova=2022`** riproduce lo spoglio vero del 2022, località per località, con un cursore da 0 a 100%. Al 100% il riparto deve dare Likud 32, Yesh Atid 24, Sionismo religioso 14, Unità nazionale 12, Shas 11, UTJ 7, Yisrael Beitenu 6, Ra'am 5, Hadash–Ta'al 5, Laburisti 4: è il risultato ufficiale. Il codice è verificato anche sul 2021 (file in windows-1255).
 - **`…/risultati-israele/?ed=25`** usa il feed live, ma dal server del 2022 (`media25`). Prova l'intera catena browser → Vercel → Commissione.
 - **`?proxy=https://…`** sostituisce il proxy predefinito.
+- **Feed spento fino alla sera del voto:** senza parametri la pagina non chiama il proxy fino a martedì 27 ottobre alle 20 italiane, poi si accende da sola. **`?feed=1`** la accende subito, per le prove. Il proxy su Vercel resta attivo: la diagnostica `?diag=1` funziona sempre.
 
 ## La sera del voto
 
