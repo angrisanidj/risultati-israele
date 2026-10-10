@@ -11,6 +11,7 @@ Dashboard per seguire in diretta lo spoglio delle elezioni della 26ª Knesset (2
 | `dati/prova/expc-2022.csv` | Il file definitivo del 2022, usato per la prova generale. |
 | `proxy/` | Il progetto Vercel: `api/cec.js` più la configurazione. |
 | `.github/` | Il workflow che copia ogni giorno la proiezione del modello in `stime.json`, con il suo script. |
+| `strumenti/pubblica-stime.mjs` | La sera del voto: controlla `stime.json`, lo pubblica e aspetta GitHub Pages. |
 
 ## Da dove arrivano i dati
 
@@ -89,7 +90,46 @@ In modalità redazione compaiono:
 
 Non è una protezione vera, perché la pagina è statica. Ma quello che vedono i lettori lo decide solo `stime.json`, e lì scrive solo chi fa il push.
 
-**La sera del voto:**
+**La sera del voto, la strada principale: dagli screenshot a `stime.json`.**
+
+1. Alle 21 italiane gli screenshot dei grafici delle reti vanno a Claude, anche in ebraico. Claude:
+   - legge i seggi;
+   - assegna ogni lista alla sua lettera di scheda con la tabella qui sotto;
+   - scrive `stime.json` nella cartella del progetto.
+2. Claude Code esegue `node strumenti/pubblica-stime.mjs`. Lo script:
+   - controlla che ogni rete sommi a 120, con lettere valide e nessuna lista fra 1 e 3 seggi;
+   - fa commit, `pull --rebase` e push;
+   - aspetta che GitHub Pages serva il file nuovo.
+   Se un controllo fallisce non pubblica niente e dice cosa correggere.
+3. Per una prova senza pubblicare: `node strumenti/pubblica-stime.mjs --prova un-file.json`.
+
+Le reti aggiornano i numeri nella notte: si ripete con la nuova ora.
+
+**Come compaiono le liste nei grafici delle reti**
+
+| Lettera | Nella dashboard | Nei grafici (ebraico) | In inglese |
+|---|---|---|---|
+| מחל | Likud | הליכוד, ליכוד | Likud |
+| דרך | Yashar | ישר!, איזנקוט | Yashar (Eisenkot) |
+| רק | Beyachad | ביחד, בנט | Beyachad / Together (Bennett) |
+| אמת | Democratici | הדמוקרטים | The Democrats |
+| ל | Yisrael Beitenu | ישראל ביתנו, ליברמן | Yisrael Beiteinu |
+| ב | Otzma Yehudit | עוצמה יהודית, בן גביר | Otzma Yehudit |
+| שס | Shas | ש״ס | Shas |
+| ג | UTJ | יהדות התורה | United Torah Judaism |
+| ט | SR–Zehut | הציונות הדתית, סמוטריץ׳, זהות | Religious Zionism–Zehut |
+| עם | Ra'am | רע״ם | Ra'am |
+| ודם | Lista unita | הרשימה המשותפת, חד״ש-תע״ל, בל״ד | Joint List |
+| די | Riservisti | המילואימניקים, הנדל | The Reservists |
+| ך | Popolo d'Israele | עמך ישראל, וינטר | Amcha Yisrael (Winter) |
+| כן | Blu e Bianco | כחול לבן, גנץ | Blue and White |
+| ני | Noam | נעם | Noam |
+| י | Israel First | ישראל תחילה, השכל | Israel First |
+| זך | Haredi | הציבור החרדי | Haredi Public |
+
+I nomi completi e le lettere delle 38 liste sono quelli pubblicati dalla Commissione ([Davar](https://www.davar1.co.il/698869/)). Nei grafici una lista sotto soglia compare spesso con 0 o non compare: in `stime.json` si omette.
+
+**Piano B, dalla pagina in modalità redazione:**
 
 1. Premi **Cerca su Wikipedia**. La pagina legge la tabella «Opinion polling for the 2026 Israeli legislative election» e cerca le righe del 27 ottobre di Kan 11, Canale 12, 13 e 14: nel 2022 gli exit poll erano lì, datati il giorno del voto. Le caselle si riempiono in ambra.
 2. Verifica i numeri con la diretta, aggiungi l'ora e premi **Salva stime**.
