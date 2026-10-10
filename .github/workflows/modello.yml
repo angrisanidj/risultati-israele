@@ -1,0 +1,47 @@
+# Copia ogni giorno l'ultima proiezione del modello previsionale (angrisanidj/modello-israele)
+# nel campo «modello» di stime.json, fino alla vigilia del voto.
+#
+# Il lavoro notturno del modello parte alle 03:30 UTC ma GitHub lo consegna spesso con ore
+# di ritardo (fra le 8 e le 12 UTC): per questo qui i passaggi sono due, alle 13:17 e alle
+# 19:17 UTC. Se la proiezione non è cambiata non si scrive niente. Dal 27 ottobre lo script
+# esce senza toccare il file, e la sera del voto stime.json resta tutto della redazione.
+name: Proiezione del modello
+on:
+  schedule:
+    - cron: '17 13 10-26 10 *'
+    - cron: '17 19 10-26 10 *'
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: proiezione-modello
+  cancel-in-progress: false
+jobs:
+  aggiorna:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: angrisanidj/modello-israele
+          path: _modello
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --no-package-lock playwright@1.64.0
+      - run: npx playwright install --with-deps chromium
+      - run: node .github/scripts/modello.mjs _modello stime.json
+      - name: Commit e push
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- stime.json; then echo "Nessun cambiamento."; exit 0; fi
+          git config user.name "proiezione-modello"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add stime.json
+          git commit -m "Proiezione del modello del $(TZ=Europe/Rome date +%F)"
+          git pull --rebase
+          git push
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/pages/builds" >/dev/null 2>&1 || true

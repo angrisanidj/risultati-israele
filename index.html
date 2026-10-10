@@ -228,6 +228,9 @@ select{background:var(--s2);color:var(--t1);border:1px solid var(--line-2);borde
 .feedprog span{display:block;color:var(--t3);font-size:12px;margin-top:2px;line-height:1.45}
 .feedprog.on span{color:#9fe0bd}
 body:not(.redazione) .solo-red{display:none!important}
+/* i comandi del feed sono della redazione: ai lettori resta solo l'ora dell'ultimo file,
+   quando c'è, e la riga sparisce del tutto se non ha niente da mostrare */
+body:not(.redazione) .metaline:not(:has(> :not(.hidden):not(.solo-red))){display:none}
 
 /* ---------- tabella ---------- */
 .tablewrap{overflow:auto;padding:10px 0 4px;-webkit-overflow-scrolling:touch}
@@ -492,10 +495,10 @@ footer a{color:var(--t2)}
     </div>
     <div class="hero-side">
       <div class="metaline">
-      <span id="lastUpdate" class="pill neutral">In attesa del primo file</span>
+      <span id="lastUpdate" class="pill neutral solo-red">In attesa del primo file</span>
       <span id="testBadge" class="pill danger hidden">Prova con i dati 2022</span>
-      <button id="refreshBtn" class="sm">Aggiorna ora</button>
-      <button id="pauseBtn" class="sm">Metti in pausa</button>
+      <button id="refreshBtn" class="sm solo-red">Aggiorna ora</button>
+      <button id="pauseBtn" class="sm solo-red">Metti in pausa</button>
     </div>
       <div class="social" aria-label="Condividi la pagina">
       <span class="social-lab">Condividi</span>

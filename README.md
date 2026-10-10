@@ -10,6 +10,7 @@ Dashboard per seguire in diretta lo spoglio delle elezioni della 26ª Knesset (2
 | `stime.json` | Exit poll (in seggi), accordi di eccedenza e ultima proiezione del modello previsionale. Si modifica a mano. |
 | `dati/prova/expc-2022.csv` | Il file definitivo del 2022, usato per la prova generale. |
 | `proxy/` | Il progetto Vercel: `api/cec.js` più la configurazione. |
+| `.github/` | Il workflow che copia ogni giorno la proiezione del modello in `stime.json`, con il suo script. |
 
 ## Da dove arrivano i dati
 
@@ -117,7 +118,17 @@ Il riquadro confronta la proiezione del modello con le fonti della notte, lista 
 - i seggi per lettera di scheda, che devono sommare 120;
 - le quote di voto stimate.
 
-Va aggiornato con l'ultima proiezione prima del voto. Se manca o non somma a 120, la pagina usa la copia incorporata nel codice (`MODELLO_BASE`).
+Lo aggiorna da solo il workflow **Proiezione del modello** (`.github/workflows/modello.yml`), due volte al giorno (13:17 e 19:17 UTC) dal 10 al 26 ottobre:
+
+1. apre la pagina del modello in Chromium, sull'archivio dei sondaggi del suo lavoro notturno;
+2. legge seggi e quote;
+3. riscrive solo il campo `modello`, e solo se la proiezione è cambiata.
+
+Dal 27 ottobre non tocca più niente. Si ferma senza scrivere se il codice del modello cambia, se i seggi non sommano a 120 o se compare una lista senza lettera di scheda: in quel caso GitHub manda l'email del job fallito e resta la proiezione del giorno prima. Si può lanciare a mano da *Actions → Proiezione del modello → Run workflow*.
+
+Siccome il workflow fa commit su `main`, prima di un push a mano conviene un `git pull --rebase`.
+
+Se il campo manca o non somma a 120, la pagina usa la copia incorporata nel codice (`MODELLO_BASE`).
 
 ### Blocchi
 
