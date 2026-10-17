@@ -181,14 +181,15 @@ Le pastiglie e i totali seguono le stesse ipotesi del modello:
 
 ### Accordi di eccedenza
 
-Il termine per depositarli è il **16 ottobre**. Oggi in `stime.json` ci sono i quattro accordi firmati:
+Il termine per depositarli era il **16 ottobre** a mezzogiorno. In `stime.json` ci sono i cinque accordi depositati:
 
 - Beyachad–Yisrael Beitenu;
 - Yashar–Democratici;
 - Likud–Sionismo religioso/Zehut;
-- Lista unita–Ra'am.
+- Lista unita–Ra'am;
+- Shas–UTJ.
 
-Dopo il 16 ottobre, correggi l'elenco con quelli effettivamente depositati. Un accordo vale solo se entrambe le liste superano il 3,25%: la pagina lo segnala sotto la tabella.
+Sono rimaste senza accordo Otzma Yehudit, Popolo d'Israele, Riservisti e Blu e Bianco. Fonti: Ynet, Kikar HaShabbat ed Emess del 16 ottobre 2026. Un accordo vale solo se entrambe le liste superano il 3,25%: la pagina lo segnala sotto la tabella.
 
 ### Se il feed si blocca
 
