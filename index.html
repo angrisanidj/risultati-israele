@@ -1298,7 +1298,28 @@ function disegnoEmiciclo(el) {
 }
 /* la soglia, detta a parole sotto il numero al centro dell'emiciclo */
 const sogliaEmiciclo = n => n >= MAGG ? 'maggioranza raggiunta' : 'ne servono 61';
-let filtroEmi = null;
+let filtroEmi = null, centroEmi = null;
+/* Il centro dell'emiciclo segue la selezione: senza selezione, o col blocco Netanyahu, dice
+   il blocco Netanyahu; col clic su un altro blocco dice quel blocco, e su una lista quella
+   lista e il suo blocco. La soglia dei 61 si scrive solo per i due blocchi che possono
+   arrivarci; per i partiti arabi conta il totale con l'opposizione. */
+function centroEmiciclo() {
+  if (!centroEmi || !$('emiN')) return;
+  const { t, el, pieno } = centroEmi, fi = filtroEmi, min = s => s[0].toLowerCase() + s.slice(1);
+  const e = fi && fi.t === 'l' ? el.find(x => x.l === fi.v) : null;
+  let n, nome, sotto = '', col = '#98a7c0';
+  if (e) { n = e.n; nome = nomeBreve(e.p); sotto = min(BLOCCHI[e.b].n); }
+  else {
+    const b = fi && fi.t === 'b' && t[fi.v] != null ? fi.v : 'N';
+    n = t[b]; nome = min(BLOCCHI[b].n);
+    if (b === 'N' || b === 'O') { sotto = sogliaEmiciclo(t[b]); col = t[b] >= MAGG ? '#a9c4ff' : '#ff6680'; }
+    else if (b === 'A') sotto = (t.O + t.A) + ' con l’opposizione';
+  }
+  $('emiN').textContent = pieno ? n : '';
+  $('emiNome').textContent = nome;
+  $('emiSotto').textContent = pieno ? sotto : '';
+  $('emiSotto').setAttribute('fill', col);
+}
 function renderEmiciclo() {
   const F = fontiSeggi(), f = fonteAttiva();
   /* selettore della fonte */
@@ -1309,22 +1330,23 @@ function renderEmiciclo() {
   /* ordine dei seggi: per blocco, poi per dimensione */
   const elenco = Object.keys(f.seggi).filter(l => f.seggi[l] > 0).map(l => ({ l, n: f.seggi[l], p: infoPer(f, l), b: bloccoDi(f, l) }));
   elenco.sort((a, b) => ORD_BLOCCHI.indexOf(a.b) - ORD_BLOCCHI.indexOf(b.b) || (a.b === 'N' ? a.n - b.n : b.n - a.n));
-  const D = disegnoEmiciclo(elenco), nN = sum(f.seggi) ? totBlocchi(f).N : null;
+  const D = disegnoEmiciclo(elenco), t = totBlocchi(f);
+  centroEmi = { t, el: elenco, pieno: sum(f.seggi) > 0 };
   let svg = D.pts.map(p => p.vuoto ? '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="8.6" fill="rgba(255,255,255,.08)"></circle>'
     : '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="8.6" fill="' + p.c + '" data-l="' + esc(p.l) + '" data-b="' + p.b + '"></circle>').join('');
-  svg += '<text x="280" y="236" text-anchor="middle" fill="#f2f5fb" style="font:600 42px Inter,sans-serif">' + (nN == null ? '' : nN) + '</text>' +
-    '<text x="280" y="255" text-anchor="middle" fill="#98a7c0" style="font:500 12px Inter,sans-serif">blocco Netanyahu</text>' +
-    (nN == null ? '' : '<text x="280" y="273" text-anchor="middle" fill="' + (nN >= MAGG ? '#a9c4ff' : '#ff6680') + '" style="font:600 12px Inter,sans-serif">' + sogliaEmiciclo(nN) + '</text>');
+  svg += '<text id="emiN" x="280" y="236" text-anchor="middle" fill="#f2f5fb" style="font:600 42px Inter,sans-serif"></text>' +
+    '<text id="emiNome" x="280" y="255" text-anchor="middle" fill="#98a7c0" style="font:500 12px Inter,sans-serif"></text>' +
+    '<text id="emiSotto" x="280" y="273" text-anchor="middle" style="font:600 12px Inter,sans-serif"></text>';
   const H = $('hemicycle'); H.innerHTML = svg;
-  applicaFiltro();
   $('seatLegend').innerHTML = elenco.map(e => '<button class="seat-chip" data-l="' + esc(e.l) + '" data-b="' + e.b + '"><i style="background:' + e.p.c + '"></i>' + esc(nomeBreve(e.p)) + ' <strong>' + e.n + '</strong></button>').join('');
-  const t = totBlocchi(f);
   $('blocchi').innerHTML = ['N', 'O', 'A', 'X'].filter(b => b !== 'X' || t.X).map(b => {
     const membri = elenco.filter(e => e.b === b).map(e => nomeBreve(e.p)).join(', ');
     const verso61 = n => n >= MAGG ? (n > MAGG ? 'maggioranza, ' + (n - MAGG) + ' oltre i 61' : 'maggioranza esatta') : 'mancano ' + (MAGG - n);
     const d = b === 'N' ? verso61(t.N) : (b === 'O' ? verso61(t.O) + ' · con gli arabi ' + (t.O + t.A) : '');
     return '<button class="bloc' + (b === 'N' && t.N >= MAGG ? ' win' : '') + '" data-b="' + b + '"><div><div class="bn"><i style="background:' + BLOCCHI[b].c + '"></i>' + BLOCCHI[b].n + '</div><div class="bp">' + esc(membri || '—') + '</div></div><div><div class="bv">' + t[b] + '</div><div class="bd">' + d + '</div></div></button>';
   }).join('');
+  /* dopo aver rifatto emiciclo, liste e blocchi, così la selezione resta accesa su tutti e tre */
+  applicaFiltro();
   /* le fonti a confronto */
   let sc = '<div class="scen scen-head"><span>Fonte</span><span class="sn">Net.</span><span class="sn">Opp.</span><span class="sn">Arabi</span><span class="sn">Altri</span></div>';
   F.forEach(x => {
@@ -1354,6 +1376,7 @@ function applicaFiltro() {
   $('seatLegend').classList.toggle('filtro', !!filtroEmi);
   document.querySelectorAll('.seat-chip').forEach(c => c.classList.toggle('att', !!filtroEmi && (filtroEmi.t === 'l' ? c.dataset.l === filtroEmi.v : c.dataset.b === filtroEmi.v)));
   document.querySelectorAll('.bloc').forEach(c => c.classList.toggle('att', !!filtroEmi && filtroEmi.t === 'b' && c.dataset.b === filtroEmi.v));
+  centroEmiciclo();
 }
 
 /* ---------- il modello alla prova ----------
