@@ -1266,8 +1266,9 @@ function renderTabella() {
    Ogni blocco ha il suo spicchio, separato dagli altri da un corridoio vuoto. Lo spicchio è
    largo in proporzione ai seggi, e dentro lo spicchio ogni fila riceve seggi in proporzione al
    suo raggio, così la densità resta uguale in tutto l'emiciclo. Il blocco Netanyahu parte
-   sempre dal bordo destro: la linea tratteggiata segna dove arriverebbe con 61 seggi, contati
-   sui seggi disegnati e non sull'angolo, che comprende anche i corridoi. */
+   sempre dal bordo destro. La soglia dei 61 non si disegna sui seggi: con i corridoi fra gli
+   spicchi nessuna linea cade in un punto che si legga a colpo d'occhio, e la dice meglio la
+   barra dei 120 seggi nel riquadro della maggioranza. Al centro resta scritta a parole. */
 const EMI = { cx: 280, cy: 278, raggi: [92, 124, 156, 188, 220, 252], varco: 0.085 };
 function disegnoEmiciclo(el) {
   const { cx, cy, raggi, varco } = EMI, sr = raggi.reduce((a, b) => a + b, 0);
@@ -1285,7 +1286,7 @@ function disegnoEmiciclo(el) {
     const q = raggi.map(r => g.n * r / sr), k = q.map(Math.floor);
     q.map((v, i) => [v - k[i], i]).sort((a, b) => b[0] - a[0]).slice(0, g.n - k.reduce((a, b) => a + b, 0)).forEach(([, i]) => k[i]++);
     const sp = [];
-    raggi.forEach((r, i) => { for (let j = 0; j < k[i]; j++) { const a = th - amp * (j + 0.5) / k[i]; sp.push({ x: cx + r * Math.cos(a), y: cy - r * Math.sin(a), a, r }); } });
+    raggi.forEach((r, i) => { for (let j = 0; j < k[i]; j++) { const a = th - amp * (j + 0.5) / k[i]; sp.push({ x: cx + r * Math.cos(a), y: cy - r * Math.sin(a), a }); } });
     sp.sort((p, q2) => q2.a - p.a);
     let i = 0;
     for (const e of g.el) for (let j = 0; j < e.n; j++, i++) Object.assign(sp[i], { l: e.l, b: e.b, c: e.p.c });
@@ -1293,21 +1294,10 @@ function disegnoEmiciclo(el) {
     pts.push(...sp);
     th -= amp + varco;
   });
-  /* La linea lascia alla sua destra esattamente i 61 seggi più vicini al bordo destro, contati
-     sui seggi disegnati: un angolo fisso conterebbe anche i corridoi fra gli spicchi. Dentro
-     uno spicchio le file sono sfalsate e una retta taglierebbe qualche seggio, quindi la linea
-     va a gradini: in ogni fila passa a metà fra l'ultimo seggio contato e il primo escluso, e
-     cambia angolo nello spazio vuoto fra una fila e l'altra. */
-  const da = pts.map(p => p.a).sort((a, b) => a - b), aM = (da[MAGG - 1] + da[MAGG]) / 2;
-  const mezzo = (raggi[1] - raggi[0]) / 2, P = (r, a) => ({ x: cx + r * Math.cos(a), y: cy - r * Math.sin(a) });
-  const linea = [];
-  raggi.forEach((r, i) => {
-    const fila = pts.filter(p => p.r === r), dentro = fila.filter(p => p.a < aM), fuori = fila.filter(p => p.a > aM);
-    const a = dentro.length && fuori.length ? (Math.max(...dentro.map(p => p.a)) + Math.min(...fuori.map(p => p.a))) / 2 : aM;
-    linea.push(P(i ? r - mezzo : r - 10, a), P(i < raggi.length - 1 ? r + mezzo : r + 14, a));
-  });
-  return { pts, linea };
+  return { pts };
 }
+/* la soglia, detta a parole sotto il numero al centro dell'emiciclo */
+const sogliaEmiciclo = n => n >= MAGG ? 'maggioranza raggiunta' : 'ne servono 61';
 let filtroEmi = null;
 function renderEmiciclo() {
   const F = fontiSeggi(), f = fonteAttiva();
@@ -1319,12 +1309,12 @@ function renderEmiciclo() {
   /* ordine dei seggi: per blocco, poi per dimensione */
   const elenco = Object.keys(f.seggi).filter(l => f.seggi[l] > 0).map(l => ({ l, n: f.seggi[l], p: infoPer(f, l), b: bloccoDi(f, l) }));
   elenco.sort((a, b) => ORD_BLOCCHI.indexOf(a.b) - ORD_BLOCCHI.indexOf(b.b) || (a.b === 'N' ? a.n - b.n : b.n - a.n));
-  const D = disegnoEmiciclo(elenco), ln = D.linea;
+  const D = disegnoEmiciclo(elenco), nN = sum(f.seggi) ? totBlocchi(f).N : null;
   let svg = D.pts.map(p => p.vuoto ? '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="8.6" fill="rgba(255,255,255,.08)"></circle>'
     : '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="8.6" fill="' + p.c + '" data-l="' + esc(p.l) + '" data-b="' + p.b + '"></circle>').join('');
-  svg += '<polyline points="' + ln.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') + '" fill="none" stroke="rgba(255,255,255,.28)" stroke-dasharray="3 5"/>' +
-    '<text x="280" y="250" text-anchor="middle" fill="#f2f5fb" style="font:600 42px Inter,sans-serif">' + (sum(f.seggi) ? totBlocchi(f).N : '') + '</text>' +
-    '<text x="280" y="272" text-anchor="middle" fill="#98a7c0" style="font:500 12px Inter,sans-serif">blocco Netanyahu</text>';
+  svg += '<text x="280" y="236" text-anchor="middle" fill="#f2f5fb" style="font:600 42px Inter,sans-serif">' + (nN == null ? '' : nN) + '</text>' +
+    '<text x="280" y="255" text-anchor="middle" fill="#98a7c0" style="font:500 12px Inter,sans-serif">blocco Netanyahu</text>' +
+    (nN == null ? '' : '<text x="280" y="273" text-anchor="middle" fill="' + (nN >= MAGG ? '#a9c4ff' : '#ff6680') + '" style="font:600 12px Inter,sans-serif">' + sogliaEmiciclo(nN) + '</text>');
   const H = $('hemicycle'); H.innerHTML = svg;
   applicaFiltro();
   $('seatLegend').innerHTML = elenco.map(e => '<button class="seat-chip" data-l="' + esc(e.l) + '" data-b="' + e.b + '"><i style="background:' + e.p.c + '"></i>' + esc(nomeBreve(e.p)) + ' <strong>' + e.n + '</strong></button>').join('');
@@ -2482,10 +2472,7 @@ window.CARD = (function () {
 
   /* l'emiciclo della pagina, con gli stessi spicchi separati, ridisegnato sulla tela */
   function emicicloSu(x, el, ox, oy, k, r) {
-    const D = disegnoEmiciclo(el), ln = D.linea;
-    D.pts.forEach(p => { x.beginPath(); x.arc(ox + p.x * k, oy + p.y * k, r, 0, 7); x.fillStyle = p.vuoto ? 'rgba(255,255,255,.08)' : p.c; x.fill(); });
-    x.save(); x.setLineDash([4, 6]); x.beginPath(); ln.forEach((p, i) => x[i ? 'lineTo' : 'moveTo'](ox + p.x * k, oy + p.y * k));
-    x.strokeStyle = 'rgba(255,255,255,.3)'; x.lineWidth = 1.2; x.stroke(); x.restore();
+    disegnoEmiciclo(el).pts.forEach(p => { x.beginPath(); x.arc(ox + p.x * k, oy + p.y * k, r, 0, 7); x.fillStyle = p.vuoto ? 'rgba(255,255,255,.08)' : p.c; x.fill(); });
   }
   /* sotto l'emiciclo: quanto manca ai 61, prima al blocco Netanyahu e poi all'opposizione */
   function righe61(t) {
