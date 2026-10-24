@@ -1266,7 +1266,8 @@ function renderTabella() {
    Ogni blocco ha il suo spicchio, separato dagli altri da un corridoio vuoto. Lo spicchio è
    largo in proporzione ai seggi, e dentro lo spicchio ogni fila riceve seggi in proporzione al
    suo raggio, così la densità resta uguale in tutto l'emiciclo. Il blocco Netanyahu parte
-   sempre dal bordo destro: la linea tratteggiata segna dove arriverebbe con 61 seggi. */
+   sempre dal bordo destro: la linea tratteggiata segna dove arriverebbe con 61 seggi, contati
+   sui seggi disegnati e non sull'angolo, che comprende anche i corridoi. */
 const EMI = { cx: 280, cy: 278, raggi: [92, 124, 156, 188, 220, 252], varco: 0.085 };
 function disegnoEmiciclo(el) {
   const { cx, cy, raggi, varco } = EMI, sr = raggi.reduce((a, b) => a + b, 0);
@@ -1284,7 +1285,7 @@ function disegnoEmiciclo(el) {
     const q = raggi.map(r => g.n * r / sr), k = q.map(Math.floor);
     q.map((v, i) => [v - k[i], i]).sort((a, b) => b[0] - a[0]).slice(0, g.n - k.reduce((a, b) => a + b, 0)).forEach(([, i]) => k[i]++);
     const sp = [];
-    raggi.forEach((r, i) => { for (let j = 0; j < k[i]; j++) { const a = th - amp * (j + 0.5) / k[i]; sp.push({ x: cx + r * Math.cos(a), y: cy - r * Math.sin(a), a }); } });
+    raggi.forEach((r, i) => { for (let j = 0; j < k[i]; j++) { const a = th - amp * (j + 0.5) / k[i]; sp.push({ x: cx + r * Math.cos(a), y: cy - r * Math.sin(a), a, r }); } });
     sp.sort((p, q2) => q2.a - p.a);
     let i = 0;
     for (const e of g.el) for (let j = 0; j < e.n; j++, i++) Object.assign(sp[i], { l: e.l, b: e.b, c: e.p.c });
@@ -1292,8 +1293,20 @@ function disegnoEmiciclo(el) {
     pts.push(...sp);
     th -= amp + varco;
   });
-  const aM = disp * MAGG / SEGGI, r0 = raggi[0] - 10, r1 = raggi[raggi.length - 1] + 14;
-  return { pts, linea: { x1: cx + r0 * Math.cos(aM), y1: cy - r0 * Math.sin(aM), x2: cx + r1 * Math.cos(aM), y2: cy - r1 * Math.sin(aM) } };
+  /* La linea lascia alla sua destra esattamente i 61 seggi più vicini al bordo destro, contati
+     sui seggi disegnati: un angolo fisso conterebbe anche i corridoi fra gli spicchi. Dentro
+     uno spicchio le file sono sfalsate e una retta taglierebbe qualche seggio, quindi la linea
+     va a gradini: in ogni fila passa a metà fra l'ultimo seggio contato e il primo escluso, e
+     cambia angolo nello spazio vuoto fra una fila e l'altra. */
+  const da = pts.map(p => p.a).sort((a, b) => a - b), aM = (da[MAGG - 1] + da[MAGG]) / 2;
+  const mezzo = (raggi[1] - raggi[0]) / 2, P = (r, a) => ({ x: cx + r * Math.cos(a), y: cy - r * Math.sin(a) });
+  const linea = [];
+  raggi.forEach((r, i) => {
+    const fila = pts.filter(p => p.r === r), dentro = fila.filter(p => p.a < aM), fuori = fila.filter(p => p.a > aM);
+    const a = dentro.length && fuori.length ? (Math.max(...dentro.map(p => p.a)) + Math.min(...fuori.map(p => p.a))) / 2 : aM;
+    linea.push(P(i ? r - mezzo : r - 10, a), P(i < raggi.length - 1 ? r + mezzo : r + 14, a));
+  });
+  return { pts, linea };
 }
 let filtroEmi = null;
 function renderEmiciclo() {
@@ -1309,7 +1322,7 @@ function renderEmiciclo() {
   const D = disegnoEmiciclo(elenco), ln = D.linea;
   let svg = D.pts.map(p => p.vuoto ? '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="8.6" fill="rgba(255,255,255,.08)"></circle>'
     : '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="8.6" fill="' + p.c + '" data-l="' + esc(p.l) + '" data-b="' + p.b + '"></circle>').join('');
-  svg += '<line x1="' + ln.x1.toFixed(1) + '" y1="' + ln.y1.toFixed(1) + '" x2="' + ln.x2.toFixed(1) + '" y2="' + ln.y2.toFixed(1) + '" stroke="rgba(255,255,255,.28)" stroke-dasharray="3 5"/>' +
+  svg += '<polyline points="' + ln.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') + '" fill="none" stroke="rgba(255,255,255,.28)" stroke-dasharray="3 5"/>' +
     '<text x="280" y="250" text-anchor="middle" fill="#f2f5fb" style="font:600 42px Inter,sans-serif">' + (sum(f.seggi) ? totBlocchi(f).N : '') + '</text>' +
     '<text x="280" y="272" text-anchor="middle" fill="#98a7c0" style="font:500 12px Inter,sans-serif">blocco Netanyahu</text>';
   const H = $('hemicycle'); H.innerHTML = svg;
@@ -1318,7 +1331,8 @@ function renderEmiciclo() {
   const t = totBlocchi(f);
   $('blocchi').innerHTML = ['N', 'O', 'A', 'X'].filter(b => b !== 'X' || t.X).map(b => {
     const membri = elenco.filter(e => e.b === b).map(e => nomeBreve(e.p)).join(', ');
-    const d = b === 'N' ? (t.N >= MAGG ? (t.N > MAGG ? 'maggioranza, ' + (t.N - MAGG) + ' oltre i 61' : 'maggioranza esatta') : 'mancano ' + (MAGG - t.N)) : (b === 'O' ? 'con gli arabi ' + (t.O + t.A) : '');
+    const verso61 = n => n >= MAGG ? (n > MAGG ? 'maggioranza, ' + (n - MAGG) + ' oltre i 61' : 'maggioranza esatta') : 'mancano ' + (MAGG - n);
+    const d = b === 'N' ? verso61(t.N) : (b === 'O' ? verso61(t.O) + ' · con gli arabi ' + (t.O + t.A) : '');
     return '<button class="bloc' + (b === 'N' && t.N >= MAGG ? ' win' : '') + '" data-b="' + b + '"><div><div class="bn"><i style="background:' + BLOCCHI[b].c + '"></i>' + BLOCCHI[b].n + '</div><div class="bp">' + esc(membri || '—') + '</div></div><div><div class="bv">' + t[b] + '</div><div class="bd">' + d + '</div></div></button>';
   }).join('');
   /* le fonti a confronto */
@@ -2470,7 +2484,15 @@ window.CARD = (function () {
   function emicicloSu(x, el, ox, oy, k, r) {
     const D = disegnoEmiciclo(el), ln = D.linea;
     D.pts.forEach(p => { x.beginPath(); x.arc(ox + p.x * k, oy + p.y * k, r, 0, 7); x.fillStyle = p.vuoto ? 'rgba(255,255,255,.08)' : p.c; x.fill(); });
-    x.save(); x.setLineDash([4, 6]); line(x, ox + ln.x1 * k, oy + ln.y1 * k, ox + ln.x2 * k, oy + ln.y2 * k, 'rgba(255,255,255,.3)', 1.2); x.restore();
+    x.save(); x.setLineDash([4, 6]); x.beginPath(); ln.forEach((p, i) => x[i ? 'lineTo' : 'moveTo'](ox + p.x * k, oy + p.y * k));
+    x.strokeStyle = 'rgba(255,255,255,.3)'; x.lineWidth = 1.2; x.stroke(); x.restore();
+  }
+  /* sotto l'emiciclo: quanto manca ai 61, prima al blocco Netanyahu e poi all'opposizione */
+  function righe61(t) {
+    const sg = n => n + (n === 1 ? ' seggio' : ' seggi');
+    const n = t.N >= MAGG ? (t.N === MAGG ? 'Esattamente la maggioranza di 61 seggi' : sg(t.N - MAGG) + ' oltre la maggioranza di 61') : 'Alla maggioranza di 61 mancano ' + sg(MAGG - t.N);
+    const o = t.O >= MAGG ? 'L’opposizione ha la maggioranza da sola: ' + sg(t.O) : 'All’opposizione ne mancano ' + (MAGG - t.O) + ' (' + (t.O + t.A) + ' con i partiti arabi)';
+    return [n, o];
   }
 
   /* ---------- CARD 2 — seggi e blocchi ---------- */
@@ -2499,8 +2521,9 @@ window.CARD = (function () {
       T(x, cut(x, membri || '—', 470, F(400, 19)), bx + 24, y + 78, { font: F(400, 19), color: C.t3 });
       T(x, String(v), bx + bw - 24, y + 72, { font: F(700, 54, 'serif'), align: 'right' });
     });
-    const msg = win ? (t.N === MAGG ? 'Esattamente la maggioranza di 61 seggi' : (t.N - MAGG) + (t.N - MAGG === 1 ? ' seggio' : ' seggi') + ' oltre la maggioranza di 61') : 'Alla maggioranza di 61 mancano ' + (MAGG - t.N) + (MAGG - t.N === 1 ? ' seggio' : ' seggi');
+    const [msg, msgO] = righe61(t);
     T(x, msg, ox + 280 * k, oy + 330 * k + 22, { font: F(700, 24), color: win ? C.acc : C.red, align: 'center' });
+    T(x, msgO, ox + 280 * k, oy + 330 * k + 54, { font: F(600, 19), color: C.t2, align: 'center' });
   }
 
   /* ---------- CARD 3 — gli exit poll a confronto ---------- */
@@ -2720,23 +2743,27 @@ window.CARD = (function () {
     const el = Object.keys(f.seggi).filter(l => f.seggi[l] > 0).map(l => ({ l, n: f.seggi[l], p: infoPer(f, l), b: bloccoDi(f, l) }));
     el.sort((a, b) => ORD_BLOCCHI.indexOf(a.b) - ORD_BLOCCHI.indexOf(b.b) || (a.b === 'N' ? a.n - b.n : b.n - a.n));
     const blocchi = [['N', t.N], ['O', t.O], ['A', t.A], ['X', t.X]].filter(([b, v]) => b !== 'X' || v);
-    const ph = 92, gap = 10, hp = blocchi.length * (ph + gap);
-    const k = Math.min(1.7, (z.y1 - z.y0 - hp - 64) / 300), ox = IG.W / 2 - 280 * k, oy = z.y0 - 10 * k;
+    /* riquadri più bassi di prima per far posto alla riga dell'opposizione senza stringere l'emiciclo */
+    const ph = 86, gap = 8, hp = blocchi.length * (ph + gap);
+    const k = Math.min(1.7, (z.y1 - z.y0 - hp - 94) / 300), ox = IG.W / 2 - 280 * k, oy = z.y0 - 10 * k;
     emicicloSu(x, el, ox, oy, k, 8.6 * k);
     T(x, String(t.N), IG.W / 2, oy + 244 * k, { font: F(700, Math.round(46 * k), 'serif'), align: 'center' });
-    T(x, 'BLOCCO NETANYAHU', IG.W / 2, oy + 272 * k, { font: F(800, 14), color: C.t2, ls: 2, align: 'center' });
-    const msg = win ? (t.N === MAGG ? 'Esattamente la maggioranza di 61 seggi' : (t.N - MAGG) + (t.N - MAGG === 1 ? ' seggio' : ' seggi') + ' oltre la maggioranza di 61') : 'Alla maggioranza di 61 mancano ' + (MAGG - t.N) + (MAGG - t.N === 1 ? ' seggio' : ' seggi');
+    /* l'etichetta deve stare dentro la fila più interna, che qui è più stretta che nella card per X */
+    let fl = 14; while (fl > 9 && W(x, 'BLOCCO NETANYAHU', F(800, fl), 2) > 166 * k - 8) fl--;
+    T(x, 'BLOCCO NETANYAHU', IG.W / 2, oy + 272 * k, { font: F(800, fl), color: C.t2, ls: 2, align: 'center' });
+    const [msg, msgO] = righe61(t);
     const ym = oy + 300 * k + 40;
     T(x, msg, IG.W / 2, ym, { font: F(700, 24), color: win ? C.acc : C.red, align: 'center' });
+    T(x, msgO, IG.W / 2, ym + 30, { font: F(600, 19), color: C.t2, align: 'center' });
     blocchi.forEach(([b, v], j) => {
-      const y = ym + 28 + j * (ph + gap), w = IG.W - 2 * M;
+      const y = ym + 58 + j * (ph + gap), w = IG.W - 2 * M;
       panel(x, M, y, w, ph);
       if (b === 'N' && win) { x.save(); rr(x, M + .5, y + .5, w - 1, ph - 1, 14); x.strokeStyle = 'rgba(111,156,255,.7)'; x.lineWidth = 2; x.stroke(); x.restore(); }
-      fillRR(x, M + 22, y + 24, 14, 14, 4, BLOCCHI[b].c);
-      T(x, BLOCCHI[b].n.toUpperCase(), M + 46, y + 37, { font: F(800, 16), color: C.t2, ls: 1.5 });
+      fillRR(x, M + 22, y + 21, 14, 14, 4, BLOCCHI[b].c);
+      T(x, BLOCCHI[b].n.toUpperCase(), M + 46, y + 34, { font: F(800, 16), color: C.t2, ls: 1.5 });
       const membri = el.filter(e => e.b === b).sort((p, q) => q.n - p.n).map(e => nomeBreve(e.p) + ' ' + e.n).join(' · ');
-      T(x, cut(x, membri || '—', w - 170, F(400, 18)), M + 22, y + 70, { font: F(400, 18), color: C.t3 });
-      T(x, String(v), M + w - 22, y + 64, { font: F(700, 48, 'serif'), align: 'right' });
+      T(x, cut(x, membri || '—', w - 170, F(400, 18)), M + 22, y + 66, { font: F(400, 18), color: C.t3 });
+      T(x, String(v), M + w - 22, y + 61, { font: F(700, 48, 'serif'), align: 'right' });
     });
   }
   function ig3(x, s, N) {
