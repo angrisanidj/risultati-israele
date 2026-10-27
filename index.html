@@ -907,6 +907,7 @@ const SFONDO = JSON.parse($('dati-sfondo').textContent);
 const NOMI = {};                       /* codice → {en, he} dai poligoni */
 TOPO.objects.localities.geometries.forEach(g => { NOMI[g.id] = g.properties; });
 const nomeLoc = (code, he) => (NOMI[code] && NOMI[code].en) || (code === ENV_CODE ? 'Doppie buste' : (he || ('Località ' + code)));
+const SEGGI_MIN_ELENCO = 10000;
 const VAL22_ORD = Object.entries(BASE22.loc).reduce((s, [c, v]) => s + (Number(c) === ENV_CODE ? 0 : v[3]), 0);
 const VAL22_ENV = (BASE22.loc[ENV_CODE] || [0, 0, 0, 0])[3];
 
@@ -1064,7 +1065,10 @@ function avanzamento(R) {
   const d = R.d;
   const ord = d.val - (d.env ? d.env.val : 0);
   const seg = d.seggi || (S.expb && S.expb.tot ? S.expb : null);
-  if (seg && seg.tot) return { f: seg.fatti / seg.tot, tipo: 'seggi', fatti: seg.fatti, tot: seg.tot, ord };
+  /* Nel 2022 expb elencava tutti i seggi, anche quelli ancora da contare; nel 2026 elenca solo
+     quelli contati, e il conto dei seggi darebbe sempre il 100%. Vale solo se il file li ha
+     tutti (oltre 10.000); altrimenti l'avanzamento si stima dai voti, contro quelli del 2022. */
+  if (seg && seg.tot >= SEGGI_MIN_ELENCO) return { f: seg.fatti / seg.tot, tipo: 'seggi', fatti: seg.fatti, tot: seg.tot, ord };
   return { f: clamp(ord / VAL22_ORD, 0, 1), tipo: 'volumi', ord };
 }
 /* L'ORA DEGLI EXIT POLL si scrive com'è nei grafici delle reti, cioè in ora israeliana
