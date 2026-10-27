@@ -207,7 +207,7 @@ select{background:var(--s2);color:var(--t1);border:1px solid var(--line-2);borde
 
 /* ---------- exit poll ---------- */
 .exit-wrap{overflow-x:auto;padding-bottom:2px}
-.exit-head,.exit-row{display:grid;grid-template-columns:minmax(130px,1fr) repeat(4,62px);gap:6px;align-items:center;padding:0 18px;min-width:400px}
+.exit-head,.exit-row{display:grid;grid-template-columns:minmax(130px,1fr) repeat(5,62px);gap:6px;align-items:center;padding:0 18px;min-width:400px}
 .exit-head{color:var(--t3);font-size:12px;font-weight:500;margin-bottom:4px;padding-bottom:6px;border-bottom:1px solid var(--line)}
 .exit-head span{text-align:center}
 .exit-row{padding-top:2px;padding-bottom:2px}
@@ -413,7 +413,7 @@ footer a{color:var(--t2)}
   .maparea{padding-left:14px;padding-right:14px}
   #locMap{height:min(78vh,640px)}
   .manca .mr{grid-template-columns:minmax(0,110px) minmax(0,1fr) 48px}
-  .exit-head,.exit-row{grid-template-columns:minmax(84px,1fr) repeat(4,50px);gap:5px;padding:0 14px;min-width:0}
+  .exit-head,.exit-row{grid-template-columns:minmax(84px,1fr) repeat(5,44px);gap:4px;padding:0 14px;min-width:0}
   .exit-row input{padding:6px 5px;font-size:13px}
   .magg-lab{font-size:12px}
   .magg-lab .n b{font-size:19px}
@@ -429,6 +429,10 @@ footer a{color:var(--t2)}
   td .partylabel>span:first-of-type{flex:0 1 auto;min-width:0;max-width:calc(100% - 14px)}
   td .partylabel .lett{margin-left:2px;white-space:nowrap}
   td .partylabel .bl{flex:1 0 calc(100% - 14px);margin-left:14px;white-space:nowrap}
+  /* con cinque exit poll le colonne si stringono, perché stiano tutte nello schermo */
+  #natTable th,#natTable td{padding-left:3px;padding-right:3px}
+  #natTable th:first-child,#natTable td:first-child{padding-left:14px;padding-right:5px}
+  #natTable th:last-child,#natTable td:last-child{padding-right:10px}
   #natTable th .lungo{display:none}
   #natTable th .corto{display:inline}
   table.conf .dlt{display:block;margin:1px 0 0}
@@ -499,7 +503,7 @@ footer a{color:var(--t2)}
     <div class="hero-main">
       <div class="eyebrow" id="heroEyebrow">Elezioni della 26ª Knesset, martedì 27 ottobre 2026</div>
       <h1 id="heroTitle">Israele 2026</h1>
-      <p id="heroText">Lo spoglio in diretta dai file della Commissione elettorale centrale: i 120 seggi ripartiti con il metodo Bader-Ofer e gli accordi di eccedenza, gli exit poll delle quattro reti, la mappa delle località. I seggi chiudono alle 22 in Israele, le 21 in Italia.</p>
+      <p id="heroText">Lo spoglio in diretta dai file della Commissione elettorale centrale: i 120 seggi ripartiti con il metodo Bader-Ofer e gli accordi di eccedenza, gli exit poll delle reti, la mappa delle località. I seggi chiudono alle 22 in Israele, le 21 in Italia.</p>
     </div>
     <div class="hero-side">
       <div class="metaline">
@@ -576,12 +580,12 @@ footer a{color:var(--t2)}
 
     <article class="card">
       <div class="cardhead"><div><h2>Exit poll</h2></div><span class="cmeta">seggi su 120</span></div>
-      <p class="subcopy" id="exitSub">Kan 11, Canale 12, Canale 13 e Canale 14 pubblicano gli exit poll in seggi alla chiusura dei seggi, alle 21 italiane, e li aggiornano nella notte con i voti reali.</p>
+      <p class="subcopy" id="exitSub">Kan 11, Canale 12, Canale 13, Canale 14 e i24 (con Direct Polls) pubblicano gli exit poll in seggi alla chiusura dei seggi, alle 21 italiane, e li aggiornano nella notte con i voti reali.</p>
       <div class="feedprog solo-red" id="boxWiki"><div><b>Exit poll da Wikipedia</b><span id="statoWiki">legge la tabella dei sondaggi e precompila le caselle, da verificare con la diretta</span></div><button id="cercaWiki" class="sm">Cerca su Wikipedia</button></div>
       <div class="feedprog solo-red" id="boxStime"><div><b>Stime pubblicate nel repository</b><span id="statoStime">lettura di stime.json…</span></div><button id="copyStime" class="sm">Copia per stime.json</button></div>
       <div class="exit-wrap">
-        <div class="exit-head"><span style="text-align:left">Lista</span><span>Kan 11</span><span>Can. 12</span><span>Can. 13</span><span>Can. 14</span></div>
-        <div class="exit-row ore"><div class="partylabel"><span class="muted" title="Come nei grafici delle reti: ai lettori si mostra in ora italiana">Ora in Israele</span></div><input data-src="kan" data-ora placeholder="22:00"><input data-src="c12" data-ora placeholder="22:00"><input data-src="c13" data-ora placeholder="22:00"><input data-src="c14" data-ora placeholder="22:00"></div>
+        <div class="exit-head"><span style="text-align:left">Lista</span><span>Kan 11</span><span>Can. 12</span><span>Can. 13</span><span>Can. 14</span><span>i24</span></div>
+        <div class="exit-row ore"><div class="partylabel"><span class="muted" title="Come nei grafici delle reti: ai lettori si mostra in ora italiana">Ora in Israele</span></div><input data-src="kan" data-ora placeholder="22:00"><input data-src="c12" data-ora placeholder="22:00"><input data-src="c13" data-ora placeholder="22:00"><input data-src="c14" data-ora placeholder="22:00"><input data-src="i24" data-ora placeholder="22:00"></div>
         <div id="exitInputs"></div>
         <div id="exitBlocchi"></div>
       </div>
@@ -664,7 +668,7 @@ footer a{color:var(--t2)}
     </article>
   </section>
 
-  <footer><span id="footSrc">Voti: Commissione elettorale centrale (bechirot.gov.il) · Exit poll: Kan 11, Canale 12, Canale 13, Canale 14 · Mappa: Ufficio centrale di statistica, via DarthVictor/israel-election-results (MIT)</span><span id="footProxy">—</span></footer>
+  <footer><span id="footSrc">Voti: Commissione elettorale centrale (bechirot.gov.il) · Exit poll: Kan 11, Canale 12, Canale 13, Canale 14, i24/Direct Polls · Mappa: Ufficio centrale di statistica, via DarthVictor/israel-election-results (MIT)</span><span id="footProxy">—</span></footer>
 </section>
 
 <!-- ============================ TAB 2 — CARD ============================ -->
@@ -843,9 +847,10 @@ const EXIT = [
   { k: 'kan', n: 'Kan 11', s: 'Kan' },
   { k: 'c12', n: 'Canale 12', s: 'C12' },
   { k: 'c13', n: 'Canale 13', s: 'C13' },
-  { k: 'c14', n: 'Canale 14', s: 'C14' }
+  { k: 'c14', n: 'Canale 14', s: 'C14' },
+  { k: 'i24', n: 'i24', s: 'i24' }
 ];
-const ORD_AUTO_EXIT = ['c12', 'kan', 'c13', 'c14'];
+const ORD_AUTO_EXIT = ['c12', 'kan', 'c13', 'c14', 'i24'];
 
 const L = LISTE[ED];
 const LMAP = Object.fromEntries(L.map(p => [p.l, p]));
@@ -2604,7 +2609,7 @@ window.CARD = (function () {
   function card3(x, s, N) {
     const cols = s.ex.map(e => ({ n: e.n, ora: e.x.ora, seggi: e.x.seggi }));
     if (s.bo && s.R.fonte !== 'prova') cols.push({ n: 'Scrutinio', ora: nf(s.av.f * 100, 0) + '%', seggi: s.bo.seggi, reale: true });
-    frame(x, { badge: 'EXIT POLL', kicker: s.ambito, title: g('t3').value, sub: 'Seggi su 120 secondo ' + (s.ex.length === 4 ? 'le quattro reti' : s.ex.length === 1 ? 'l’exit poll disponibile' : 'gli exit poll disponibili') + (cols.some(c => c.reale) ? ', e il riparto sui voti contati' : ''),
+    frame(x, { badge: 'EXIT POLL', kicker: s.ambito, title: g('t3').value, sub: 'Seggi su 120 secondo ' + (s.ex.length === EXIT.length ? 'le cinque reti' : s.ex.length === 1 ? 'l’exit poll disponibile' : 'gli exit poll disponibili') + (cols.some(c => c.reale) ? ', e il riparto sui voti contati' : ''),
       nota: 'Gli exit poll israeliani sono pubblicati in seggi alla chiusura dei seggi, alle 21 italiane (le 22 in Israele), e aggiornati nella notte con i voti reali. Le liste sotto la soglia del 3,25% non hanno seggi.',
       fonte: (s.ex.map(e => e.n).join(', ') || 'Reti israeliane') + ' (' + s.data + ')', n: N.n, tot: N.tot });
     if (!cols.length) return attesa(x, 'In attesa degli exit poll', 'Alle 21 italiane, le 22 in Israele.');

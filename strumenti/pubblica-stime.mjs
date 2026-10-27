@@ -24,7 +24,7 @@ const BLOCCO = { 'מחל': 'N', 'ט': 'N', 'ב': 'N', 'שס': 'N', 'ג': 'N', '�
 /* le liste del 2022, solo per la prova generale con gli exit poll di allora */
 const L22 = { 'מחל': ['Likud', 'N'], 'פה': ['Yesh Atid', 'O'], 'ט': ['Sionismo religioso', 'N'], 'כן': ['Unità nazionale', 'O'], 'שס': ['Shas', 'N'], 'ג': ['UTJ', 'N'], 'ל': ['Yisrael Beitenu', 'O'],
   'עם': ["Ra'am", 'A'], 'ום': ["Hadash–Ta'al", 'A'], 'אמת': ['Laburisti', 'O'], 'מרצ': ['Meretz', 'O'], 'ד': ['Balad', 'A'], 'ב': ['Casa ebraica', 'X'] };
-const RETI = { kan: 'Kan 11', c12: 'Canale 12', c13: 'Canale 13', c14: 'Canale 14' };
+const RETI = { kan: 'Kan 11', c12: 'Canale 12', c13: 'Canale 13', c14: 'Canale 14', i24: 'i24' };
 
 const args = process.argv.slice(2), iP = args.indexOf('--prova');
 const PROVA = iP >= 0, FILE = PROVA ? args[iP + 1] : 'stime.json';
