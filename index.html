@@ -244,7 +244,8 @@ td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:right;font-va
 td:first-child{text-align:left;padding-left:18px;white-space:normal}
 tbody tr:hover td{background:rgba(255,255,255,.02)}
 td .pname{color:var(--t3);font-weight:400;font-size:12px;display:block;margin-left:16px}
-td .lett{color:var(--t3);font-size:12px;margin-left:2px}
+td .lett{color:var(--t3);font-size:12px;margin-left:4px}
+#natTable th .corto{display:none}
 td.seat{font-weight:700}
 td.mute,td .mute{color:var(--t3)}
 tr.sotto td{color:var(--t2)}
@@ -422,9 +423,14 @@ footer a{color:var(--t2)}
   table{min-width:0}
   .c-v,.c-r,.c-x-vuota{display:none}
   td .pname{display:none}
-  td .partylabel{flex-wrap:wrap;row-gap:1px;align-items:baseline}
+  /* due righe: pallino, nome e lettera, poi il blocco sotto il nome, senza spezzarlo */
+  td .partylabel{flex-wrap:wrap;row-gap:1px;column-gap:6px;align-items:center}
   td .partylabel span{white-space:normal}
-  td .partylabel .partydot{align-self:center}
+  td .partylabel>span:first-of-type{flex:0 1 auto;min-width:0;max-width:calc(100% - 14px)}
+  td .partylabel .lett{margin-left:2px;white-space:nowrap}
+  td .partylabel .bl{flex:1 0 calc(100% - 14px);margin-left:14px;white-space:nowrap}
+  #natTable th .lungo{display:none}
+  #natTable th .corto{display:inline}
   table.conf .dlt{display:block;margin:1px 0 0}
   table.conf th .lungo{display:none}
   table.conf .qv{display:none}
@@ -1235,14 +1241,14 @@ function renderTabella() {
   const righe = righeListe(R);
   const mostrate = new Set(righe.map(r => r.l));
   let h = '<thead><tr><th>Lista</th><th>Voti</th><th>%</th><th>Seggi<small>scrutinio</small></th>' +
-    EXIT.map((e, i) => '<th>' + e.n + '<small>' + (ex[i] && ex[i].ora ? 'ore ' + esc(ex[i].ora) : 'exit poll') + '</small></th>').join('') +
+    EXIT.map((e, i) => '<th><span class="lungo">' + e.n + '</span><span class="corto">' + e.s + '</span><small>' + (ex[i] && ex[i].ora ? '<span class="lungo">ore </span>' + esc(ex[i].ora) : 'exit poll') + '</small></th>').join('') +
     '<th>2022<small>riferimento</small></th></tr></thead><tbody>';
   for (const r of righe) {
     const p = r.p, q = R ? r.v / R.val : null, sotto = R && q < SOGLIA;
     const s = bo ? bo.seggi[r.l] || 0 : null;
     const ref = p.r22 ? (p.r22.p != null ? nf(p.r22.p, 2) + '% · ' + p.r22.s : '—') : (ED === '25' && BASE22.naz[r.l] ? nf(BASE22.naz[r.l] / sum(BASE22.naz) * 100, 2) + '% · ' + (SEGGI22[r.l] || 0) : '—');
     const refT = p.r22 && p.r22.nota ? ' title="' + esc(p.r22.nota) + '"' : '';
-    h += '<tr class="' + (sotto ? 'sotto' : '') + '"><td><div class="partylabel"><i class="partydot" style="background:' + p.c + '"></i><span>' + esc(p.n) + '</span><span class="lett he">' + esc(r.l) + '</span><span class="bl ' + p.b + '">' + BLOCCHI[p.b].s + '</span></div>' +
+    h += '<tr class="' + (sotto ? 'sotto' : '') + '"><td><div class="partylabel"><i class="partydot" style="background:' + p.c + '"></i><span>' + esc(p.n) + ' <span class="lett he">' + esc(r.l) + '</span></span><span class="bl ' + p.b + '">' + BLOCCHI[p.b].s + '</span></div>' +
       (p.ld ? '<span class="pname">' + esc(p.ld) + '</span>' : '') + '</td>' +
       '<td>' + (R ? nf(r.v) : '—') + '</td><td>' + (R ? pct(q, 2) : '—') + '</td>' +
       '<td class="seat">' + (bo ? (s || (sotto ? '<span class="mute">—</span>' : '0')) : '—') + '</td>' +
