@@ -79,7 +79,7 @@ for (let i = 0; i < 60; i++) {
   await new Promise(r => setTimeout(r, 5000));
   try {
     const r = await fetch(URL_PUBBLICO + '?t=' + Date.now(), { cache: 'no-store' });
-    if (r.ok && JSON.stringify(await r.json()) === atteso) { console.log('✓ Online dopo ' + Math.round((Date.now() - t0) / 1000) + ' s: i lettori lo vedono entro due minuti.'); process.exit(0); }
+    if (r.ok && JSON.stringify(await r.json()) === atteso) { console.log('✓ Online dopo ' + Math.round((Date.now() - t0) / 1000) + ' s: i lettori lo vedono entro 15 secondi fino alle 22:30, poi entro due minuti.'); process.exit(0); }
   } catch (_) { }
 }
 console.error('✗ Dopo 5 minuti Pages serve ancora la versione precedente: controllare Actions → pages-build-deployment.');

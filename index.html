@@ -733,6 +733,9 @@ const FORZA_FEED = PARAM.get('feed') === '1';
 const POLL_MS = 60000;          /* la Commissione aggiorna il file ogni pochi minuti */
 const POLL_EXPB_OGNI = 3;       /* il file per seggio, più pesante, un ciclo cambiato su tre */
 const STIME_MS = 120000;        /* rilettura di stime.json */
+/* Attorno agli exit poll stime.json si rilegge ogni 15 secondi: dalle 20:55 alle 22:30
+   italiane del 27 ottobre (19:55-21:30 UTC). Il file pesa un KB. */
+const STIME_RAPIDO = [Date.UTC(2026, 9, 27, 19, 55), Date.UTC(2026, 9, 27, 21, 30)], STIME_RAPIDO_MS = 15000;
 const STORAGE = 'israele-live-2026-v1';
 const SEGGI = 120, MAGG = 61, SOGLIA = 0.0325;
 const ENV_CODE = 9999;          /* «מעטפות חיצוניות»: le doppie buste, una riga sola */
@@ -2082,7 +2085,12 @@ async function pollExpb() {
     render();
   } catch (_) { /* facoltativo: senza expb l'avanzamento resta una stima */ }
 }
+const STIME_LETTURA = { timer: null, ultima: 0, inCorso: false };
+function intervalloStime() { const t = Date.now(); return t >= STIME_RAPIDO[0] && t < STIME_RAPIDO[1] ? STIME_RAPIDO_MS : STIME_MS; }
 async function leggiStime() {
+  if (STIME_LETTURA.inCorso) return;
+  clearTimeout(STIME_LETTURA.timer);
+  STIME_LETTURA.inCorso = true; STIME_LETTURA.ultima = Date.now();
   try {
     const r = await fetch('stime.json?t=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) throw 0;
@@ -2091,8 +2099,11 @@ async function leggiStime() {
       modello: j.modello && j.modello.seggi && sum(j.modello.seggi) === SEGGI ? j.modello : null };
     riempiExit(); render();
   } catch (_) { $('statoStime').textContent = 'stime.json non leggibile (pagina aperta dal disco?)'; }
-  setTimeout(leggiStime, STIME_MS);
+  STIME_LETTURA.inCorso = false;
+  STIME_LETTURA.timer = setTimeout(leggiStime, intervalloStime());
 }
+/* chi torna sulla scheda dopo un po' rilegge subito: i browser rallentano i timer delle schede nascoste */
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Date.now() - STIME_LETTURA.ultima > STIME_RAPIDO_MS) leggiStime(); });
 
 /* ---------- la prova generale con il 2022 ---------- */
 const PROVA_ST = { P: null, ordine: null, play: null };

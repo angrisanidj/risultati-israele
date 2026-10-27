@@ -140,6 +140,8 @@ Non è una protezione vera, perché la pagina è statica. Ma quello che vedono i
    Se un controllo fallisce non pubblica niente e dice cosa correggere.
 3. Per una prova senza pubblicare: `node strumenti/pubblica-stime.mjs --prova un-file.json`.
 
+Conviene una rete alla volta, uno screenshot per messaggio: lo script accetta le reti ancora vuote, e il primo exit poll esce senza aspettare gli altri. Dallo screenshot ai lettori passa circa un minuto e mezzo: la lettura, la pubblicazione su Pages (25–60 secondi) e la rilettura delle pagine, ogni 15 secondi fra le 20:55 e le 22:30.
+
 Le reti aggiornano i numeri nella notte: si ripete con la nuova ora.
 
 **L'ora.** In `stime.json`, e nelle caselle della redazione, l'ora va scritta com'è nei grafici delle reti, cioè in ora israeliana: per esempio «נכון לשעה 01:00» si scrive `01:00`. La pagina la mostra ai lettori in ora italiana, un'ora indietro (01:00 → 00:00). Le ore prima di mezzogiorno valgono per la notte dopo il voto.
@@ -172,7 +174,7 @@ I nomi completi e le lettere delle 38 liste sono quelli pubblicati dalla Commiss
 
 1. Premi **Cerca su Wikipedia**. La pagina legge la tabella «Opinion polling for the 2026 Israeli legislative election» e cerca le righe del 27 ottobre di Kan 11, Canale 12, 13 e 14: nel 2022 gli exit poll erano lì, datati il giorno del voto. Le caselle si riempiono in ambra.
 2. Verifica i numeri con la diretta, aggiungi l'ora e premi **Salva stime**.
-3. Per pubblicarli premi **Copia per stime.json**, incolla in `stime.json` e fai il commit. Le pagine aperte rileggono il file ogni due minuti.
+3. Per pubblicarli premi **Copia per stime.json**, incolla in `stime.json` e fai il commit. Le pagine aperte rileggono il file ogni due minuti, e ogni 15 secondi fra le 20:55 e le 22:30 italiane del 27 ottobre. Chi torna sulla scheda lo rilegge subito.
 
 Le reti aggiornano i numeri nella notte: ripeti l'operazione con la nuova ora.
 
