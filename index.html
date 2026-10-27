@@ -869,6 +869,10 @@ function nf(v, d = 0) {
   return Number(v).toLocaleString('it-IT', { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: 'always' });
 }
 const pct = (v, d = 1) => v == null || !isFinite(v) ? '—' : nf(v * 100, d) + '%';
+/* la percentuale di scrutinio: un decimale sotto il 10%, così all'inizio non resta a 0% */
+const pctScr = f => pct(f, f < 0.1 ? 1 : 0);
+/* «allo 0,1%», «all’8%», «all’11%», «al 25%» */
+const alPct = f => { const t = pctScr(f); return (/^0/.test(t) ? 'allo ' : /^(1[,%]|11[,%]|8)/.test(t) ? 'all’' : 'al ') + t; };
 function hex2rgb(h) { h = h.replace('#', ''); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); }
 function mix(a, b, t) {
   const A = hex2rgb(a), B = hex2rgb(b);
@@ -1098,7 +1102,7 @@ const SEGGI22 = baderOfer(BASE22.naz, ACCORDI_BASE['25']).seggi;
 
 function fontiSeggi() {
   const R = risultato(), out = [];
-  if (R) { const bo = baderOfer(R.voti, accordi()); out.push({ k: 'scrutinio', n: R.fonte === 'manuale' ? 'Voti inseriti a mano' : 'Scrutinio', seggi: bo.seggi, liste: L, bo }); }
+  if (R) { const bo = baderOfer(R.voti, accordi()); out.push({ k: 'scrutinio', n: R.fonte === 'manuale' ? 'Voti inseriti a mano' : 'Scrutinio', seggi: bo.seggi, liste: L, bo, av: avanzamento(R) }); }
   EXIT.forEach(e => { const x = exitDi(e.k); if (x) out.push({ k: e.k, n: 'Exit poll ' + e.n, s: e.n, ora: x.ora, seggi: x.seggi, liste: L, locale: x.locale }); });
   const M = modello();
   if (M) out.push({ k: 'modello', n: 'Modello previsionale', s: 'Modello', quando: dataIT(M.data), seggi: M.seggi, liste: L });
@@ -1129,7 +1133,7 @@ function totBlocchi(f) {
 }
 /* Il nome di una fonte nel selettore e nella tabella dei blocchi */
 function nomeFonte(x, lungo) {
-  if (x.k === 'scrutinio') return x.n;
+  if (x.k === 'scrutinio') return x.n + (x.av && x.av.tipo !== 'manuale' ? ' · ' + pctScr(x.av.f) : '');
   if (x.k === 'k22') return 'Knesset 2022';
   if (x.k === 'modello') return (lungo ? x.n : x.s) + ' · ' + x.quando;
   return lungo ? x.n : x.s + (x.ora ? ' · ' + x.ora : '');
@@ -1164,7 +1168,7 @@ function renderKpi() {
     $('kVoti').textContent = nf(R.val);
     $('kVotiMeta').textContent = R.fonte === 'manuale' ? 'inseriti a mano'
       : av.tipo === 'seggi' ? nf(av.fatti) + ' seggi elettorali su ' + nf(av.tot) + ' (' + pct(av.f) + ')'
-        : (av.seggi ? nf(av.seggi) + ' seggi elettorali contati · ' : '') + 'circa ' + pct(av.f, av.f < 0.1 ? 1 : 0) + ' dei voti ordinari, sui volumi del 2022';
+        : (av.seggi ? nf(av.seggi) + ' seggi elettorali contati · ' : '') + 'circa ' + pctScr(av.f) + ' dei voti ordinari, sui volumi del 2022';
     if (R.d) {
       let n = 0, tot = 0;
       for (const a of R.d.loc.values()) { if (a.code === ENV_CODE) continue; tot++; if (a.val > 0) n++; }
@@ -1176,7 +1180,7 @@ function renderKpi() {
   }
   const f = fonteAttiva();
   $('kFonte').textContent = f.k === 'scrutinio' ? 'Scrutinio' : f.k === 'k22' ? 'Knesset 2022' : (f.s || f.n);
-  $('kFonteMeta').textContent = f.k === 'scrutinio' ? (R.fonte === 'manuale' ? 'voti inseriti a mano' : 'Bader-Ofer sui voti contati, ' + pct(av.f, 0) + ' scrutinato')
+  $('kFonteMeta').textContent = f.k === 'scrutinio' ? (R.fonte === 'manuale' ? 'voti inseriti a mano' : 'Bader-Ofer sui voti contati, ' + pctScr(av.f) + ' scrutinato')
     : f.k === 'k22' ? 'composizione uscente fino ai primi dati'
     : f.k === 'modello' ? 'proiezione ' + conData('del', modello().data) + (S.seatSrc === 'auto' ? ' · gli exit poll subentrano alle 21' : '')
       : 'exit poll' + (f.ora ? ' delle ' + f.ora : '') + (S.seatSrc === 'auto' ? ' · i voti contati subentrano a metà scrutinio' : '');
@@ -1214,7 +1218,7 @@ function renderVerdetto() {
     return;
   }
   const t = totBlocchi(f), n = t.N, win = n >= MAGG;
-  const chi = f.k === 'scrutinio' ? (R.fonte === 'manuale' ? 'Con i voti inseriti a mano' : 'Con il ' + pct(av.f, 0) + ' dei voti contati')
+  const chi = f.k === 'scrutinio' ? (R.fonte === 'manuale' ? 'Con i voti inseriti a mano' : 'Con il ' + pctScr(av.f) + ' dei voti contati')
     : f.k === 'modello' ? 'Secondo il modello previsionale'
     : 'Secondo l’exit poll di ' + f.s + (f.ora ? ' (ore ' + esc(f.ora) + ')' : '');
   const titolo = win ? chi + ', il blocco Netanyahu ha la maggioranza: ' + n + ' seggi'
@@ -1420,7 +1424,7 @@ function datiConfronto() {
   const conScr = !!R && (R.fonte === 'manuale' || av.f >= CONFRONTO_DA);
   const col = [];
   EXIT.forEach(e => { const x = exitDi(e.k); if (x) col.push({ k: e.k, n: e.n, c: e.s, sub: x.ora || 'exit poll', ora: x.ora, seggi: x.seggi }); });
-  if (conScr) col.push({ k: 'scrutinio', n: 'Scrutinio', c: 'Scrut.', sub: R.fonte === 'manuale' ? 'a mano' : 'al ' + pct(av.f, 0), seggi: baderOfer(R.voti, accordi()).seggi, voti: R.voti, val: R.val, reale: true });
+  if (conScr) col.push({ k: 'scrutinio', n: 'Scrutinio', c: 'Scrut.', sub: R.fonte === 'manuale' ? 'a mano' : alPct(av.f), seggi: baderOfer(R.voti, accordi()).seggi, voti: R.voti, val: R.val, reale: true });
   const lett = new Set(Object.keys(M.seggi).filter(l => M.seggi[l] > 0));
   col.forEach(c => Object.keys(c.seggi).forEach(l => { if (+c.seggi[l] > 0) lett.add(l); }));
   const ultima = col.length ? col[col.length - 1] : null;
@@ -1469,7 +1473,7 @@ function renderConfronto() {
   $('confrontoMeta').textContent = 'proiezione ' + conData('del', M.data);
   let sub = 'La proiezione del <a href="' + URL_MODELLO + '" target="_blank" rel="noopener">modello previsionale</a> (media ponderata di ' + M.rilevazioni + ' sondaggi, l’ultimo ' + conData('del', M.ultimo) + ') messa a confronto con i numeri della notte. ';
   if (!col.length) sub += 'Gli exit poll entrano appena pubblicati, alle 21 italiane; lo scrutinio quando è contata metà dei seggi.';
-  else if (!conScr) sub += 'Gli scarti accanto ai seggi sono la differenza dal modello. Lo scrutinio entra quando è contata metà dei seggi' + (R && R.fonte !== 'manuale' ? ': ora siamo al ' + pct(av.f, 0) + '.' : '.');
+  else if (!conScr) sub += 'Gli scarti accanto ai seggi sono la differenza dal modello. Lo scrutinio entra quando è contata metà dei seggi' + (R && R.fonte !== 'manuale' ? ': ora siamo ' + alPct(av.f) + '.' : '.');
   else sub += 'Gli scarti accanto ai seggi sono la differenza dal modello; sotto i seggi dello scrutinio, la quota di voto e lo scarto in punti dalla quota stimata.';
   const nascoste = col.filter(c => !tenute.has(c.k)).map(c => c.n);
   if (nascoste.length) sub += '<span class="solo-tel"> Da telefono non entrano ' + esc(nascoste.join(' e ')) + ': si vedono da computer o girando lo schermo.</span>';
@@ -1485,7 +1489,7 @@ function renderBarre() {
     $('bars').innerHTML = '<div class="mapempty">Le barre compaiono con i primi voti contati.</div>';
     $('barsKicker').textContent = 'In attesa'; return;
   }
-  $('barsKicker').textContent = R.fonte === 'manuale' ? 'Voti inseriti a mano' : (R.fonte === 'prova' ? 'Prova · 2022' : 'Voti contati');
+  $('barsKicker').textContent = (R.fonte === 'manuale' ? 'Voti inseriti a mano' : R.fonte === 'prova' ? 'Prova · 2022' : 'Scrutinio ' + alPct(avanzamento(R).f)) + ' · stima seggi';
   const arr = Object.keys(R.voti).map(l => ({ l, p: infoLista(l), q: R.voti[l] / R.val })).filter(x => x.q >= 0.004 || LMAP[x.l]).sort((a, b) => b.q - a.q).slice(0, 18);
   const max = Math.max(0.05, arr[0] ? arr[0].q : 0) * 1.04, bo = baderOfer(R.voti, accordi());
   $('bars').innerHTML = arr.map(x => {
@@ -2326,7 +2330,7 @@ function testoCondivisione() {
   const f = fonteAttiva();
   if (f.k === 'k22' || f.k === 'modello') return 'Israele, elezioni del 27 ottobre: lo spoglio in diretta, con i 120 seggi, gli exit poll e la mappa';
   const t = totBlocchi(f), R = risultato(), av = avanzamento(R);
-  const chi = f.k === 'scrutinio' ? (R && R.fonte !== 'manuale' ? 'scrutinio al ' + nf(av.f * 100, 0) + '%' : 'voti contati') : 'exit poll di ' + f.s;
+  const chi = f.k === 'scrutinio' ? (R && R.fonte !== 'manuale' ? 'scrutinio ' + alPct(av.f) : 'voti contati') : 'exit poll di ' + f.s;
   return 'Israele, ' + chi + ': blocco Netanyahu a ' + t.N + ' seggi su 120 (maggioranza a 61). Lo spoglio in diretta';
 }
 function linkSocial(rete) {
@@ -2545,7 +2549,7 @@ window.CARD = (function () {
   const fonteSeggi = (f, s) => f.k === 'scrutinio' ? fonteCEC(s) : f.k === 'k22' ? 'Commissione elettorale centrale (2022)'
     : f.k === 'modello' ? 'Modello previsionale Knesset 2026, media dei sondaggi (' + f.quando + ')' : f.s + ' (' + s.data + ')';
   const fonteCEC = s => (s.R && s.R.fonte === 'prova' ? 'Commissione elettorale centrale, Knesset 2022 (prova)' : 'Commissione elettorale centrale') + ' (' + s.data + ')';
-  const scr = s => s.R && s.R.fonte !== 'manuale' ? 'Scrutinio al ' + nf(s.av.f * 100, 0) + '%' : 'Voti inseriti a mano';
+  const scr = s => s.R && s.R.fonte !== 'manuale' ? 'Scrutinio ' + alPct(s.av.f) : 'Voti inseriti a mano';
   function ordinaVoti(s) { return Object.keys(s.R.voti).map(l => ({ l, p: infoLista(l), q: s.R.voti[l] / s.R.val, v: s.R.voti[l], seg: s.bo ? s.bo.seggi[l] || 0 : 0 })).sort((a, b) => b.v - a.v); }
 
   /* ---------- CARD 1 — il voto ---------- */
@@ -2617,7 +2621,7 @@ window.CARD = (function () {
   /* ---------- CARD 3 — gli exit poll a confronto ---------- */
   function card3(x, s, N) {
     const cols = s.ex.map(e => ({ n: e.n, ora: e.x.ora, seggi: e.x.seggi }));
-    if (s.bo && s.R.fonte !== 'prova') cols.push({ n: 'Scrutinio', ora: nf(s.av.f * 100, 0) + '%', seggi: s.bo.seggi, reale: true });
+    if (s.bo && s.R.fonte !== 'prova') cols.push({ n: 'Scrutinio', ora: pctScr(s.av.f), seggi: s.bo.seggi, reale: true });
     frame(x, { badge: 'EXIT POLL', kicker: s.ambito, title: g('t3').value, sub: 'Seggi su 120 secondo ' + (s.ex.length === EXIT.length ? 'le cinque reti' : s.ex.length === 1 ? 'l’exit poll disponibile' : 'gli exit poll disponibili') + (cols.some(c => c.reale) ? ', e il riparto sui voti contati' : ''),
       nota: 'Gli exit poll israeliani sono pubblicati in seggi alla chiusura dei seggi, alle 21 italiane (le 22 in Israele), e aggiornati nella notte con i voti reali. Le liste sotto la soglia del 3,25% non hanno seggi.',
       fonte: (s.ex.map(e => e.n).join(', ') || 'Reti israeliane') + ' (' + s.data + ')', n: N.n, tot: N.tot });
@@ -2663,7 +2667,7 @@ window.CARD = (function () {
     const D = s.cf, tt = testiConfronto(s);
     frame(x, { badge: 'IL MODELLO ALLA PROVA', kicker: s.ambito, title: g('t6').value, sub: tt.sub, nota: tt.nota, fonte: tt.fonte, n: N.n, tot: N.tot });
     if (!D.col.length) return attesa(x, 'In attesa degli exit poll', 'Alle 21 italiane, le 22 in Israele.');
-    const cols = [{ n: 'Modello', sub: dataIT(D.M.data), seggi: D.M.seggi, mod: true }].concat(D.col.map(c => ({ n: c.n, sub: c.reale ? c.sub.replace(/^al /, '') + ' contato' : (c.ora ? 'ore ' + c.ora : 'exit poll'), seggi: c.seggi, reale: c.reale })));
+    const cols = [{ n: 'Modello', sub: dataIT(D.M.data), seggi: D.M.seggi, mod: true }].concat(D.col.map(c => ({ n: c.n, sub: c.reale ? c.sub.replace(/^(al |allo |all’)/, '') + ' contato' : (c.ora ? 'ore ' + c.ora : 'exit poll'), seggi: c.seggi, reale: c.reale })));
     const rows = D.righe.slice(0, 13), nb = 4, h = Math.min(34, 420 / (rows.length + nb));
     const x0 = 62, cw = Math.min(200, (1538 - 560) / cols.length), cx0 = 1538 - cw * cols.length;
     cols.forEach((c, j) => {
@@ -2852,7 +2856,7 @@ window.CARD = (function () {
   }
   function ig3(x, s, N) {
     const cols = s.ex.map(e => ({ n: e.s === 'Kan' ? 'Kan 11' : e.n.replace('Canale ', 'Can. '), ora: e.x.ora, seggi: e.x.seggi }));
-    if (s.bo && s.R.fonte !== 'prova') cols.push({ n: 'Scrutinio', ora: nf(s.av.f * 100, 0) + '%', seggi: s.bo.seggi, reale: true });
+    if (s.bo && s.R.fonte !== 'prova') cols.push({ n: 'Scrutinio', ora: pctScr(s.av.f), seggi: s.bo.seggi, reale: true });
     const z = frameIG(x, { badge: 'EXIT POLL', kicker: s.ambito, title: g('t3').value, sub: 'Seggi su 120' + (cols.some(c => c.reale) ? ', e il riparto sui voti contati' : ''),
       nota: 'Gli exit poll israeliani sono pubblicati in seggi alla chiusura dei seggi, alle 21 italiane (le 22 in Israele), e aggiornati nella notte con i voti reali.',
       fonte: (s.ex.map(e => e.n).join(', ') || 'Reti israeliane') + ' (' + s.data + ')', n: N.n, tot: N.tot });
@@ -2887,7 +2891,7 @@ window.CARD = (function () {
     const z = frameIG(x, { badge: 'IL MODELLO ALLA PROVA', kicker: s.ambito, title: g('t6').value, sub: tt.sub, nota: tt.nota, fonte: tt.fonte, n: N.n, tot: N.tot });
     if (!D.col.length) return attesaIG(x, z, 'In attesa degli exit poll', 'Alle 21 italiane, le 22 in Israele.');
     const M = IG.M, Rr = IG.W - M;
-    const cols = [{ n: 'Modello', sub: dataIT(D.M.data).replace(/ottobre/, 'ott.'), seggi: D.M.seggi, mod: true }].concat(D.col.map(c => ({ n: c.k === 'kan' ? 'Kan 11' : c.n.replace('Canale ', 'Can. '), sub: c.reale ? c.sub.replace(/^al /, '') : (c.ora ? 'ore ' + c.ora : ''), seggi: c.seggi, reale: c.reale })));
+    const cols = [{ n: 'Modello', sub: dataIT(D.M.data).replace(/ottobre/, 'ott.'), seggi: D.M.seggi, mod: true }].concat(D.col.map(c => ({ n: c.k === 'kan' ? 'Kan 11' : c.n.replace('Canale ', 'Can. '), sub: c.reale ? c.sub.replace(/^(al |allo |all’)/, '') : (c.ora ? 'ore ' + c.ora : ''), seggi: c.seggi, reale: c.reale })));
     const liste = D.righe.slice(0, 14);
     const cw = Math.min(130, (Rr - 360) / cols.length), cx0 = Rr - cw * cols.length;
     const h = Math.min(48, (z.y1 - z.y0 - 70) / (liste.length + 4.6));
@@ -3006,7 +3010,7 @@ window.CARD = (function () {
       const n = ordinaVoti(s).filter(r => r.q >= SOGLIA).length;
       p.c1 = 'Israele, ' + scr(s).toLowerCase() + ': ' + o + '. Sopra la soglia del 3,25% ci sono ' + n + ' liste; i seggi sono ricalcolati con il metodo Bader-Ofer e possono ancora cambiare.';
     }
-    const t = s.tb, chi = s.f.k === 'scrutinio' ? 'Con i ' + nomeF(s) + ' (' + nf(s.av.f * 100, 0) + '%)' : s.f.k === 'modello' ? 'Secondo il ' + nomeF(s) + ' ' + conData('del', modello().data) : 'Secondo l’' + nomeF(s);
+    const t = s.tb, chi = s.f.k === 'scrutinio' ? 'Con i ' + nomeF(s) + ' (' + pctScr(s.av.f) + ')' : s.f.k === 'modello' ? 'Secondo il ' + nomeF(s) + ' ' + conData('del', modello().data) : 'Secondo l’' + nomeF(s);
     p.c2 = chi + ', il blocco Netanyahu ha ' + t.N + ' seggi su 120: ' + (t.N >= MAGG ? 'basta per la maggioranza.' : 'ne servono 61.') + ' Opposizione ' + t.O + ', partiti arabi ' + t.A + (t.X ? ', altre liste ' + t.X : '') + '.';
     if (s.ex.length) p.c3 = 'Exit poll in Israele, seggi di blocco Netanyahu, opposizione e arabi (ore italiane): ' + s.ex.map(e => { const t = totBlocchi({ seggi: e.x.seggi }); return e.n + (e.x.ora ? ' (' + e.x.ora + ')' : '') + ' ' + t.N + '-' + t.O + '-' + t.A; }).join(', ') + '. Maggioranza a 61.';
     if (s.R && s.R.loc) {
