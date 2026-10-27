@@ -711,6 +711,8 @@ footer a{color:var(--t2)}
      ?prova=2022          prova generale con lo spoglio vero del 2022 (file locale)
      ?ed=25               stesso feed live, ma dal server del 2022 (media25): prova il proxy
      ?proxy=URL           un proxy diverso da quello predefinito
+     ?copia=1             solo la copia del feed pubblicata dalla redazione, senza proxy
+     ?copia=prova         la copia di prova in dati/prova/live/ (con ?ed=25 per i file del 2022)
    ===================================================================== */
 
 /* ---------- configurazione ---------- */
@@ -718,6 +720,11 @@ const PARAM = new URLSearchParams(location.search);
 const PROVA = PARAM.get('prova') === '2022';
 const ED = (PROVA || PARAM.get('ed') === '25') ? '25' : '26';
 const PROXY = PARAM.get('proxy') || 'https://israele-2026-feed-proxy.vercel.app/api/cec';
+/* La Commissione risponde al proxy con una verifica anti-bot di AWS WAF (202 vuoto). Allora la
+   pagina legge la copia che la redazione scarica dal browser e pubblica qui accanto con
+   strumenti/pubblica-feed.mjs. Il proxy resta la prima scelta, se torna a rispondere. */
+const SOLO_COPIA = PARAM.has('copia');
+const COPIA_DIR = PARAM.get('copia') === 'prova' ? 'dati/prova/live/' : 'dati/live/';
 /* Il feed resta spento fino alla sera del voto: prima di allora la pagina non chiama il
    proxy. Si accende da solo martedì 27 ottobre alle 20 italiane (19 UTC), un'ora prima
    della chiusura dei seggi. ?feed=1 lo accende subito, per le prove. */
@@ -1983,6 +1990,39 @@ async function conTimeout(url, opt, ms) {
   try { return await fetch(url, { ...opt, signal: ctl.signal }); } finally { clearTimeout(t); }
 }
 function urlFeed(file) { const u = new URL(PROXY); u.searchParams.set('file', file); if (ED === '25') u.searchParams.set('ed', '25'); return u.href; }
+/* Un CSV della Commissione e non una pagina d'errore o un corpo vuoto. */
+function sembraCSV(t) { const l = String(t).slice(0, 2000); return l.includes('סמל ישוב') && l.includes('כשרים'); }
+/* Il file dal proxy o, se il proxy non lo riceve, dalla copia pubblicata dalla redazione.
+   null: nessuno dei due ce l'ha ancora (file non pubblicato, o copia non ancora caricata). */
+async function scaricaFeed(file) {
+  let motivo = '';
+  if (!SOLO_COPIA) {
+    try {
+      const r = await conTimeout(urlFeed(file), { cache: 'no-cache' }, 25000);
+      const cec = Number(r.headers.get('X-Cec-Status')) || 0;
+      if (r.ok) {
+        const text = await r.text();
+        if (sembraCSV(text)) return { text, lm: r.headers.get('Last-Modified'), copia: false, enc: r.headers.get('X-Cec-Encoding') };
+        motivo = cec === 202 ? 'la Commissione chiede al proxy una verifica anti-bot (202)' : 'il proxy riceve un file vuoto o una pagina d’errore';
+      } else {
+        let det = ''; try { const j = await r.json(); det = j.errore || ''; } catch (_) { }
+        const c = cec || Number((det.match(/\d{3}/) || [])[0]) || 0;
+        motivo = c === 404 ? '' : c === 403 ? 'la Commissione nega l’accesso al proxy (403)' : 'HTTP ' + r.status + (det ? ' · ' + det : '');
+      }
+    } catch (e) { motivo = e.name === 'AbortError' ? 'tempo scaduto' : e.message; }
+  }
+  if (ED === '26' || SOLO_COPIA) {
+    const r = await conTimeout(COPIA_DIR + file + '.csv', { cache: 'no-cache' }, 25000);
+    if (r.ok) {
+      const text = await r.text();
+      if (sembraCSV(text)) return { text, lm: r.headers.get('Last-Modified'), copia: true };
+      motivo = 'la copia pubblicata non è un CSV della Commissione';
+    } else if (r.status !== 404) motivo = 'copia: HTTP ' + r.status;
+    else if (!motivo || ED === '26') return null;
+  }
+  if (motivo) throw new Error(motivo);
+  return null;
+}
 function applica(P, fonte, quando) {
   const d = aggrega(P);
   if (d.tipo === 'expb') S.expb = { ...d.seggi, quando: new Date() };
@@ -2002,20 +2042,15 @@ async function poll(forza) {
   FEED.busy = true; clearTimeout(FEED.timer);
   try {
     setFeed('Interrogo la Commissione…', 'loading');
-    const r = await conTimeout(urlFeed('expc'), { cache: 'no-cache' }, 25000);
-    if (!r.ok) {
-      let det = ''; try { const j = await r.json(); det = j.errore || ''; } catch (_) { }
-      const cec = Number(r.headers.get('X-Cec-Status')) || Number((det.match(/\d{3}/) || [])[0]) || 0;
-      if (cec === 404) { setFeed('Il file della Commissione non è ancora pubblicato (404) · riprovo ogni minuto', 'paused'); return; }
-      if (cec === 403) throw new Error('la Commissione nega l’accesso al proxy (403): possibile blocco geografico, vedi il README');
-      throw new Error('HTTP ' + r.status + (det ? ' · ' + det : ''));
-    }
-    const text = await r.text();
-    const lm = r.headers.get('Last-Modified'), quando = lm ? new Date(lm) : new Date();
+    const F = await scaricaFeed('expc');
+    if (!F) { setFeed('In attesa del primo file della Commissione · riprovo ogni minuto', 'paused'); return; }
+    const text = F.text;
+    const lm = F.lm, quando = lm ? new Date(lm) : new Date();
     const firma = (lm || '') + '|' + text.length + '|' + hash(text);
-    $('footProxy').textContent = 'Proxy: ' + new URL(PROXY).host + (r.headers.get('X-Cec-Encoding') ? ' · ' + r.headers.get('X-Cec-Encoding') : '');
+    const di = F.copia ? 'copia della Commissione ' : 'Commissione ';
+    $('footProxy').textContent = F.copia ? 'Copia del file della Commissione, scaricato e pubblicato dalla redazione' : 'Proxy: ' + new URL(PROXY).host + (F.enc ? ' · ' + F.enc : '');
     if (firma === FEED.firma) {
-      setFeed('Collegato · nessun file nuovo · Commissione ' + oraIT(quando), 'ok');
+      setFeed('Collegato · nessun file nuovo · ' + di + oraIT(quando), 'ok');
     } else {
       FEED.firma = firma;
       const P = leggiCSV(text);
@@ -2023,7 +2058,7 @@ async function poll(forza) {
       applica(P, 'feed', quando);
       FEED.cicli++;
       const tot = S.dati.val;
-      setFeed(tot ? 'Feed live · Commissione ' + oraIT(quando) + ' · ' + nf(tot) + ' voti validi' : 'Feed collegato · il file della Commissione non ha ancora voti', 'ok');
+      setFeed(tot ? 'Feed live · ' + di + oraIT(quando) + ' · ' + nf(tot) + ' voti validi' : 'Feed collegato · il file della Commissione non ha ancora voti', 'ok');
       if (tot && FEED.cicli % POLL_EXPB_OGNI === 1) pollExpb();
     }
     avviso('');
@@ -2038,9 +2073,9 @@ async function poll(forza) {
 }
 async function pollExpb() {
   try {
-    const r = await conTimeout(urlFeed('expb'), { cache: 'no-cache' }, 30000);
-    if (!r.ok) return;
-    const P = leggiCSV(await r.text());
+    const F = await scaricaFeed('expb');
+    if (!F) return;
+    const P = leggiCSV(F.text);
     if (P.tipo !== 'expb') return;
     const d = aggrega(P);
     S.expb = { ...d.seggi, quando: new Date() };
