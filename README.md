@@ -10,8 +10,9 @@ Dashboard per seguire in diretta lo spoglio delle elezioni della 26ª Knesset (2
 | `stime.json` | Exit poll (in seggi), accordi di eccedenza e ultima proiezione del modello previsionale. Si modifica a mano. |
 | `dati/prova/expc-2022.csv` | Il file definitivo del 2022, usato per la prova generale. |
 | `proxy/` | Il progetto Vercel: `api/cec.js` più la configurazione. |
-| `.github/` | Il workflow che copia ogni giorno la proiezione del modello in `stime.json`, con il suo script. |
+| `.github/` | Il workflow che pubblica il sito su GitHub Pages e quello che copia ogni giorno la proiezione del modello in `stime.json`, con il suo script. |
 | `strumenti/pubblica-stime.mjs` | La sera del voto: controlla `stime.json`, lo pubblica e aspetta GitHub Pages. |
+| `strumenti/pubblica-feed.mjs` | La sera del voto: pubblica in `dati/live/` i file della Commissione scaricati dal browser. Vedi «Il feed: la copia scaricata dalla redazione». |
 
 ## Da dove arrivano i dati
 
@@ -26,7 +27,13 @@ Le colonne delle liste si leggono dall'intestazione, non sono scritte nel codice
 
 Codifica: windows-1255 fino al 2021, UTF-8 con BOM nel 2022. Il proxy riconosce da solo la codifica e restituisce sempre UTF-8.
 
-**Attenzione:** a differenza del 2022, `media26` e `votes26` puntano oggi a CloudFront (AWS) e non più alla rete governativa israeliana. CloudFront può applicare un blocco geografico. Va verificato prima del 27, vedi la diagnostica qui sotto.
+**Attenzione:** a differenza del 2022, `media26` e `votes26` puntano a CloudFront (AWS), protetto da AWS WAF. Verificato il 27 ottobre:
+
+- dal proxy Vercel, che gira in un data center, `media26` risponde **202 con corpo vuoto** e `x-amzn-waf-action: challenge`: è una verifica anti-bot, il file non arriva;
+- un programma che lo scarica da una connessione di casa riceve un 404; il file arriva solo a un browser;
+- le pagine dei lettori non possono leggerlo direttamente: la risposta non ha le intestazioni CORS.
+
+Il file 2026 esiste dal 13 ottobre, con la sola intestazione e le lettere delle liste del 2026. Il proxy non va travestito da browser: la strada è la copia scaricata dalla redazione, vedi «La sera del voto».
 
 ## 1. Pubblicare il proxy su Vercel
 
@@ -62,18 +69,48 @@ Se l'indirizzo del 2026 dovesse cambiare, imposta su Vercel la variabile d'ambie
 
 ## 2. Pubblicare la pagina
 
-Crea il repository `angrisanidj/risultati-israele` e carica tutto tranne `proxy/`. Puoi anche lasciarlo: non dà fastidio. Poi attiva GitHub Pages dal branch `main`, cartella root.
+Crea il repository `angrisanidj/risultati-israele` e carica tutto tranne `proxy/`. Puoi anche lasciarlo: non dà fastidio.
+
+GitHub Pages si pubblica con il workflow **Pubblica il sito** (`.github/workflows/pages.yml`) a ogni push su `main`, in circa un minuto. La pubblicazione «dal branch» ha un limite indicativo di 10 ricostruzioni l'ora, troppo poche la sera del voto. Il passaggio si fa una volta:
+
+```
+gh api -X PUT repos/angrisanidj/risultati-israele/pages -f build_type=workflow
+```
+
+Per tornare indietro: `-f build_type=legacy`.
 
 ## 3. La prova generale
 
 - **`…/risultati-israele/?prova=2022`** riproduce lo spoglio vero del 2022, località per località, con un cursore da 0 a 100%. Al 100% il riparto deve dare Likud 32, Yesh Atid 24, Sionismo religioso 14, Unità nazionale 12, Shas 11, UTJ 7, Yisrael Beitenu 6, Ra'am 5, Hadash–Ta'al 5, Laburisti 4: è il risultato ufficiale. Il codice è verificato anche sul 2021 (file in windows-1255).
 - **`…/risultati-israele/?ed=25`** usa il feed live, ma dal server del 2022 (`media25`). Prova l'intera catena browser → Vercel → Commissione.
 - **`?proxy=https://…`** sostituisce il proxy predefinito.
+- **`?ed=25&copia=prova`** legge la copia di prova in `dati/prova/live/`, che pubblica `node strumenti/pubblica-feed.mjs --prova`. Prova la catena download → script → Pages → pagina con i file del 2022. **`?copia=1`** legge solo la copia vera, senza proxy.
 - **Feed spento fino alla sera del voto:** senza parametri la pagina non chiama il proxy fino a martedì 27 ottobre alle 20 italiane, poi si accende da sola. **`?feed=1`** la accende subito, per le prove. Il proxy su Vercel resta attivo: la diagnostica `?diag=1` funziona sempre.
 
 ## La sera del voto
 
 **Orari:** i seggi chiudono alle 22 israeliane, le **21 in Italia**. L'ora legale è già finita in entrambi i paesi, quindi la differenza è di un'ora.
+
+### Il feed: la copia scaricata dalla redazione
+
+Il proxy riceve dalla Commissione la verifica anti-bot (vedi «Da dove arrivano i dati»). La pagina prova comunque prima il proxy; se non riceve un CSV, legge `dati/live/expc.csv` (ed `expb.csv`) dallo stesso sito. Quella copia la scarica la redazione dal proprio browser e la pubblica lo script.
+
+**Prima delle 21:**
+
+1. Nel terminale, dalla cartella del progetto: `node strumenti/pubblica-feed.mjs`. Resta acceso tutta la notte e sorveglia la cartella Download.
+2. In Chrome, un segnalibro a `https://media26.bechirot.gov.il/files/expc.csv`. Nelle impostazioni dei download va spenta «Chiedi dove salvare ciascun file», così basta un clic. Facoltativo, un secondo segnalibro a `expb.csv`, per contare i seggi scrutinati.
+
+**Durante lo spoglio** si clicca il segnalibro ogni pochi minuti. Per ogni file scaricato (`expc.csv`, `expc (1).csv`, …) lo script:
+
+- controlla che sia un CSV della Commissione, non una pagina d'errore;
+- lo converte in UTF-8;
+- se è cambiato, lo pubblica (commit, `pull --rebase`, push) e dice quando GitHub Pages lo serve, in genere entro un minuto;
+- se è identico all'ultimo, non pubblica niente: la Commissione non ha ancora aggiornato;
+- lo sposta in `Download/israele-2026/` con l'ora nel nome, che resta l'archivio della notte.
+
+Se da un po' non arriva un file, lo script ricorda di scaricarlo con una notifica di Windows. L'intervallo segue il ritmo con cui la Commissione ha cambiato il file, fra 2 e 15 minuti. Dal clic ai lettori passano 1–2 minuti: la pubblicazione circa uno, più la rilettura della pagina ogni 60 secondi. I lettori vedono «copia della Commissione» con l'ora di pubblicazione.
+
+Provato il 27 ottobre con i file del 2022 (`--prova`): online dopo 35–50 secondi dal download, pagina aggiornata da sola, file doppio e pagina d'errore scartati, promemoria arrivato.
 
 ### Exit poll
 
@@ -196,12 +233,9 @@ Sono rimaste senza accordo Otzma Yehudit, Popolo d'Israele, Riservisti e Blu e B
 - **Importa CSV:** scarica `expc.csv` o `expb.csv` a mano dal sito della Commissione e caricalo. Il feed va in pausa finché non premi «Riprendi».
 - **Inserimento manuale:** inserisci i voti nazionali per lista. Soglia e seggi si ricalcolano e il risultato manuale ha la precedenza finché non lo rimuovi.
 
-### Piano B se CloudFront blocca le richieste dall'estero
+### Il proxy e la verifica anti-bot
 
-Il proxy Vercel non ha una regione in Israele, quindi un blocco geografico va aggirato da fuori. Due strade:
-
-- una funzione equivalente su un servizio con regione israeliana: Google Cloud `me-west1` (Tel Aviv) oppure AWS `il-central-1`. Il codice di `api/cec.js` si adatta in pochi minuti. Poi la si indica con `?proxy=`;
-- in serata, i due fallback qui sopra.
+Il blocco non è geografico: AWS WAF chiede una verifica a chi arriva da un data center, e una funzione in una regione israeliana (Google Cloud `me-west1`, AWS `il-central-1`) sarebbe comunque in un data center. Il proxy torna utile solo se la Commissione lo autorizza, per esempio con un accesso per la stampa: la pagina lo preferisce da sola alla copia appena riceve un CSV. La diagnostica `?diag=1` riporta il campo `waf`.
 
 ## Condivisione
 
