@@ -85,6 +85,9 @@ export default async function handler(req, res) {
             server: r.headers.get('server'), via: r.headers.get('via'),
             cache: r.headers.get('x-cache'), lastModified: r.headers.get('last-modified'),
             tipo: r.headers.get('content-type'),
+            /* Un 202 vuoto da CloudFront è di solito un controllo di AWS WAF: lo dice x-amzn-waf-action. */
+            waf: r.headers.get('x-amzn-waf-action'), pop: r.headers.get('x-amz-cf-pop'),
+            byte: buf.byteLength, intestazioni: Object.fromEntries(r.headers),
             inizio: decodifica(buf).testo.slice(0, 160) });
         } catch (err) {
           out.prove.push({ url, errore: String(err && err.message || err), ms: Date.now() - t0 });
