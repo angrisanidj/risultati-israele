@@ -212,6 +212,8 @@ select{background:var(--s2);color:var(--t1);border:1px solid var(--line-2);borde
 .exit-head span{text-align:center}
 .exit-row{padding-top:2px;padding-bottom:2px}
 .exit-row.ore input{font-size:12px;padding:5px}
+.exit-row.blocco b{text-align:right;padding:6px 8px;font:700 14px var(--sans);font-variant-numeric:tabular-nums}
+.exit-row.blocco:first-child{margin-top:6px;padding-top:8px;border-top:1px solid var(--line)}
 .partylabel{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;min-width:0}
 .partylabel span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .partydot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
@@ -575,6 +577,7 @@ footer a{color:var(--t2)}
         <div class="exit-head"><span style="text-align:left">Lista</span><span>Kan 11</span><span>Can. 12</span><span>Can. 13</span><span>Can. 14</span></div>
         <div class="exit-row ore"><div class="partylabel"><span class="muted" title="Come nei grafici delle reti: ai lettori si mostra in ora italiana">Ora in Israele</span></div><input data-src="kan" data-ora placeholder="22:00"><input data-src="c12" data-ora placeholder="22:00"><input data-src="c13" data-ora placeholder="22:00"><input data-src="c14" data-ora placeholder="22:00"></div>
         <div id="exitInputs"></div>
+        <div id="exitBlocchi"></div>
       </div>
  <div class="exit-actions solo-red"><button id="saveExit" class="primary">Salva stime</button><button id="clearExit" class="sm">Torna a stime.json</button></div>
       <div id="exitValidation" class="validation">Totali: —</div>
@@ -1505,7 +1508,16 @@ function leggiExit() {
   });
   return out;
 }
+/* sotto le liste, i seggi per blocco di ogni exit poll */
+function renderExitBlocchi() {
+  const tot = EXIT.map(e => { const x = exitDi(e.k); return x ? totBlocchi(x) : null; });
+  if (!tot.some(Boolean)) { $('exitBlocchi').innerHTML = ''; return; }
+  $('exitBlocchi').innerHTML = ['N', 'O', 'A', 'X'].filter(b => b !== 'X' || tot.some(t => t && t.X)).map(b =>
+    '<div class="exit-row blocco"><div class="partylabel"><i class="partydot" style="background:' + BLOCCHI[b].c + '"></i><span>' + BLOCCHI[b].n + '</span></div>' +
+    tot.map(t => '<b>' + (t ? t[b] : '') + '</b>').join('') + '</div>').join('');
+}
 function renderValidazione() {
+  renderExitBlocchi();
   const parti = EXIT.map(e => { const x = exitDi(e.k); if (!x) return e.s + ' —'; const t = sum(x.seggi); return e.s + ' <b class="' + (t === SEGGI ? 'okk' : 'ko') + '">' + t + '</b>'; });
   document.querySelector('.exit-wrap').classList.toggle('hidden', !REDAZIONE && !EXIT.some(e => exitDi(e.k)));
   if (REDAZIONE) $('exitValidation').innerHTML = 'Totali (devono fare 120): ' + parti.join(' · ');
