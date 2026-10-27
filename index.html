@@ -301,6 +301,14 @@ table.conf th .corto{display:none}
 #hiLayer path.ov-sel{stroke-width:2.2}
 #hiLayer path.ov-hover{stroke-width:1.6;opacity:.9}
 #locMap.area #locLayer path:not(.fuori){stroke:#0a1324;stroke-width:.7}
+/* le bolle: un cerchio per località, area proporzionale ai voti validi */
+#bubLayer circle{stroke:#08101f;stroke-width:.7;vector-effect:non-scaling-stroke;cursor:pointer;fill-opacity:.88;transition:fill .3s,opacity .3s}
+#bubLayer circle:hover{stroke:#fff;stroke-width:1.4}
+#bubLayer circle.sel{stroke:#fff;stroke-width:2.2;fill-opacity:1}
+#locMap.hassel #bubLayer circle:not(.sel){opacity:.5}
+.bolleg{display:flex;align-items:flex-end;gap:14px;margin-top:10px}
+.bolleg div{display:grid;justify-items:center;gap:3px;font-size:11.5px;color:var(--t3)}
+.bolleg svg circle{fill:none;stroke:var(--t2);stroke-width:1}
 .mapzoom{position:absolute;top:10px;right:10px;z-index:2;display:grid;gap:4px}
 .mapzoom button{width:34px;height:34px;padding:0;font:500 17px/1 var(--sans);border-radius:var(--r-s);background:rgba(10,20,40,.94)}
 .maphint{position:absolute;left:10px;top:10px;z-index:2;color:var(--t2);font-size:12px;background:rgba(10,20,40,.9);padding:5px 9px;border-radius:var(--r-s);pointer-events:none;max-width:calc(100% - 64px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -612,6 +620,7 @@ footer a{color:var(--t2)}
         <div class="mapfonte" id="mapLivello">
           <button data-liv="sd" aria-pressed="true">Aree</button>
           <button data-liv="loc" aria-pressed="false">Località</button>
+          <button data-liv="bolle" aria-pressed="false" title="Un cerchio per località, grande quanto i voti validi">Bolle</button>
         </div>
         <div class="mapfonte" id="mapMode">
           <button data-mode="primo" aria-pressed="true">Prima lista</button>
@@ -627,7 +636,7 @@ footer a{color:var(--t2)}
       <div class="mapside l maplist"><h4 id="listTitle">Le aree</h4><input id="cerca" class="cerca" placeholder="Cerca una località…" autocomplete="off"><div id="locList" class="rows"></div></div>
       <div class="mapcol">
         <div class="mapstage" id="mapStage">
-          <svg id="locMap" role="img" aria-label="Mappa delle località israeliane"><g id="baseLayer"></g><g id="locLayer"></g><g id="hiLayer"></g></svg>
+          <svg id="locMap" role="img" aria-label="Mappa delle località israeliane"><g id="baseLayer"></g><g id="locLayer"></g><g id="bubLayer"></g><g id="hiLayer"></g></svg>
           <span class="maphint" id="mapHint">Tocca un’area per vedere le sue località</span>
           <button id="mapBack" class="sm mapback hidden">← Tutto il paese</button>
           <div class="mapzoom">
@@ -1638,7 +1647,13 @@ const BASE22_SD = (function () {
   out.forEach(o => { if (o.val) { o.N /= o.val; o.O /= o.val; o.A /= o.val; } });
   return out;
 })();
-const livello = () => S.mapLivello === 'loc' ? 'loc' : 'sd';
+const livello = () => S.mapLivello === 'loc' || S.mapLivello === 'bolle' ? 'loc' : 'sd';
+/* «Bolle» è il livello delle località disegnato con i cerchi: dove sono gli elettori, non
+   quanta terra c'è. L'area del cerchio è proporzionale ai voti validi, sulla stessa scala
+   per tutta la notte (BOLLA_VAL voti fanno un raggio di BOLLA_MAX). */
+const bolle = () => S.mapLivello === 'bolle';
+const BOLLA_MAX = 30, BOLLA_VAL = 250000;
+const raggioBolla = v => Math.max(1.3, BOLLA_MAX * Math.sqrt(v / BOLLA_VAL));
 function costruisciMappa() {
   const layer = $('locLayer');
   $('baseLayer').innerHTML = MAPPA.base.map((g, i) => '<path d="' + g.d + '" data-sd="' + i + '"></path>').join('');
@@ -1707,14 +1722,14 @@ function costruisciMappa() {
   mappaPronta = true;
 }
 function evidenzia() {
-  document.querySelectorAll('#locMap path.sel').forEach(p => p.classList.remove('sel'));
+  document.querySelectorAll('#locMap path.sel, #bubLayer circle.sel').forEach(p => p.classList.remove('sel'));
   const id = S.sel;
   if (id != null) {
     let sel = [];
     if (typeof id === 'string') {
       const i = Number(id.slice(2));
       sel = i === SD_GS ? [...document.querySelectorAll('#locLayer path[data-gs]')] : [document.querySelector('#baseLayer path[data-sd="' + i + '"]')];
-    } else sel = [document.querySelector('#locLayer path[data-id="' + id + '"]')];
+    } else sel = [document.querySelector((bolle() ? '#bubLayer circle' : '#locLayer path') + '[data-id="' + id + '"]')];
     sel.filter(Boolean).forEach(p => p.classList.add('sel'));
   }
   $('locMap').classList.toggle('hassel', id != null && !(S.focusSD != null && typeof id === 'string'));
@@ -1839,15 +1854,25 @@ function renderMappa() {
     p.classList.toggle('fuori', foc != null && sdDi(MAPPA.geo[i].id) !== foc);
   });
   $('locMap').classList.toggle('sd', liv === 'sd');
+  if (bolle()) {
+    document.querySelectorAll('#locLayer path').forEach(p => p.setAttribute('display', 'none'));
+    const B = [];
+    MAPPA.geo.forEach((g, i) => { const a = loc.get(g.id); if (a && a.val > 0 && isFinite(g.bx[0])) B.push({ id: g.id, x: (g.bx[0] + g.bx[2]) / 2, y: (g.bx[1] + g.bx[3]) / 2, r: raggioBolla(a.val), c: col.locs[i] }); });
+    /* le grandi sotto, le piccole sopra: nessuna resta nascosta */
+    B.sort((a, b) => b.r - a.r);
+    $('bubLayer').innerHTML = B.map(b => '<circle data-id="' + b.id + '" cx="' + b.x.toFixed(1) + '" cy="' + b.y.toFixed(1) + '" r="' + b.r.toFixed(2) + '" fill="' + b.c + '"></circle>').join('');
+  } else $('bubLayer').innerHTML = '';
   let fatte = 0;
   for (const a of loc.values()) if (a.val > 0 && MAPPA.byId[a.code]) fatte++;
   const sdFatti = col.sd.filter(o => o.val > 0).length;
   $('mapEmpty').classList.toggle('hidden', fatte > 0);
-  $('mapPill').textContent = liv === 'sd' ? (sdFatti ? sdFatti + ' aree su ' + NOMI_SD.length + ' con voti' : 'in attesa') : (fatte ? nf(fatte) + ' località colorate' : 'in attesa');
-  $('mapSub').textContent = liv === 'sd'
+  $('mapPill').textContent = liv === 'sd' ? (sdFatti ? sdFatti + ' aree su ' + NOMI_SD.length + ' con voti' : 'in attesa') : (fatte ? nf(fatte) + (bolle() ? ' località, cerchi grandi quanto i voti' : ' località colorate') : 'in attesa');
+  $('mapSub').textContent = bolle()
+    ? 'Un cerchio per località, con l’area proporzionale ai voti validi contati: la mappa mostra dove sono gli elettori, non quanta terra c’è. Il colore segue la scelta qui sopra: prima lista, blocchi o una lista. I cerchi sono al centro di ogni località; quelli grandi stanno sotto quelli piccoli.'
+    : liv === 'sd'
     ? 'I 15 sottodistretti coprono tutto il paese entro la Linea verde, Golan compreso: ogni località confluisce nel suo. In Cisgiordania votano solo gli insediamenti, raccolti in un’area a parte, «Giudea e Samaria», e disegnati con i loro confini.'
     : 'Ogni poligono è una località (comune, consiglio locale o insediamento di un consiglio regionale) unita al file della Commissione con il codice dell’Ufficio centrale di statistica. I poligoni coprono solo l’abitato: il territorio aperto fra un centro e l’altro resta grigio.';
-  document.querySelectorAll('#mapLivello button').forEach(b => b.setAttribute('aria-pressed', b.dataset.liv === liv ? 'true' : 'false'));
+  document.querySelectorAll('#mapLivello button').forEach(b => b.setAttribute('aria-pressed', b.dataset.liv === (bolle() ? 'bolle' : liv) ? 'true' : 'false'));
   /* selettore della lista */
   const sl = $('mapLista');
   if (!S.mapLista || !LMAP[S.mapLista]) S.mapLista = L[0].l;
@@ -1868,6 +1893,11 @@ function renderMappa() {
   } else {
     const p = infoLista(S.mapLista);
     lg = '<h4>' + esc(p.n) + '</h4><div class="ramp" style="background:linear-gradient(90deg,' + COL_BASE + ',' + p.c + ')"></div><div class="rampl"><span>0%</span><span>30%</span><span>60% e oltre</span></div><p>Quota della lista sui voti validi di ogni ' + (liv === 'sd' ? 'area' : 'località') + '.</p>';
+  }
+  if (bolle()) {
+    /* la scala dei cerchi, a vista intera */
+    const k = ($('locMap').getBoundingClientRect().height || 600) / MAPPA.H;
+    lg += '<div class="bolleg">' + [10000, 50000, 200000].map(v => { const rp = Math.max(1.5, raggioBolla(v) * k); return '<div><svg width="' + Math.ceil(rp * 2 + 2) + '" height="' + Math.ceil(rp * 2 + 2) + '"><circle cx="' + (rp + 1) + '" cy="' + (rp + 1) + '" r="' + rp.toFixed(1) + '"></circle></svg><span>' + nf(v) + '</span></div>'; }).join('') + '</div><p>Area del cerchio proporzionale ai voti validi, a vista intera.</p>';
   }
   $('mapLegend').innerHTML = lg;
   /* una selezione dell'altro livello non vale più */
