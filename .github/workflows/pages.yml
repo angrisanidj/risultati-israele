@@ -1,0 +1,40 @@
+# Pubblica il sito su GitHub Pages a ogni push su main.
+#
+# Sostituisce la pubblicazione «dal branch» di Pages, che ha un limite indicativo di 10
+# ricostruzioni l'ora: la sera del voto strumenti/pubblica-feed.mjs pubblica la copia del feed
+# a ogni download, e con gli exit poll si andrebbe oltre. Con un workflow il limite non c'è.
+# Se arrivano più push di fila, vince l'ultimo: quelli in corso si annullano.
+#
+# Il push del workflow «Proiezione del modello» usa il token di Actions, che non fa partire
+# altri workflow: per questo c'è anche workflow_run.
+name: Pubblica il sito
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ['Proiezione del modello']
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  pubblica:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deploy
+        uses: actions/deploy-pages@v4

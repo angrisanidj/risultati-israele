@@ -44,4 +44,3 @@ jobs:
           git commit -m "Proiezione del modello del $(TZ=Europe/Rome date +%F)"
           git pull --rebase
           git push
-          gh api -X POST "repos/${GITHUB_REPOSITORY}/pages/builds" >/dev/null 2>&1 || true
