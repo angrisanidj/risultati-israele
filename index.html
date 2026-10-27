@@ -309,6 +309,14 @@ table.conf th .corto{display:none}
 .bolleg{display:flex;align-items:flex-end;gap:14px;margin-top:10px}
 .bolleg div{display:grid;justify-items:center;gap:3px;font-size:11.5px;color:var(--t3)}
 .bolleg svg circle{fill:none;stroke:var(--t2);stroke-width:1}
+/* le frecce dello spostamento */
+#arrLayer{pointer-events:none}
+#arrLayer path{fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+#arrLayer path.N{stroke:#5b93ff}#arrLayer path.O{stroke:#ff6f8a}
+.mapfonte button:disabled{opacity:.4;cursor:not-allowed}
+.frecceleg{display:grid;gap:6px;margin-top:6px;font-size:12px;color:var(--t2)}
+.frecceleg div{display:flex;align-items:center;gap:8px}
+.frecceleg svg path{fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .mapzoom{position:absolute;top:10px;right:10px;z-index:2;display:grid;gap:4px}
 .mapzoom button{width:34px;height:34px;padding:0;font:500 17px/1 var(--sans);border-radius:var(--r-s);background:rgba(10,20,40,.94)}
 .maphint{position:absolute;left:10px;top:10px;z-index:2;color:var(--t2);font-size:12px;background:rgba(10,20,40,.9);padding:5px 9px;border-radius:var(--r-s);pointer-events:none;max-width:calc(100% - 64px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -626,6 +634,7 @@ footer a{color:var(--t2)}
           <button data-mode="primo" aria-pressed="true">Prima lista</button>
           <button data-mode="blocco" aria-pressed="false">Blocchi</button>
           <button data-mode="lista" aria-pressed="false">Una lista</button>
+          <button data-mode="sposta" aria-pressed="false" title="Le frecce dello spostamento rispetto al 2022: si attiva al 75% dello scrutinio">Spostamento</button>
         </div>
         <select id="mapLista" class="hidden" aria-label="Lista da mostrare"></select>
         <span class="cmeta" id="mapPill">in attesa</span>
@@ -636,7 +645,7 @@ footer a{color:var(--t2)}
       <div class="mapside l maplist"><h4 id="listTitle">Le aree</h4><input id="cerca" class="cerca" placeholder="Cerca una località…" autocomplete="off"><div id="locList" class="rows"></div></div>
       <div class="mapcol">
         <div class="mapstage" id="mapStage">
-          <svg id="locMap" role="img" aria-label="Mappa delle località israeliane"><g id="baseLayer"></g><g id="locLayer"></g><g id="bubLayer"></g><g id="hiLayer"></g></svg>
+          <svg id="locMap" role="img" aria-label="Mappa delle località israeliane"><g id="baseLayer"></g><g id="locLayer"></g><g id="bubLayer"></g><g id="arrLayer"></g><g id="hiLayer"></g></svg>
           <span class="maphint" id="mapHint">Tocca un’area per vedere le sue località</span>
           <button id="mapBack" class="sm mapback hidden">← Tutto il paese</button>
           <div class="mapzoom">
@@ -1654,6 +1663,24 @@ const livello = () => S.mapLivello === 'loc' || S.mapLivello === 'bolle' ? 'loc'
 const bolle = () => S.mapLivello === 'bolle';
 const BOLLA_MAX = 30, BOLLA_VAL = 250000;
 const raggioBolla = v => Math.max(1.3, BOLLA_MAX * Math.sqrt(v / BOLLA_VAL));
+/* LO SPOSTAMENTO: per ogni area o località, una freccia dal suo centro. Verso destra e blu se
+   il blocco Netanyahu ha guadagnato quota rispetto al 2022, verso sinistra e rossa se l'ha
+   persa; la lunghezza è la differenza in punti. Nel 2022 il blocco era Likud, Sionismo
+   religioso, Shas e UTJ; nel 2026 Likud, SR–Zehut, Otzma Yehudit, Shas, UTJ, Noam e Popolo
+   d'Israele. Si attiva dal 75% dello scrutinio, quando quasi ovunque i voti sono abbastanza;
+   ?sposta=1 la accende prima, per le prove. */
+const SPOSTA_DA = 0.75, SPOSTA_FORZA = PARAM.get('sposta') === '1';
+const FRECCIA_10PT = 80, FRECCIA_MIN_VOTI = 300;
+const spostaAttivo = R => SPOSTA_FORZA || (!!R && R.fonte !== 'manuale' && avanzamento(R).f >= SPOSTA_DA);
+function freccia(x, y, dq) {
+  const L = Math.min(Math.abs(dq) * 100 / 10 * FRECCIA_10PT, FRECCIA_10PT * 2.5);
+  if (L < 1.5) return '';
+  const s = dq > 0 ? 1 : -1, a = Math.PI / 4, ex = x + s * L * Math.cos(a), ey = y - L * Math.sin(a);
+  const h = Math.max(3, Math.min(10, L * 0.25)), b = Math.atan2(ey - y, ex - x);
+  const p1 = [ex - h * Math.cos(b - 0.5), ey - h * Math.sin(b - 0.5)], p2 = [ex - h * Math.cos(b + 0.5), ey - h * Math.sin(b + 0.5)];
+  return '<path class="' + (dq > 0 ? 'N' : 'O') + '" d="M' + x.toFixed(1) + ',' + y.toFixed(1) + 'L' + ex.toFixed(1) + ',' + ey.toFixed(1) +
+    'M' + p1[0].toFixed(1) + ',' + p1[1].toFixed(1) + 'L' + ex.toFixed(1) + ',' + ey.toFixed(1) + 'L' + p2[0].toFixed(1) + ',' + p2[1].toFixed(1) + '"></path>';
+}
 function costruisciMappa() {
   const layer = $('locLayer');
   $('baseLayer').innerHTML = MAPPA.base.map((g, i) => '<path d="' + g.d + '" data-sd="' + i + '"></path>').join('');
@@ -1787,9 +1814,11 @@ function coloreLoc(a, modo, aree) {
   modo = modo || S.mapMode;
   const q = quote(a); if (!q) return COL_VUOTO;
   if (modo === 'blocco') {
-    const t = q.bl.N - (q.bl.O + q.bl.A);
-    return t >= 0 ? mix('#2a3550', BLOCCHI.N.c, clamp(t * 1.6, 0, 1)) : mix('#2a3550', BLOCCHI.O.c, clamp(-t * 1.6, 0, 1));
+    /* tre blocchi: il colore del primo, più pieno quanto più è forte (dal 35% all'80%) */
+    const b = ['N', 'O', 'A'].reduce((m, k) => q.bl[k] > q.bl[m] ? k : m, 'N');
+    return mix(COL_BASE, BLOCCHI[b].c, 0.35 + 0.65 * clamp((q.bl[b] - 0.35) / 0.45, 0, 1));
   }
+  if (modo === 'sposta') return COL_BASE;
   if (modo === 'lista') {
     const l = S.mapLista, p = infoLista(l), v = (a.v[l] || 0) / a.val;
     return mix(COL_BASE, p.c, clamp(v / 0.6, 0, 1) * 0.9 + (v > 0 ? 0.1 : 0));
@@ -1840,6 +1869,11 @@ function chiudiArea() {
 function renderMappa() {
   if (!mappaPronta) costruisciMappa();
   const R = risultato(), loc = R && R.loc ? R.loc : new Map(), liv = livello();
+  const sposta = spostaAttivo(R);
+  if (S.mapMode === 'sposta' && !sposta) S.mapMode = 'primo';
+  const bs = document.querySelector('#mapMode button[data-mode="sposta"]');
+  bs.disabled = !sposta;
+  bs.title = sposta ? 'Le frecce dello spostamento rispetto al 2022' : 'Si attiva al 75% dello scrutinio';
   if (liv !== 'sd') S.focusSD = null;
   const foc = liv === 'sd' ? S.focusSD : null;
   const col = coloriMappa(loc, liv, undefined, foc);
@@ -1862,6 +1896,24 @@ function renderMappa() {
     B.sort((a, b) => b.r - a.r);
     $('bubLayer').innerHTML = B.map(b => '<circle data-id="' + b.id + '" cx="' + b.x.toFixed(1) + '" cy="' + b.y.toFixed(1) + '" r="' + b.r.toFixed(2) + '" fill="' + b.c + '"></circle>').join('');
   } else $('bubLayer').innerHTML = '';
+  let fr = '';
+  if (S.mapMode === 'sposta') {
+    if (liv === 'sd' && foc == null) {
+      col.sd.forEach((o, i) => {
+        const b = BASE22_SD[i], q = quote(o); if (!q || !b.val || o.val < FRECCIA_MIN_VOTI) return;
+        const bx = bboxArea(i); if (!isFinite(bx[0])) return;
+        fr += freccia((bx[0] + bx[2]) / 2, (bx[1] + bx[3]) / 2, q.bl.N - b.N);
+      });
+    } else {
+      MAPPA.geo.forEach(g => {
+        if (foc != null && sdDi(g.id) !== foc) return;
+        const a = loc.get(g.id), b = stessaLocalita22(g.id), q = quote(a);
+        if (!q || !b || !b.val || a.val < FRECCIA_MIN_VOTI || !isFinite(g.bx[0])) return;
+        fr += freccia((g.bx[0] + g.bx[2]) / 2, (g.bx[1] + g.bx[3]) / 2, q.bl.N - b.N);
+      });
+    }
+  }
+  $('arrLayer').innerHTML = fr;
   let fatte = 0;
   for (const a of loc.values()) if (a.val > 0 && MAPPA.byId[a.code]) fatte++;
   const sdFatti = col.sd.filter(o => o.val > 0).length;
@@ -1889,7 +1941,15 @@ function renderMappa() {
     const arr = Object.entries(cnt).sort((a, b) => b[1] - a[1]);
     lg = '<h4>Prima lista · ' + (liv === 'sd' ? 'aree' : 'località') + '</h4><div class="lg">' + (arr.length ? arr.slice(0, 9).map(([l, n]) => '<div><i style="background:' + infoLista(l).c + '"></i><span>' + esc(nomeBreve(infoLista(l))) + '</span><b>' + nf(n) + '</b></div>').join('') : '<div><span class="muted">nessun voto contato</span></div>') + '</div><p>Colore più pieno dove la prima lista è più forte: ' + (liv === 'sd' ? 'dal 15% al 45%' : 'dal 20% al 70%') + ' dei voti validi.</p>';
   } else if (S.mapMode === 'blocco') {
-    lg = '<h4>Blocco Netanyahu contro gli altri</h4><div class="ramp" style="background:linear-gradient(90deg,' + BLOCCHI.O.c + ',#2a3550,' + BLOCCHI.N.c + ')"></div><div class="rampl"><span>opposizione + arabi</span><span>pari</span><span>Netanyahu</span></div><p>Differenza fra la quota del blocco Netanyahu e quella di opposizione e partiti arabi insieme.</p>';
+    const cnt = { N: 0, O: 0, A: 0 };
+    const unita = liv === 'sd' ? col.sd : [...loc.values()].filter(a => a.code !== ENV_CODE && MAPPA.byId[a.code]);
+    unita.forEach(a => { const q = quote(a); if (q) cnt[['N', 'O', 'A'].reduce((m, k) => q.bl[k] > q.bl[m] ? k : m, 'N')]++; });
+    lg = '<h4>Primo blocco · ' + (liv === 'sd' ? 'aree' : 'località') + '</h4><div class="lg">' + ['N', 'O', 'A'].map(b => '<div><i style="background:' + BLOCCHI[b].c + '"></i><span>' + BLOCCHI[b].n + '</span><b>' + nf(cnt[b]) + '</b></div>').join('') +
+      '</div><p>Ogni ' + (liv === 'sd' ? 'area' : 'località') + ' ha il colore del blocco con più voti, più pieno quanto più è forte: dal 35% all’80% dei voti validi.</p>';
+  } else if (S.mapMode === 'sposta') {
+    const es = (dq, c) => '<svg width="44" height="34" viewBox="0 0 44 34">' + freccia(dq > 0 ? 6 : 38, 32, dq * 0.6).replace('class="N"', 'stroke="#5b93ff"').replace('class="O"', 'stroke="#ff6f8a"') + '</svg>';
+    lg = '<h4>Spostamento rispetto al 2022</h4><div class="frecceleg"><div>' + es(0.05) + '<span>verso il blocco Netanyahu</span></div><div>' + es(-0.05) + '<span>verso opposizione e partiti arabi</span></div></div>' +
+      '<p>La freccia parte dal centro di ' + (liv === 'sd' && foc == null ? 'ogni area' : 'ogni località') + ' ed è lunga quanto la differenza nella quota del blocco Netanyahu sui voti validi, in punti, rispetto al 2022: a vista intera 10 punti sono circa ' + Math.round(FRECCIA_10PT * (($('locMap').getBoundingClientRect().height || 600) / MAPPA.H)) + ' pixel. Solo dove sono contati almeno ' + nf(FRECCIA_MIN_VOTI) + ' voti validi.</p>';
   } else {
     const p = infoLista(S.mapLista);
     lg = '<h4>' + esc(p.n) + '</h4><div class="ramp" style="background:linear-gradient(90deg,' + COL_BASE + ',' + p.c + ')"></div><div class="rampl"><span>0%</span><span>30%</span><span>60% e oltre</span></div><p>Quota della lista sui voti validi di ogni ' + (liv === 'sd' ? 'area' : 'località') + '.</p>';
