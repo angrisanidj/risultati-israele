@@ -259,7 +259,9 @@ table.conf td small{display:block;color:var(--t3);font-size:11.5px;font-weight:5
 table.conf .dlt{color:var(--t2);font-size:12px;font-weight:600;margin-left:5px}
 table.conf .dlt.zero{color:var(--t3);font-weight:500}
 table.conf .dlt.forte{color:var(--amber)}
-table.conf tr.rbl-sep td{border-top:1px solid var(--line-2)}
+/* i blocchi in una sezione a parte, staccata dalle liste */
+table.conf tr.rsez td{padding-top:26px;padding-bottom:8px;border-top:1px solid var(--line-2);font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);text-align:left}
+table.conf tr.rbl td{background:rgba(255,255,255,.025)}
 table.conf tr.rbl td:first-child{color:var(--t2)}
 table.conf tr.rbl td:first-child i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:7px;vertical-align:0}
 table.conf td.attesa{color:var(--t3);font-size:12px;white-space:normal}
@@ -1453,6 +1455,7 @@ function renderConfronto() {
       (attesaScr ? '<td><span class="mute">—</span></td>' : '') + '</tr>';
   });
   /* blocchi */
+  h += '<tr class="rsez"><td colspan="' + (2 + col.length + (attesaScr ? 1 : 0)) + '">Blocchi</td></tr>';
   ['N', 'O', 'A', 'X'].filter(b => b !== 'X' || tm.X || tc.some(t => t.X)).forEach((b, i) => {
     h += '<tr class="rbl' + (i ? '' : ' rbl-sep') + '"><td><i style="background:' + BLOCCHI[b].c + '"></i>' + esc(BLOCCHI[b].n) + '</td><td><b>' + tm[b] + '</b></td>' +
       tc.map((t, j) => '<td' + cls(col[j]) + '><b>' + t[b] + '</b>' + scarto(t[b], tm[b]) + '</td>').join('') + (attesaScr ? '<td></td>' : '') + '</tr>';
