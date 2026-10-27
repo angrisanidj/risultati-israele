@@ -2525,6 +2525,8 @@ window.CARD = (function () {
 
   /* ---------- lo stato della dashboard ---------- */
   const g = id => document.getElementById(id);
+  /* i blocchi sotto le liste, come nella pagina e nei grafici delle reti */
+  const BLOCCHI3 = [['N', 'Blocco Netanyahu', t => t.N], ['O', 'Opposizione', t => t.O], ['A', 'Partiti arabi', t => t.A]];
   function snap() {
     const R = risultato(), av = avanzamento(R), f = fonteAttiva(), F_ = fontiSeggi();
     const bo = R ? baderOfer(R.voti, accordi()) : null;
@@ -2617,7 +2619,7 @@ window.CARD = (function () {
       fonte: (s.ex.map(e => e.n).join(', ') || 'Reti israeliane') + ' (' + s.data + ')', n: N.n, tot: N.tot });
     if (!cols.length) return attesa(x, 'In attesa degli exit poll', 'Alle 21 italiane, le 22 in Israele.');
     const liste = L.filter(p => cols.some(c => (c.seggi[p.l] || 0) > 0)).sort((a, b) => (cols[0].seggi[b.l] || 0) - (cols[0].seggi[a.l] || 0));
-    const nb = 2, rows = liste.slice(0, 13), h = Math.min(36, 400 / (rows.length + nb));
+    const nb = 3, rows = liste.slice(0, 13), h = Math.min(36, 400 / (rows.length + nb));
     const x0 = 62, cx0 = 660, cw = Math.min(220, (1538 - cx0) / cols.length);
     cols.forEach((c, j) => {
       const cx = cx0 + cw * j + cw / 2;
@@ -2633,14 +2635,10 @@ window.CARD = (function () {
     });
     const yb = 330 + rows.length * h + 10;
     line(x, x0, yb - h * .55, 1538, yb - h * .55, C.line, 1);
-    [['N', 'Blocco Netanyahu'], ['O', 'Opposizione + arabi']].forEach(([b, n], i) => {
+    BLOCCHI3.forEach(([b, n, f], i) => {
       const y = yb + i * h + 6;
       T(x, n, x0 + 24, y, { font: F(800, 21), color: BLOCCHI[b].c });
-      cols.forEach((c, j) => {
-        const tb = totBlocchi({ seggi: c.seggi });
-        const v = b === 'N' ? tb.N : tb.O + tb.A;
-        T(x, String(v), cx0 + cw * j + cw / 2, y, { font: F(800, 24, 'serif'), color: (b === 'N' && v >= MAGG) || (b === 'O' && v >= MAGG) ? C.acc : C.t1, align: 'center' });
-      });
+      cols.forEach((c, j) => { const v = f(totBlocchi({ seggi: c.seggi })); T(x, String(v), cx0 + cw * j + cw / 2, y, { font: F(800, 24, 'serif'), color: v >= MAGG ? C.acc : C.t1, align: 'center' }); });
     });
   }
 
@@ -2662,7 +2660,7 @@ window.CARD = (function () {
     frame(x, { badge: 'IL MODELLO ALLA PROVA', kicker: s.ambito, title: g('t6').value, sub: tt.sub, nota: tt.nota, fonte: tt.fonte, n: N.n, tot: N.tot });
     if (!D.col.length) return attesa(x, 'In attesa degli exit poll', 'Alle 21 italiane, le 22 in Israele.');
     const cols = [{ n: 'Modello', sub: dataIT(D.M.data), seggi: D.M.seggi, mod: true }].concat(D.col.map(c => ({ n: c.n, sub: c.reale ? c.sub.replace(/^al /, '') + ' contato' : (c.ora ? 'ore ' + c.ora : 'exit poll'), seggi: c.seggi, reale: c.reale })));
-    const rows = D.righe.slice(0, 13), nb = 3, h = Math.min(34, 420 / (rows.length + nb));
+    const rows = D.righe.slice(0, 13), nb = 4, h = Math.min(34, 420 / (rows.length + nb));
     const x0 = 62, cw = Math.min(200, (1538 - 560) / cols.length), cx0 = 1538 - cw * cols.length;
     cols.forEach((c, j) => {
       const cx = cx0 + cw * j + cw / 2;
@@ -2686,12 +2684,12 @@ window.CARD = (function () {
     const yb = 330 + rows.length * h + 10;
     line(x, x0, yb - h * .55, 1538, yb - h * .55, C.line, 1);
     const tot = c => totBlocchi({ seggi: c.seggi }), tm = tot(cols[0]);
-    [['N', 'Blocco Netanyahu', t => t.N], ['O', 'Opposizione + arabi', t => t.O + t.A]].forEach(([b, n, f], i) => {
+    BLOCCHI3.forEach(([b, n, f], i) => {
       const y = yb + i * h + 6;
       T(x, n, x0 + 24, y, { font: F(800, fz), color: BLOCCHI[b].c });
       cols.forEach((c, j) => cella(c, j, f(tot(c)), f(tm), y, F(800, fz + 2, 'serif')));
     });
-    const ys = yb + 2 * h + 10;
+    const ys = yb + 3 * h + 10;
     T(x, 'Seggi spostati', x0 + 24, ys, { font: F(700, fz), color: C.t2 });
     cols.forEach((c, j) => T(x, c.mod ? '—' : nf(D.spost[j - 1], 0), cx0 + cw * j + cw / 2, ys, { font: F(700, fz), color: C.t2, align: 'center' }));
   }
@@ -2858,10 +2856,10 @@ window.CARD = (function () {
     const M = IG.M, Rr = IG.W - M;
     const liste = L.filter(p => cols.some(c => (c.seggi[p.l] || 0) > 0)).sort((a, b) => (cols[0].seggi[b.l] || 0) - (cols[0].seggi[a.l] || 0)).slice(0, 14);
     const cw = Math.min(140, (Rr - 420) / cols.length), cx0 = Rr - cw * cols.length;
-    const h = Math.min(50, (z.y1 - z.y0 - 70) / (liste.length + 2.6));
+    const h = Math.min(50, (z.y1 - z.y0 - 70) / (liste.length + 3.6));
     cols.forEach((c, j) => {
       const cx = cx0 + cw * j + cw / 2;
-      if (c.reale) fillRR(x, cx0 + cw * j + 6, z.y0 - 28, cw - 12, (liste.length + 2.6) * h + 76, 12, 'rgba(169,196,255,.07)');
+      if (c.reale) fillRR(x, cx0 + cw * j + 6, z.y0 - 28, cw - 12, (liste.length + 3.6) * h + 76, 12, 'rgba(169,196,255,.07)');
       T(x, c.n, cx, z.y0, { font: fit(x, c.n, cw - 10, 20, 14, 800), color: c.reale ? C.acc : C.t1, align: 'center' });
       T(x, c.ora ? (c.reale ? c.ora : 'ore ' + c.ora) : '', cx, z.y0 + 24, { font: F(400, 15), color: C.t3, align: 'center' });
     });
@@ -2874,10 +2872,10 @@ window.CARD = (function () {
     });
     const yb = z.y0 + 68 + liste.length * h + 6;
     line(x, M, yb - h * .55, Rr, yb - h * .55, C.line, 1);
-    [['N', 'Blocco Netanyahu'], ['O', 'Opposizione + arabi']].forEach(([b, n], i) => {
+    BLOCCHI3.forEach(([b, n, f], i) => {
       const y = yb + i * h + 8;
       T(x, n, M + 22, y, { font: F(800, fz), color: BLOCCHI[b].c });
-      cols.forEach((c, j) => { const tb = totBlocchi({ seggi: c.seggi }), v = b === 'N' ? tb.N : tb.O + tb.A; T(x, String(v), cx0 + cw * j + cw / 2, y, { font: F(700, fz + 2, 'serif'), color: v >= MAGG ? C.acc : C.t1, align: 'center' }); });
+      cols.forEach((c, j) => { const v = f(totBlocchi({ seggi: c.seggi })); T(x, String(v), cx0 + cw * j + cw / 2, y, { font: F(700, fz + 2, 'serif'), color: v >= MAGG ? C.acc : C.t1, align: 'center' }); });
     });
   }
   function ig6(x, s, N) {
@@ -2888,10 +2886,10 @@ window.CARD = (function () {
     const cols = [{ n: 'Modello', sub: dataIT(D.M.data).replace(/ottobre/, 'ott.'), seggi: D.M.seggi, mod: true }].concat(D.col.map(c => ({ n: c.k === 'kan' ? 'Kan 11' : c.n.replace('Canale ', 'Can. '), sub: c.reale ? c.sub.replace(/^al /, '') : (c.ora ? 'ore ' + c.ora : ''), seggi: c.seggi, reale: c.reale })));
     const liste = D.righe.slice(0, 14);
     const cw = Math.min(130, (Rr - 360) / cols.length), cx0 = Rr - cw * cols.length;
-    const h = Math.min(48, (z.y1 - z.y0 - 70) / (liste.length + 3.6));
+    const h = Math.min(48, (z.y1 - z.y0 - 70) / (liste.length + 4.6));
     cols.forEach((c, j) => {
       const cx = cx0 + cw * j + cw / 2;
-      if (c.mod || c.reale) fillRR(x, cx0 + cw * j + 5, z.y0 - 28, cw - 10, (liste.length + 3.6) * h + 76, 12, c.mod ? 'rgba(255,255,255,.045)' : 'rgba(169,196,255,.07)');
+      if (c.mod || c.reale) fillRR(x, cx0 + cw * j + 5, z.y0 - 28, cw - 10, (liste.length + 4.6) * h + 76, 12, c.mod ? 'rgba(255,255,255,.045)' : 'rgba(169,196,255,.07)');
       T(x, c.n, cx, z.y0, { font: fit(x, c.n, cw - 10, 20, 13, 800), color: c.reale ? C.acc : C.t1, align: 'center' });
       T(x, c.sub, cx, z.y0 + 24, { font: F(400, 15), color: C.t3, align: 'center' });
     });
@@ -2911,12 +2909,12 @@ window.CARD = (function () {
     const yb = z.y0 + 68 + liste.length * h + 6;
     line(x, M, yb - h * .55, Rr, yb - h * .55, C.line, 1);
     const tot = c => totBlocchi({ seggi: c.seggi }), tm = tot(cols[0]);
-    [['N', 'Blocco Netanyahu', t => t.N], ['O', 'Opposizione + arabi', t => t.O + t.A]].forEach(([b, n, f], i) => {
+    BLOCCHI3.forEach(([b, n, f], i) => {
       const y = yb + i * h + 8;
       T(x, n, M + 22, y, { font: F(800, fz), color: BLOCCHI[b].c });
       cols.forEach((c, j) => cella(c, j, f(tot(c)), f(tm), y, F(700, fz + 2, 'serif')));
     });
-    const ys = yb + 2 * h + 12;
+    const ys = yb + 3 * h + 12;
     T(x, 'Seggi spostati', M + 22, ys, { font: F(700, fz), color: C.t2 });
     cols.forEach((c, j) => T(x, c.mod ? '—' : nf(D.spost[j - 1], 0), cx0 + cw * j + cw / 2, ys, { font: F(700, fz), color: C.t2, align: 'center' }));
   }
@@ -2984,7 +2982,7 @@ window.CARD = (function () {
     else t.t1 = 'Il voto in Israele, lista per lista';
     t.t2 = s.f.k === 'modello' ? 'Il modello stima il blocco Netanyahu a ' + s.tb.N + ' seggi: ne servono 61'
       : s.tb.N >= MAGG ? 'Netanyahu ha la maggioranza: ' + s.tb.N + ' seggi su 120' : 'Il blocco Netanyahu si ferma a ' + s.tb.N + ' seggi: ne servono 61';
-    if (s.ex.length) { const v = s.ex.map(e => totBlocchi({ seggi: e.x.seggi }).N), a = Math.min(...v), b = Math.max(...v); t.t3 = 'Gli exit poll: blocco Netanyahu ' + (a === b ? 'a ' + a : 'fra ' + a + ' e ' + b) + ' seggi'; }
+    if (s.ex.length) { const v = s.ex.map(e => totBlocchi({ seggi: e.x.seggi }).N), a = Math.min(...v), b = Math.max(...v); t.t3 = 'Gli exit poll' + (s.ex.some(e => e.x.ora && e.x.ora !== '21:00') ? ' aggiornati' : '') + ': blocco Netanyahu ' + (a === b ? 'a ' + a : 'fra ' + a + ' e ' + b) + ' seggi'; }
     else t.t3 = 'Gli exit poll delle reti israeliane';
     t.t4 = 'Chi vince dove: la prima lista area per area';
     if (s.R) { const f = sulFilo(s.R); t.t5 = f.length ? 'Sul filo della soglia: ' + f.map(x => nomeBreve(infoLista(x.l))).join(', ') : 'La soglia del 3,25%: chi entra e chi resta fuori'; }
@@ -3006,7 +3004,7 @@ window.CARD = (function () {
     }
     const t = s.tb, chi = s.f.k === 'scrutinio' ? 'Con i ' + nomeF(s) + ' (' + nf(s.av.f * 100, 0) + '%)' : s.f.k === 'modello' ? 'Secondo il ' + nomeF(s) + ' ' + conData('del', modello().data) : 'Secondo l’' + nomeF(s);
     p.c2 = chi + ', il blocco Netanyahu ha ' + t.N + ' seggi su 120: ' + (t.N >= MAGG ? 'basta per la maggioranza.' : 'ne servono 61.') + ' Opposizione ' + t.O + ', partiti arabi ' + t.A + (t.X ? ', altre liste ' + t.X : '') + '.';
-    if (s.ex.length) p.c3 = 'Gli exit poll in Israele, seggi del blocco Netanyahu: ' + s.ex.map(e => e.n + ': ' + totBlocchi({ seggi: e.x.seggi }).N).join(', ') + '. La maggioranza alla Knesset è a 61 seggi su 120.';
+    if (s.ex.length) p.c3 = 'Exit poll in Israele, seggi di blocco Netanyahu, opposizione e arabi (ore italiane): ' + s.ex.map(e => { const t = totBlocchi({ seggi: e.x.seggi }); return e.n + (e.x.ora ? ' (' + e.x.ora + ')' : '') + ' ' + t.N + '-' + t.O + '-' + t.A; }).join(', ') + '. Maggioranza a 61.';
     if (s.R && s.R.loc) {
       const cnt = {}; for (const a of s.R.loc.values()) { if (a.code === ENV_CODE || !a.val) continue; const q = quote(a); cnt[q.arr[0].l] = (cnt[q.arr[0].l] || 0) + 1; }
       const arr = Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 3);
