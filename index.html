@@ -1069,7 +1069,7 @@ function avanzamento(R) {
      quelli contati, e il conto dei seggi darebbe sempre il 100%. Vale solo se il file li ha
      tutti (oltre 10.000); altrimenti l'avanzamento si stima dai voti, contro quelli del 2022. */
   if (seg && seg.tot >= SEGGI_MIN_ELENCO) return { f: seg.fatti / seg.tot, tipo: 'seggi', fatti: seg.fatti, tot: seg.tot, ord };
-  return { f: clamp(ord / VAL22_ORD, 0, 1), tipo: 'volumi', ord };
+  return { f: clamp(ord / VAL22_ORD, 0, 1), tipo: 'volumi', ord, seggi: seg ? seg.fatti : 0 };
 }
 /* L'ORA DEGLI EXIT POLL si scrive com'è nei grafici delle reti, cioè in ora israeliana
    (stime.json e caselle della redazione), e si mostra ai lettori in ora italiana. Le ore
@@ -1164,7 +1164,7 @@ function renderKpi() {
     $('kVoti').textContent = nf(R.val);
     $('kVotiMeta').textContent = R.fonte === 'manuale' ? 'inseriti a mano'
       : av.tipo === 'seggi' ? nf(av.fatti) + ' seggi elettorali su ' + nf(av.tot) + ' (' + pct(av.f) + ')'
-        : 'circa ' + pct(av.f, 0) + ' dei voti ordinari, sui volumi del 2022';
+        : (av.seggi ? nf(av.seggi) + ' seggi elettorali contati · ' : '') + 'circa ' + pct(av.f, av.f < 0.1 ? 1 : 0) + ' dei voti ordinari, sui volumi del 2022';
     if (R.d) {
       let n = 0, tot = 0;
       for (const a of R.d.loc.values()) { if (a.code === ENV_CODE) continue; tot++; if (a.val > 0) n++; }
@@ -1966,7 +1966,7 @@ function renderScrutinio() {
   $('progPill').textContent = av.tipo === 'seggi' ? 'seggi elettorali' : av.tipo === 'volumi' ? 'stima sui volumi 2022' : av.tipo === 'manuale' ? 'manuale' : '—';
   $('progressText').textContent = !R ? 'In attesa del file della Commissione'
     : av.tipo === 'seggi' ? nf(av.fatti) + ' seggi elettorali scrutinati su ' + nf(av.tot)
-      : av.tipo === 'volumi' ? nf(av.ord) + ' voti ordinari contati, su ' + nf(VAL22_ORD) + ' nel 2022' : 'Risultato inserito a mano';
+      : av.tipo === 'volumi' ? (av.seggi ? nf(av.seggi) + ' seggi elettorali contati, ' : '') + nf(av.ord) + ' voti ordinari su ' + nf(VAL22_ORD) + ' nel 2022' : 'Risultato inserito a mano';
   let cc = '';
   if (R && R.d) {
     const d = R.d;
