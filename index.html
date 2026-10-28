@@ -2477,7 +2477,7 @@ const RAPPORTO_BUSTE22 = { 'מחל': 1.00, 'רק': 0.95, 'ט': 1.43, 'ב': 1.43,
 /* Le doppie buste votate: fra 430.000 e 480.000 secondo la Commissione (28 ottobre, dopo una
    prima stima di 600.000-650.000); si usa il valore di mezzo. Lo spoglio completo è atteso il
    29 ottobre nel pomeriggio, i risultati ufficiali il 4 novembre. */
-const BUSTE_ATTESE_26 = 455000, BUSTE_FORCHETTA = 'fra 430.000 e 480.000';
+const BUSTE_ATTESE_26 = 455000, BUSTE_MIN_26 = 430000, BUSTE_MAX_26 = 480000, BUSTE_FORCHETTA = 'fra 430.000 e 480.000';
 /* le sezioni ordinarie (קלפיות) del 2026: 12.018 secondo la Commissione */
 const SEZIONI_26 = 12018;
 const ENV_QUOTA26 = BUSTE_ATTESE_26 / VOT26;
@@ -2619,8 +2619,15 @@ function renderManca() {
   if (a26) {
     const sez = S.expb && S.expb.fatti ? S.expb.fatti : (avanzamento(R).seggi || 0), mancano = Math.max(0, SEZIONI_26 - sez);
     const bc = R.env ? R.env.vot : 0;
+    /* I votanti delle sezioni ordinarie che mancano, come forchetta: dall'affluenza con le doppie
+       buste agli estremi della stima della Commissione, e dalle sezioni mancanti per la media di
+       quelle contate. Arrotondata alle decine di migliaia più vicine. */
+    const stime = [BUSTE_MAX_26, BUSTE_MIN_26].map(b => Math.max(0, VOT26 - R.d.vot - Math.max(0, b - bc)));
+    if (sez) stime.push(mancano * R.d.vot / sez);
+    const lo = Math.round(Math.min(...stime) / 10000) * 10000, hi = Math.round(Math.max(...stime) / 10000) * 10000;
+    const quanti = !mancano && sez ? 'Non mancano più votanti.' : lo === hi ? 'Mancano circa ' + nf(lo) + ' votanti.' : 'Mancano fra ' + nf(lo) + ' e ' + nf(hi) + ' votanti circa.';
     h = '<div class="mancagrid">' +
-      '<div><div class="mk">Sezioni ordinarie</div><div class="big">' + (sez ? nf(mancano) : '—') + '</div><div class="muted">' + (sez ? 'da contare: ' + nf(sez) + ' contate su ' + nf(SEZIONI_26) + ' (' + pct(sez / SEZIONI_26, 1) + ')' : 'il conteggio delle sezioni arriva con il file per sezione') + '. Mancano circa ' + nf(ord) + ' votanti.</div></div>' +
+      '<div><div class="mk">Sezioni ordinarie</div><div class="big">' + (sez ? nf(mancano) : '—') + '</div><div class="muted">' + (sez ? 'da contare: ' + nf(sez) + ' contate su ' + nf(SEZIONI_26) + ' (' + pct(sez / SEZIONI_26, 1) + ')' : 'il conteggio delle sezioni arriva con il file per sezione') + '. ' + quanti + '</div></div>' +
       '<div><div class="mk">Doppie buste</div><div class="big">' + nf(envM) + '</div><div class="muted">' + (bc ? 'votanti ancora da contare: ne sono contati ' + nf(bc) + ' sui circa ' + nf(BUSTE_ATTESE_26) + ' stimati' : 'votanti stimati, ancora tutti da contare: la Commissione ne indica ' + BUSTE_FORCHETTA) + '. Lo spoglio completo è atteso il 29 ottobre nel pomeriggio.</div></div>' +
       '</div><div class="muted" style="font-size:12.5px;margin:2px 0 10px">In tutto circa <b>' + nf(ord + envM) + '</b> votanti ancora da contare, sull’affluenza ufficiale del ' + pct(AFFLUENZA_26) + '. Qui sotto, dove mancano più voti nelle sezioni ordinarie.</div>';
   } else h = '<div><div class="big">' + nf(ord + envM) + '</div><div class="muted" style="font-size:12px">voti validi ancora da contare, stimati: ' + nf(ord) + ' nei seggi ordinari e ' + nf(envM) + ' in doppia busta</div></div>';
