@@ -1869,8 +1869,15 @@ function spostamenti(loc) {
   return { naz: sw(naz), aree: sp.map(sw) };
 }
 const punti = x => (x >= 0 ? '+' : '−') + nf(Math.abs(x) * 100, 1);
-function freccia(x, y, dq) {
-  const L = Math.min(Math.abs(dq) * 100 / 10 * FRECCIA_10PT, FRECCIA_10PT * 2.5);
+/* Per le aree la lunghezza è proporzionale ai punti. Per le località no: dove si vota poco gli
+   spostamenti arrivano a 30-40 punti e le frecce uscirebbero dalla scala, quindi la lunghezza
+   cresce con il logaritmo, e oltre i 30 punti non cresce più. 10 punti valgono FRECCIA_10PT in
+   tutte e due le scale. */
+const FRECCIA_LOG_MAX = 30;
+const lunghezzaLog = pt => FRECCIA_10PT * Math.log1p(Math.min(pt, FRECCIA_LOG_MAX) / 5) / Math.log1p(2);
+function freccia(x, y, dq, log) {
+  const pt = Math.abs(dq) * 100;
+  const L = log ? lunghezzaLog(pt) : Math.min(pt / 10 * FRECCIA_10PT, FRECCIA_10PT * 2.5);
   if (L < 1.5) return '';
   const s = dq > 0 ? 1 : -1, a = Math.PI / 4, ex = x + s * L * Math.cos(a), ey = y - L * Math.sin(a);
   const h = Math.max(3, Math.min(10, L * 0.25)), b = Math.atan2(ey - y, ex - x);
@@ -2071,6 +2078,12 @@ function renderMappa() {
   const bs = document.querySelector('#mapMode button[data-mode="sposta"]');
   bs.disabled = !sposta;
   bs.title = sposta ? 'Le frecce dello spostamento rispetto al 2022' : 'Si attiva al 75% dello scrutinio';
+  /* con lo spostamento niente bolle: le frecce partono dal centro delle località, e i cerchi le
+     coprirebbero o ne sarebbero coperti */
+  const bb = document.querySelector('#mapLivello button[data-liv="bolle"]');
+  bb.disabled = S.mapMode === 'sposta';
+  bb.title = bb.disabled ? 'Le bolle non si usano con lo spostamento' : 'Un cerchio per località, grande quanto i voti validi';
+  if (S.mapMode === 'sposta' && S.mapLivello === 'bolle') S.mapLivello = 'loc';
   if (liv !== 'sd') S.focusSD = null;
   const foc = liv === 'sd' ? S.focusSD : null;
   const col = coloriMappa(loc, liv, undefined, foc);
@@ -2106,7 +2119,7 @@ function renderMappa() {
         if (foc != null && sdDi(g.id) !== foc) return;
         const a = loc.get(g.id), b = stessaLocalita22(g.id), q = quote(a);
         if (!q || !b || !b.val || a.val < FRECCIA_MIN_VOTI || !isFinite(g.bx[0])) return;
-        fr += freccia((g.bx[0] + g.bx[2]) / 2, (g.bx[1] + g.bx[3]) / 2, q.bl.N - b.N);
+        fr += freccia((g.bx[0] + g.bx[2]) / 2, (g.bx[1] + g.bx[3]) / 2, q.bl.N - b.N, true);
       });
     }
   }
@@ -2148,7 +2161,13 @@ function renderMappa() {
     const SN = spostamenti(loc).naz;
     lg = '<h4>Spostamento rispetto al 2022</h4>' + (SN ? '<div class="spotot">Nel complesso, sulle località già contate: blocco Netanyahu <b>' + punti(SN.N) + '</b> punti, opposizione <b>' + punti(SN.O) + '</b>, partiti arabi <b>' + punti(SN.A) + '</b>.</div>' : '') +
       '<div class="frecceleg"><div>' + es(0.05) + '<span>il blocco Netanyahu guadagna</span></div><div>' + es(-0.05) + '<span>il blocco Netanyahu perde</span></div></div>' +
-      '<p>La freccia parte dal centro di ' + (liv === 'sd' && foc == null ? 'ogni area' : 'ogni località') + ' ed è lunga quanto la differenza nella quota del blocco Netanyahu sui voti validi, in punti, rispetto a come avevano votato le stesse località nel 2022. Nell’elenco a sinistra lo stesso numero: con la mappa intera 10 punti sono circa ' + Math.round(FRECCIA_10PT * (($('locMap').getBoundingClientRect().height || 600) / MAPPA.H)) + ' pixel. Solo dove sono contati almeno ' + nf(FRECCIA_MIN_VOTI) + ' voti validi.</p>';
+      (() => {
+        const aree = liv === 'sd' && foc == null, px = v => Math.round(v * (($('locMap').getBoundingClientRect().height || 600) / MAPPA.H));
+        return '<p>La freccia parte dal centro di ' + (aree ? 'ogni area' : 'ogni località') + ' e misura quanto è cambiata la quota del blocco Netanyahu sui voti validi rispetto a come avevano votato le stesse località nel 2022. Il numero, in punti, è nell’elenco a sinistra. ' +
+          (aree ? 'La lunghezza è proporzionale: con la mappa intera 10 punti sono circa ' + px(FRECCIA_10PT) + ' pixel.'
+            : 'Per le località la lunghezza cresce più lentamente dei punti (scala logaritmica), perché nei centri piccoli gli spostamenti sono molto grandi: con la mappa intera 10 punti sono circa ' + px(lunghezzaLog(10)) + ' pixel, 30 punti circa ' + px(lunghezzaLog(30)) + '; oltre i 30 punti la freccia non si allunga più.') +
+          ' Solo dove sono contati almeno ' + nf(FRECCIA_MIN_VOTI) + ' voti validi.</p>';
+      })();
   } else {
     const p = infoLista(S.mapLista);
     lg = '<h4>' + esc(p.n) + '</h4><div class="ramp" style="background:linear-gradient(90deg,' + COL_BASE + ',' + p.c + ')"></div><div class="rampl"><span>0%</span><span>30%</span><span>60% e oltre</span></div><p>Quota della lista sui voti validi di ogni ' + (liv === 'sd' ? 'area' : 'località') + '.</p>';
