@@ -2927,9 +2927,6 @@ window.CARD = (function () {
     const r = x.createRadialGradient(1300, -120, 0, 1300, -120, 1100);
     r.addColorStop(0, 'rgba(0,56,184,.42)'); r.addColorStop(.65, 'rgba(0,56,184,0)');
     x.fillStyle = r; x.fillRect(0, 0, 1600, 900);
-    /* la bandiera: bianco, blu, bianco, blu, bianco */
-    x.fillStyle = '#F4F7FF'; x.fillRect(0, 0, 1600, 12);
-    x.fillStyle = C.blue; x.fillRect(0, 2, 1600, 3); x.fillRect(0, 7, 1600, 3);
     const bf = F(800, 17), bw = W(x, o.badge, bf, 2.4) + 40;
     fillRR(x, 62, 50, bw, 40, 8, C.white);
     T(x, o.badge, 82, 76, { font: bf, ls: 2.4, color: '#071436' });
@@ -3250,8 +3247,6 @@ window.CARD = (function () {
     const r = x.createRadialGradient(880, -120, 0, 880, -120, 900);
     r.addColorStop(0, 'rgba(0,56,184,.45)'); r.addColorStop(.65, 'rgba(0,56,184,0)');
     x.fillStyle = r; x.fillRect(0, 0, Wd, Hd);
-    x.fillStyle = '#F4F7FF'; x.fillRect(0, 0, Wd, 14);
-    x.fillStyle = C.blue; x.fillRect(0, 2.5, Wd, 3.5); x.fillRect(0, 8, Wd, 3.5);
     const bf = F(800, 19), bw = W(x, o.badge, bf, 2.4) + 44;
     fillRR(x, M, 58, bw, 46, 9, C.white);
     T(x, o.badge, M + 22, 88, { font: bf, ls: 2.4, color: '#071436' });
