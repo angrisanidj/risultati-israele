@@ -213,7 +213,7 @@ Se il campo manca o non somma a 120, la pagina usa la copia incorporata nel codi
 
 ### Blocchi
 
-Le pastiglie e i totali seguono le stesse ipotesi del modello:
+L’indicazione del blocco sotto ogni lista e i totali dei blocchi seguono le stesse ipotesi del modello:
 
 - **Popolo d'Israele (Ofer Winter)** è nel blocco Netanyahu: Winter si è impegnato a raccomandare solo Netanyahu ed esclude governi dei suoi rivali.
 - **Riservisti e Partito economico** sono fra le «altre liste»: non si schierano e non escludono nessuno.
