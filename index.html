@@ -442,6 +442,11 @@ table.conf th .corto{display:none}
 .manca .mr .tk b{display:block;height:100%}
 .manca .mr .vv{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
 .manca .big{font:600 30px/1 var(--sans);letter-spacing:-.015em;margin:4px 0 4px;font-variant-numeric:tabular-nums}
+.mancagrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px}
+.mancagrid>div{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:var(--r-s);padding:12px 14px}
+.mancagrid .mk{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3)}
+.mancagrid .muted{font-size:12.5px;line-height:1.45}
+@media(max-width:560px){.mancagrid{grid-template-columns:1fr}}
 .timeline{margin:14px 18px 0;display:grid;font-size:13px;color:var(--t2)}
 .timeline div{display:grid;grid-template-columns:90px minmax(0,1fr);gap:12px;padding:6px 0;border-top:1px solid var(--line)}
 .timeline b{color:var(--t1);font-weight:600;font-variant-numeric:tabular-nums}
@@ -2470,6 +2475,8 @@ function renderScrutinio() {
 const RAPPORTO_BUSTE22 = { 'מחל': 1.00, 'רק': 0.95, 'ט': 1.43, 'ב': 1.43, 'דרך': 1.17, 'כן': 1.17, 'שס': 0.83, 'ג': 0.64, 'ל': 1.27, 'עם': 0.43, 'ודם': 0.50, 'אמת': 1.21 };
 /* la Commissione stima fra 600.000 e 650.000 doppie buste (Ynet, Times of Israel): si usa il valore di mezzo */
 const BUSTE_ATTESE_26 = 625000;
+/* le sezioni ordinarie (קלפיות) del 2026: 12.018 secondo la Commissione */
+const SEZIONI_26 = 12018;
 const ENV_QUOTA26 = BUSTE_ATTESE_26 / VOT26;
 function quoteBuste(nazQ) {
   const q = {}; let t = 0;
@@ -2603,8 +2610,18 @@ function renderManca() {
   const ord = a26 ? Math.max(0, VOT26 - R.d.vot - envM) : tot;
   grandi.sort((a, b) => b[1] - a[1]);
   const riga = (n, v, comp) => '<div class="mr"><span>' + n + '</span><span class="tk">' + ['N', 'O', 'A', 'X'].map(k => '<b style="width:' + ((comp[k] || 0) * 100).toFixed(1) + '%;background:' + BLOCCHI[k].c + '"></b>').join('') + '</span><span class="vv">' + v + '</span></div>';
-  let h = '<div><div class="big">' + nf(ord + envM) + '</div><div class="muted" style="font-size:12px">' + (a26 ? 'votanti ancora da contare, stimati sull’affluenza 2026 (' + pct(AFFLUENZA_26) + ')' : 'voti validi ancora da contare, stimati') + ': ' + nf(ord) + ' nelle sezioni ordinarie e ' + nf(envM) + ' in doppia busta</div></div>';
-  if (tot > 0 && ord > 0) h += riga('<b>Sezioni ordinarie</b>', pct(ord / (a26 ? VOT26 - BUSTE_ATTESE_26 : VAL22_ORD), 0), { N: bl.N / tot, O: bl.O / tot, A: bl.A / tot, X: bl.X / tot });
+  /* in testa due riquadri: le sezioni ordinarie (quante contate su quante, dal file per sezione)
+     e le doppie buste (la stima della Commissione e quante ne sono già contate) */
+  let h;
+  if (a26) {
+    const sez = S.expb && S.expb.fatti ? S.expb.fatti : (avanzamento(R).seggi || 0), mancano = Math.max(0, SEZIONI_26 - sez);
+    const bc = R.env ? R.env.vot : 0;
+    h = '<div class="mancagrid">' +
+      '<div><div class="mk">Sezioni ordinarie</div><div class="big">' + (sez ? nf(mancano) : '—') + '</div><div class="muted">' + (sez ? 'da contare: ' + nf(sez) + ' contate su ' + nf(SEZIONI_26) + ' (' + pct(sez / SEZIONI_26, 1) + ')' : 'il conteggio delle sezioni arriva con il file per sezione') + '. Mancano circa ' + nf(ord) + ' votanti.</div></div>' +
+      '<div><div class="mk">Doppie buste</div><div class="big">' + nf(envM) + '</div><div class="muted">' + (bc ? 'votanti ancora da contare: ne sono contati ' + nf(bc) + ' sui circa ' + nf(BUSTE_ATTESE_26) + ' stimati' : 'votanti stimati, ancora tutti da contare: la Commissione ne prevede fra 600.000 e 650.000') + '. Si contano fino a venerdì.</div></div>' +
+      '</div><div class="muted" style="font-size:12.5px;margin:2px 0 10px">In tutto circa <b>' + nf(ord + envM) + '</b> votanti ancora da contare, sull’affluenza ufficiale del ' + pct(AFFLUENZA_26) + '. Qui sotto, dove mancano più voti nelle sezioni ordinarie.</div>';
+  } else h = '<div><div class="big">' + nf(ord + envM) + '</div><div class="muted" style="font-size:12px">voti validi ancora da contare, stimati: ' + nf(ord) + ' nei seggi ordinari e ' + nf(envM) + ' in doppia busta</div></div>';
+  if (tot > 0 && ord > 0) h += riga('<b>Tutte le sezioni che mancano</b>', nf(ord / 1000, 0) + 'k', { N: bl.N / tot, O: bl.O / tot, A: bl.A / tot, X: bl.X / tot });
   grandi.slice(0, 7).forEach(([code, m, b, e]) => {
     const g = MAPPA.byId[code];
     h += riga(esc(g ? g.en : b[0]), nf(m / 1000, 0) + 'k', e);
