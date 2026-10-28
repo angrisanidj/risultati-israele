@@ -166,6 +166,7 @@ select{background:var(--s2);color:var(--t1);border:1px solid var(--line-2);borde
 .proiezbl i{width:9px;height:9px;border-radius:2px}
 .flussi{padding:4px 18px 0}
 #flussiScope button:disabled{opacity:.4}
+@media(max-width:560px){#flussiScope{display:flex;width:100%}#flussiScope button{flex:1 1 0;min-width:0;padding:8px 4px;font-size:12px;white-space:normal;line-height:1.2}#flussiCard .cardhead>div:last-child{width:100%;justify-content:flex-start!important}}
 .flussi svg{display:block;width:100%;max-width:860px;height:auto;margin:0 auto}
 .flussi text{font:600 15px var(--sans);fill:var(--t1)}
 .flussi text.v,.flussi tspan.v{fill:var(--t2);font-weight:500}
@@ -2004,13 +2005,17 @@ function renderFlussi() {
     const tx = sx ? n.x - 8 : n.x + nw + 8, an = sx ? 'end' : 'start', r_ = '<rect x="' + n.x + '" y="' + n.y.toFixed(1) + '" width="' + nw + '" height="' + Math.max(1, n.h).toFixed(1) + '" fill="' + FL_COL[n.k] + '" rx="2"></rect>';
     /* i nodi bassi hanno nome e percentuale su una riga, se no si accavallano con i vicini */
     const fs = mob ? 20 : 15;
-    if (n.h < fs * 2.6) return r_ + '<text x="' + tx + '" y="' + (n.y + n.h / 2 + fs * .35).toFixed(1) + '" text-anchor="' + an + '">' + esc(nome(n.k)) + ' <tspan class="v">' + nf(n.q * 100, 1) + '%</tspan></text>';
-    return r_ + '<text x="' + tx + '" y="' + (n.y + n.h / 2 - fs * .25).toFixed(1) + '" text-anchor="' + an + '">' + esc(nome(n.k)) + '</text>' +
-      '<text class="v" x="' + tx + '" y="' + (n.y + n.h / 2 + fs * 1.1).toFixed(1) + '" text-anchor="' + an + '">' + nf(n.q * 100, 1) + '%</text>';
+    if (n.h < fs * 2.6) return r_ + '<text class="lab" x="' + tx + '" y="' + (n.y + n.h / 2 + fs * .35).toFixed(1) + '" text-anchor="' + an + '">' + esc(nome(n.k)) + ' <tspan class="v">' + nf(n.q * 100, 1) + '%</tspan></text>';
+    return r_ + '<text class="lab" x="' + tx + '" y="' + (n.y + n.h / 2 - fs * .25).toFixed(1) + '" text-anchor="' + an + '">' + esc(nome(n.k)) + '</text>' +
+      '<text class="v lab" x="' + tx + '" y="' + (n.y + n.h / 2 + fs * 1.1).toFixed(1) + '" text-anchor="' + an + '">' + nf(n.q * 100, 1) + '%</text>';
   };
-  $('flussiGraf').innerHTML = '<svg viewBox="0 -24 ' + W + ' ' + (H + 30) + '" role="img" aria-label="Flussi di voto fra il 2022 e il 2026">' +
-    '<text x="' + (LB + nw / 2) + '" y="-8" text-anchor="middle" class="v">2022</text><text x="' + (W - LB - nw / 2) + '" y="-8" text-anchor="middle" class="v">2026</text>' +
+  $('flussiGraf').innerHTML = '<svg viewBox="0 -40 ' + W + ' ' + (H + 46) + '" role="img" aria-label="Flussi di voto fra il 2022 e il 2026">' +
+    '<text x="' + (LB + nw / 2) + '" y="-18" text-anchor="middle" class="v">2022</text><text x="' + (W - LB - nw / 2) + '" y="-18" text-anchor="middle" class="v">2026</text>' +
     g.nastri.map(nastro).join('') + g.L.map(n => nodo(n, true)).join('') + g.R.map(n => nodo(n, false)).join('') + '</svg>';
+  $('flussiGraf').querySelectorAll('text.lab').forEach(t => {
+    let fs_ = parseFloat(getComputedStyle(t).fontSize) || 15;
+    for (let i = 0; i < 14; i++) { const b = t.getBBox(); if (!b.width || (b.x >= 1 && b.x + b.width <= W - 1)) break; fs_ *= .93; t.style.fontSize = fs_.toFixed(1) + 'px'; }
+  });
   $('flussiTesto').innerHTML = righeFlussi(fl, FL_SCOPE === 'tot' ? '' : ' · ' + FL_SCOPE_NOMI[FL_SCOPE]);
   $('flussiMeta').textContent = 'stima su ' + nf(FL_SCOPE === 'tot' ? fl.n : FL_SCOPE === 'e' ? fl.nE : fl.nA) + ' località';
   $('flussiNota').textContent = 'Come si stima: con la regressione ecologica sulle ' + nf(fl.n) + ' località contate almeno al 90%, che raccolgono il ' + pct(fl.copertura, 0) + ' degli aventi diritto del 2022. Le località arabe (' + nf(fl.nA) + ', quelle dove nel 2022 i partiti arabi avevano più della metà dei voti) si stimano a parte: insieme a quelle ebraiche darebbero flussi falsi. Le città miste, come Haifa, Lod, Ramla e Acri, stanno con le ebraiche. Le percentuali sono sugli aventi diritto di queste località. Le doppie buste restano fuori: chi vota così risulta fra i non votanti, nel 2022 come oggi; anche i diciottenni al primo voto finiscono soprattutto fra i non votanti del 2022. I flussi grandi sono affidabili, quelli di pochi punti molto meno: il metodo vede poco chi è passato direttamente dal blocco Netanyahu all’opposizione o viceversa, e tende a mostrarlo come elettori che tornano al voto o lo lasciano. Blocchi del 2022: Netanyahu vuol dire Likud, Sionismo religioso, Shas e UTJ; nel 2026 anche Otzma, Noam e Popolo d’Israele.';
