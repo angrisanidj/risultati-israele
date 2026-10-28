@@ -151,6 +151,24 @@ select{background:var(--s2);color:var(--t1);border:1px solid var(--line-2);borde
 .simtot{margin-top:16px;font-size:14px;color:var(--t2)}
 .simtot b{font:600 24px/1 var(--sans);color:var(--t1);margin-right:6px;font-variant-numeric:tabular-nums}
 .simtot .ok{color:var(--green)}.simtot .ko{color:var(--red)}
+.simvetisel{padding:8px 18px 0;font-size:13px;color:var(--t2)}
+.simvetisel .v{color:var(--amber)}
+.simsez{margin:18px 18px 0;padding-top:14px;border-top:1px solid var(--line)}
+.simsez h3{margin:0 0 4px;font-size:15px}
+.simlede{color:var(--t2);font-size:13px;margin:0 0 12px;max-width:92ch}
+.simvetitit{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);font-weight:700;margin-bottom:6px}
+.simveti{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.simveti button{font-size:12px;padding:5px 9px;font-weight:500;color:var(--t2)}
+.simveti button.off{text-decoration:line-through;color:var(--t3);opacity:.7}
+.strada{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:9px 10px;border-top:1px solid var(--line);cursor:pointer;border-radius:var(--r-s)}
+.strada:hover{background:rgba(255,255,255,.04)}
+.strada .sm{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:13px;font-weight:600}
+.strada .sm span{display:inline-flex;align-items:center;gap:5px}
+.strada .sm i{width:8px;height:8px;border-radius:50%}
+.strada .st{font:600 15px var(--sans);font-variant-numeric:tabular-nums;text-align:right}
+.strada .sv{grid-column:1/-1;font-size:12px;color:var(--t3)}
+.strada .sv.ko{color:var(--amber)}
+.strada.ok .st{color:var(--green)}
 .magg-lab .m61{position:absolute;transform:translateX(-50%);top:-48px;font-size:11.5px;font-weight:600;color:var(--white);background:var(--s1);padding:0 4px}
 .alert{border:1px solid rgba(255,102,128,.4);background:rgba(255,102,128,.08);color:#ffd6de;border-radius:var(--r);padding:11px 14px;margin:0 0 16px;font-size:13.5px}
 
@@ -631,6 +649,14 @@ footer a{color:var(--t2)}
     <div class="simpre" id="simPre"></div>
     <div class="simliste" id="simListe"></div>
     <div id="simBarra" class="simbarra"></div>
+    <div id="simVetiSel" class="simvetisel"></div>
+    <div class="simsez">
+      <h3>Le strade verso quota 61</h3>
+      <p class="simlede">Le coalizioni minime vincenti, cioè quelle che arrivano a 61 e perdono la maggioranza se esce una lista qualsiasi, ordinate per praticabilità politica: prima quelle senza veti dichiarati, poi quelle con meno veti, a parità con meno liste. La Lista unita araba non entra nei governi: può solo appoggiarli da fuori. Tocca una coalizione per caricarla qui sopra.</p>
+      <div class="simvetitit">Veti dichiarati, dal modello previsionale · tocca per non contarne uno</div>
+      <div id="simVeti" class="simveti"></div>
+      <div id="simStrade"></div>
+    </div>
     <p class="methodnote" id="simNota"></p>
   </section>
 
@@ -1470,7 +1496,43 @@ function applicaFiltro() {
 /* ---------- simulatore di maggioranza ----------
    Il lettore sceglie le liste di una coalizione e vede se arriva a 61. I seggi vengono dalla
    fonte scelta (di base la stessa dell'emiciclo); la scelta delle liste resta cambiando fonte. */
-const SIM = { src: 'auto', sel: new Set(), pronto: false };
+const SIM = { src: 'auto', sel: new Set(), pronto: false, vetiOff: new Set() };
+/* I veti dichiarati, presi dal modello previsionale (angrisanidj/modello-israele, VETI) e
+   portati sulle lettere di scheda. La Lista unita araba (ודם) non entra nei governi: nel
+   modello ha gov:0, qui sta in NO_GOVERNO. */
+const VETI = [
+  ['מחל', 'דרך', 'Eisenkot esclude un governo guidato da Netanyahu'],
+  ['מחל', 'רק', 'Bennett e Lapid escludono un governo Netanyahu'],
+  ['מחל', 'אמת', 'Golan esclude Netanyahu'],
+  ['מחל', 'ל', 'Lieberman esclude Netanyahu dal 2019'],
+  ['מחל', 'עם', 'Il Likud esclude Ra’am al governo'],
+  ['ל', 'שס', 'Lieberman esclude Shas dal governo'],
+  ['ל', 'ג', 'Lieberman esclude il Giudaismo Unito Torah dal governo'],
+  ['אמת', 'ב', 'I Democratici: incompatibilità dichiarata con Ben Gvir'],
+  ['אמת', 'ט', 'I Democratici: incompatibilità dichiarata con Smotrich'],
+  ['דרך', 'ב', 'Eisenkot esclude Ben Gvir al governo'],
+  ['רק', 'ב', 'Bennett esclude Ben Gvir al governo'],
+  ['עם', 'ב', 'Ben Gvir e Abbas si escludono a vicenda'],
+  ['עם', 'ט', 'Smotrich e Abbas si escludono a vicenda']
+];
+const NO_GOVERNO = new Set(['ודם']);
+function vetiFra(ls) {
+  const out = [];
+  VETI.forEach((v, i) => { if (!SIM.vetiOff.has(i) && ls.includes(v[0]) && ls.includes(v[1])) out.push(v[2]); });
+  return out;
+}
+/* Coalizioni minime vincenti: ogni sottoinsieme delle liste che possono governare, con
+   almeno 61 seggi, che scende sotto i 61 togliendo una lista qualsiasi. Come nel modello. */
+function strade(seggi) {
+  const pool = Object.keys(seggi).filter(l => seggi[l] > 0 && !NO_GOVERNO.has(l)).sort((a, b) => seggi[b] - seggi[a]).slice(0, 16);
+  const out = [];
+  for (let m = 1; m < (1 << pool.length); m++) {
+    const mem = pool.filter((_, j) => m & (1 << j)), tot = mem.reduce((a, l) => a + seggi[l], 0);
+    if (tot < MAGG || mem.some(l => tot - seggi[l] >= MAGG)) continue;
+    out.push({ mem, tot, veti: vetiFra(mem) });
+  }
+  return out.sort((a, b) => (!a.veti.length !== !b.veti.length ? (a.veti.length ? 1 : -1) : a.veti.length - b.veti.length || a.mem.length - b.mem.length || b.tot - a.tot));
+}
 function simFonte() {
   const F = fontiSeggi(), f = F.find(x => x.k === SIM.src);
   return f || fonteAttiva();
@@ -1498,7 +1560,22 @@ function renderSimulatore() {
   const esito = !scelte.length ? '<span>Nessuna lista scelta</span>' : tot >= MAGG ? '<span class="ok">maggioranza' + (tot > MAGG ? ', ' + (tot - MAGG) + ' oltre la soglia' : ' esatta') + '</span>' : '<span class="ko">ne mancano ' + (MAGG - tot) + ' per la maggioranza</span>';
   $('simBarra').innerHTML = '<div class="magg"><div class="magg-bar">' + seg + '<i class="magg-61" style="left:' + (MAGG / SEGGI * 100).toFixed(3) + '%"></i></div></div>' +
     '<div class="simtot"><b>' + tot + '</b>seggi · ' + esito + '</div>';
-  $('simNota').textContent = 'Seggi: ' + nomeFonte(f, true) + (f.k === 'scrutinio' ? ', ricalcolati con Bader-Ofer sui voti contati finora: possono ancora cambiare.' : f.k === 'k22' ? ', la Knesset uscente.' : '.') + ' Il simulatore somma soltanto i seggi: non dice quali alleanze sono politicamente possibili.';
+  /* i veti dentro la coalizione scelta a mano */
+  const vs = vetiFra(scelte), fuori = scelte.filter(l => NO_GOVERNO.has(l));
+  $('simVetiSel').innerHTML = !scelte.length ? '' : (vs.length ? '<span class="v">Veti in questa coalizione: ' + vs.map(esc).join('; ') + '.</span>' : 'Nessun veto dichiarato fra queste liste.') +
+    (fuori.length ? ' ' + fuori.map(l => esc(nomeBreve(info(l)))).join(', ') + ' non entra nei governi: conta solo come appoggio esterno.' : '');
+  /* i veti, ognuno si può spegnere */
+  $('simVeti').innerHTML = VETI.map((v, i) => '<button class="' + (SIM.vetiOff.has(i) ? 'off' : '') + '" data-v="' + i + '" aria-pressed="' + !SIM.vetiOff.has(i) + '">' + esc(v[2]) + '</button>').join('');
+  $('simVeti').onclick = e => { const b = e.target.closest('[data-v]'); if (!b) return; const i = +b.dataset.v; SIM.vetiOff.has(i) ? SIM.vetiOff.delete(i) : SIM.vetiOff.add(i); renderSimulatore(); };
+  /* le strade verso 61 */
+  const ST = f.k === 'k22' ? [] : strade(f.seggi), vis = ST.slice(0, 8);
+  const libere = ST.filter(x => !x.veti.length).length;
+  $('simStrade').innerHTML = !ST.length ? '<div class="simlede">' + (f.k === 'k22' ? 'Non calcolate sulla Knesset uscente.' : 'Nessuna combinazione arriva a 61.') + '</div>'
+    : '<div class="simlede" style="margin-bottom:6px">' + nf(ST.length) + ' coalizioni minime vincenti, ' + (libere ? nf(libere) + ' senza veti' : 'nessuna senza veti') + '. Le prime ' + vis.length + ':</div>' +
+      vis.map((x, i) => '<div class="strada' + (x.veti.length ? '' : ' ok') + '" data-s="' + i + '"><div class="sm">' + x.mem.map(l => '<span><i style="background:' + info(l).c + '"></i>' + esc(nomeBreve(info(l))) + ' ' + f.seggi[l] + '</span>').join('') + '</div><div class="st">' + x.tot + '</div>' +
+        '<div class="sv' + (x.veti.length ? ' ko' : '') + '">' + (x.veti.length ? 'Veti: ' + x.veti.map(esc).join('; ') : 'Nessun veto dichiarato') + '</div></div>').join('');
+  $('simStrade').onclick = e => { const b = e.target.closest('[data-s]'); if (!b) return; SIM.sel = new Set(vis[+b.dataset.s].mem); renderSimulatore(); $('simCard').scrollIntoView({ block: 'start', behavior: 'smooth' }); };
+  $('simNota').textContent = 'Seggi: ' + nomeFonte(f, true) + (f.k === 'scrutinio' ? ', ricalcolati con Bader-Ofer sui voti contati finora: possono ancora cambiare.' : f.k === 'k22' ? ', la Knesset uscente.' : '.') + ' I veti sono le dichiarazioni dei leader raccolte dal modello previsionale prima del voto: dopo il voto possono cambiare.';
   sl.onchange = e => { SIM.src = e.target.value; renderSimulatore(); };
 }
 
