@@ -3197,6 +3197,117 @@ window.CARD = (function () {
     barreSpo(x, rr_, x0, x0 + 300, 130, Rr, zz.y0 + 30, h, 19, maxSpo(z));
   }
 
+  /* ---------- LE CARD DELLA MAPPA, una per ogni vista ----------
+     Le stesse viste della pagina: prima lista o blocchi, per aree o per località, le bolle
+     (un cerchio per località, grande quanto i voti) e lo spostamento per località. La card 4
+     (prima lista per aree) e la card 8 (spostamento per aree) restano com'erano. */
+  const VISTE = {
+    primoLoc:  { liv: 'loc', modo: 'primo', badge: 'LA MAPPA', sub: 'la prima lista località per località', nota: 'Ogni poligono è una località, colorata con la lista più votata: colore più pieno dove è più forte. I poligoni coprono solo l’abitato; Negev e campagne restano scuri.' },
+    bloccoSd:  { liv: 'sd', modo: 'blocco', badge: 'I BLOCCHI', sub: 'il blocco più votato area per area', nota: 'Le aree sono i 15 sottodistretti; in Cisgiordania gli insediamenti, presi insieme. Ogni area ha il colore del blocco più votato, più pieno dove è più forte.' },
+    bloccoLoc: { liv: 'loc', modo: 'blocco', badge: 'I BLOCCHI', sub: 'il blocco più votato località per località', nota: 'Ogni poligono è una località, con il colore del blocco più votato, più pieno dove è più forte. I poligoni coprono solo l’abitato.' },
+    bollePrimo:  { liv: 'bolle', modo: 'primo', badge: 'DOVE SONO I VOTI', sub: 'una bolla per località, grande quanto i voti validi', nota: 'Un cerchio per località, con l’area proporzionale ai voti validi contati e il colore della lista più votata: la mappa mostra dove sono gli elettori, non quanta terra c’è.' },
+    bolleBlocco: { liv: 'bolle', modo: 'blocco', badge: 'DOVE SONO I VOTI', sub: 'una bolla per località, con il colore del blocco più votato', nota: 'Un cerchio per località, con l’area proporzionale ai voti validi contati e il colore del blocco più votato: la mappa mostra dove sono gli elettori, non quanta terra c’è.' },
+    spostaLoc: { liv: 'loc', modo: 'sposta', badge: 'SPOSTAMENTO', sub: 'il blocco Netanyahu rispetto al 2022, località per località', nota: 'La freccia misura quanto è cambiata la quota del blocco Netanyahu rispetto al 2022 nella stessa località. La lunghezza cresce con il logaritmo e oltre 30 punti non cresce più. Solo località con almeno 300 voti validi.' }
+  };
+  /* il disegno della mappa sulla tela, in una vista; ritorna la scala */
+  function mappaVista(x, s, v, ox, oy, H) {
+    const loc = s.R.loc, k = H / MAPPA.H, liv = v.liv === 'sd' ? 'sd' : 'loc';
+    const col = v.modo === 'sposta' ? null : coloriMappa(loc, liv, v.modo);
+    x.save(); x.translate(ox, oy); x.scale(k, k);
+    x.lineWidth = .9 / k; x.strokeStyle = liv === 'sd' ? '#08101f' : '#2c3a58';
+    MAPPA.base.forEach((gm, i) => { const pth = new Path2D(gm.d); x.fillStyle = col && liv === 'sd' ? col.base[i] : v.modo === 'sposta' ? COL_BASE : COL_TERRA; x.fill(pth); x.stroke(pth); });
+    if (v.liv === 'bolle') {
+      const B = [];
+      MAPPA.geo.forEach((gm, i) => { const a = loc.get(gm.id); if (a && a.val > 0 && isFinite(gm.bx[0])) B.push({ x: (gm.bx[0] + gm.bx[2]) / 2, y: (gm.bx[1] + gm.bx[3]) / 2, r: raggioBolla(a.val), c: col.locs[i] }); });
+      B.sort((a, b) => b.r - a.r).forEach(b => { x.beginPath(); x.arc(b.x, b.y, b.r, 0, 7); x.globalAlpha = .9; x.fillStyle = b.c; x.fill(); x.globalAlpha = 1; x.lineWidth = .8 / k; x.strokeStyle = '#08101f'; x.stroke(); });
+    } else if (v.modo === 'sposta') {
+      x.lineCap = 'round'; x.lineJoin = 'round';
+      MAPPA.geo.forEach(gm => {
+        const a = loc.get(gm.id), b = stessaLocalita22(gm.id), q = quote(a);
+        if (!q || !b || !b.val || a.val < FRECCIA_MIN_VOTI || !isFinite(gm.bx[0])) return;
+        /* sulla card le frecce sono più corte di quelle della pagina: sono centinaia, e la mappa è piccola */
+        const dq = q.bl.N - b.N, cx = (gm.bx[0] + gm.bx[2]) / 2, cy = (gm.bx[1] + gm.bx[3]) / 2, m = /d="([^"]+)"/.exec(freccia(0, 0, dq, true)); if (!m) return;
+        x.save(); x.translate(cx, cy); x.scale(.6, .6);
+        x.strokeStyle = dq > 0 ? '#5b93ff' : '#ff6f8a'; x.lineWidth = 1.3 / k / .6; x.stroke(new Path2D(m[1])); x.restore();
+      });
+    } else {
+      x.lineWidth = .4 / k; x.strokeStyle = '#08101f';
+      MAPPA.geo.forEach((gm, i) => { if (col.locs[i] == null) return; const pth = new Path2D(gm.d); x.fillStyle = col.locs[i]; x.fill(pth); x.stroke(pth); });
+    }
+    x.restore();
+    return k;
+  }
+  const primoBlocco = q => ['N', 'O', 'A'].reduce((m, b) => q.bl[b] > q.bl[m] ? b : m, 'N');
+  /* la colonna a destra della mappa: conteggi, scala delle bolle o gli spostamenti delle città */
+  function legendaVista(x, s, v, lx, y0, w, fs, k, yMax) {
+    const loc = s.R.loc, aree = v.liv === 'sd', nomeU = aree ? 'AREE' : 'LOCALITÀ';
+    const unita = aree ? aggregaSD(loc) : [...loc.values()].filter(a => a.code !== ENV_CODE && MAPPA.byId[a.code] && a.val > 0);
+    const rh = fs * 2.1;
+    let y = y0;
+    if (v.modo === 'primo' || v.modo === 'blocco') {
+      const cnt = {};
+      unita.forEach(a => { const q = quote(a); if (!q) return; const key = v.modo === 'primo' ? q.arr[0].l : primoBlocco(q); cnt[key] = (cnt[key] || 0) + 1; });
+      const arr = Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, v.modo === 'primo' ? 7 : 3);
+      T(x, (v.modo === 'primo' ? 'PRIMA LISTA · ' : 'PRIMO BLOCCO · ') + nomeU, lx, y, { font: F(800, fs * .7), color: C.t3, ls: 2 }); y += rh * .9;
+      arr.forEach(([key, n]) => {
+        const c = v.modo === 'primo' ? infoLista(key).c : BLOCCHI[key].c, nome = v.modo === 'primo' ? nomeBreve(infoLista(key)) : BLOCCHI[key].n;
+        fillRR(x, lx, y - fs * .75, fs * .75, fs * .75, 4, c);
+        T(x, cut(x, nome, w - 120, F(700, fs)), lx + fs * 1.2, y, { font: F(700, fs) });
+        T(x, nf(n), lx + w, y, { font: F(800, fs), align: 'right' });
+        y += rh;
+      });
+      if (v.modo === 'blocco') {
+        /* accanto ai conteggi, le quote nazionali dei blocchi nei voti contati */
+        const q = quote({ v: s.R.voti, val: s.R.val }); y += rh * .3;
+        T(x, 'QUOTA NAZIONALE NEI VOTI CONTATI', lx, y, { font: F(800, fs * .7), color: C.t3, ls: 2 }); y += rh * .9;
+        ['N', 'O', 'A'].forEach(b => { fillRR(x, lx, y - fs * .75, fs * .75, fs * .75, 4, BLOCCHI[b].c); T(x, BLOCCHI[b].n, lx + fs * 1.2, y, { font: F(600, fs) }); T(x, nf(q.bl[b] * 100, 1) + '%', lx + w, y, { font: F(800, fs), align: 'right' }); y += rh; });
+      }
+    }
+    if (v.liv === 'bolle') {
+      y += rh * .3;
+      T(x, 'VOTI VALIDI', lx, y, { font: F(800, fs * .7), color: C.t3, ls: 2 }); y += rh * .4;
+      let cx = lx;
+      [10000, 50000, 200000].forEach(val => {
+        const rp = Math.max(2, raggioBolla(val) * k);
+        x.beginPath(); x.arc(cx + rp, y + rp, rp, 0, 7); x.strokeStyle = C.t2; x.lineWidth = 1.5; x.stroke();
+        T(x, nf(val), cx + rp, y + 2 * rp + fs, { font: F(600, fs * .8), color: C.t2, align: 'center' });
+        cx += Math.max(2 * rp + fs * 1.2, fs * 5);
+      });
+      y += 2 * raggioBolla(200000) * k + fs * 1.8;
+    }
+    if (v.modo === 'sposta') {
+      const z = s.spo;
+      T(x, 'TUTTO IL PAESE', lx, y, { font: F(800, fs * .7), color: C.t3, ls: 2 }); y += rh * .9;
+      T(x, 'Blocco Netanyahu', lx, y, { font: F(700, fs) }); T(x, punti(z.naz.N), lx + w, y, { font: F(800, fs), color: z.naz.N >= 0 ? '#7aa7ff' : '#ff7d95', align: 'right' }); y += rh * 1.3;
+      T(x, 'LE CITTÀ PIÙ GRANDI', lx, y, { font: F(800, fs * .7), color: C.t3, ls: 2 }); y += rh * .9;
+      Object.entries(BASE22.loc).filter(([c]) => Number(c) !== ENV_CODE).sort((a, b) => b[1][3] - a[1][3]).slice(0, Math.max(3, Math.floor(((yMax || 1e9) - y) / rh) + 1)).forEach(([c, b]) => {
+        const a = loc.get(Number(c)), q = quote(a), gm = MAPPA.byId[c];
+        T(x, cut(x, gm ? gm.en : b[0], w - 110, F(600, fs)), lx, y, { font: F(600, fs), color: q ? C.t1 : C.t3 });
+        if (q) { const d = q.bl.N - b[6] / 1000; T(x, punti(d), lx + w, y, { font: F(800, fs), color: d >= 0 ? '#7aa7ff' : '#ff7d95', align: 'right' }); }
+        else T(x, 'non ancora', lx + w, y, { font: F(400, fs * .9), color: C.t3, align: 'right' });
+        y += rh;
+      });
+    }
+  }
+  function cardVista(key) {
+    const v = VISTE[key];
+    return {
+      fn(x, s, N) {
+        frame(x, { badge: v.badge, kicker: s.ambito, title: g('t_' + key).value, sub: s.R ? scr(s) + ' · ' + v.sub : '', nota: v.nota, fonte: fonteCEC(s) + (v.modo === 'sposta' ? ', voti 2022 e 2026' : '') + '; confini CBS', n: N.n, tot: N.tot });
+        if (!s.R || !s.R.loc || (v.modo === 'sposta' && !(s.spo && s.spo.naz))) return attesa(x, 'In attesa delle prime località');
+        const H = 540, k = mappaVista(x, s, v, 62 + (360 - MAPPA.W * H / MAPPA.H) / 2, 232, H);
+        legendaVista(x, s, v, 520, 270, 560, 24, k, 740);
+      },
+      fig(x, s, N) {
+        const z = frameIG(x, { badge: v.badge, kicker: s.ambito, title: g('t_' + key).value, sub: s.R ? scr(s) + ' · ' + v.sub : '', nota: v.nota, fonte: fonteCEC(s) + '; confini CBS', n: N.n, tot: N.tot });
+        if (!s.R || !s.R.loc || (v.modo === 'sposta' && !(s.spo && s.spo.naz))) return attesaIG(x, z, 'In attesa delle prime località');
+        const H = z.y1 - z.y0 + 10, k = mappaVista(x, s, v, 30, z.y0 - 18, H), lx = Math.max(30 + MAPPA.W * H / MAPPA.H + 20, 470);
+        legendaVista(x, s, v, lx, z.y0 + 10, IG.W - IG.M - lx, 22, k, z.y1 - 10);
+      }
+    };
+  }
+  const CV = Object.fromEntries(Object.keys(VISTE).map(k => [k, cardVista(k)]));
+
   /* ---------- CARD 3 — gli exit poll a confronto ---------- */
   function card3(x, s, N) {
     const cols = s.ex.map(e => ({ n: e.n, ora: e.x.ora, seggi: e.x.seggi }));
@@ -3558,7 +3669,13 @@ window.CARD = (function () {
     { id: 'c5', tid: 't5', nome: 'Card 5 — La soglia', file: 'israele_5_soglia.png', fn: card5, fig: ig5, ok: s => !!s.R },
     { id: 'c6', tid: 't6', nome: 'Card 6 — Il modello alla prova', file: 'israele_6_modello.png', fn: card6, fig: ig6, ok: s => !!(s.cf && s.cf.col.length) },
     { id: 'c7', tid: 't7', nome: 'Card 7 — Come potrebbe finire', file: 'israele_7_proiezione.png', fn: card7, fig: ig7, ok: s => !!s.pz },
-    { id: 'c8', tid: 't8', nome: 'Card 8 — Lo spostamento', file: 'israele_8_spostamento.png', fn: card8, fig: ig8, ok: s => !!(s.spo && s.spo.naz) }
+    { id: 'c8', tid: 't8', nome: 'Card 8 — Lo spostamento per aree', file: 'israele_8_spostamento.png', fn: card8, fig: ig8, ok: s => !!(s.spo && s.spo.naz) },
+    { id: 'c9', tid: 't_primoLoc', nome: 'Card 9 — Prima lista per località', file: 'israele_9_mappa_localita.png', fn: CV.primoLoc.fn, fig: CV.primoLoc.fig, ok: s => !!(s.R && s.R.loc && s.R.loc.size) },
+    { id: 'c10', tid: 't_bloccoSd', nome: 'Card 10 — Blocchi per aree', file: 'israele_10_blocchi_aree.png', fn: CV.bloccoSd.fn, fig: CV.bloccoSd.fig, ok: s => !!(s.R && s.R.loc && s.R.loc.size) },
+    { id: 'c11', tid: 't_bloccoLoc', nome: 'Card 11 — Blocchi per località', file: 'israele_11_blocchi_localita.png', fn: CV.bloccoLoc.fn, fig: CV.bloccoLoc.fig, ok: s => !!(s.R && s.R.loc && s.R.loc.size) },
+    { id: 'c12', tid: 't_bollePrimo', nome: 'Card 12 — Bolle, prima lista', file: 'israele_12_bolle_liste.png', fn: CV.bollePrimo.fn, fig: CV.bollePrimo.fig, ok: s => !!(s.R && s.R.loc && s.R.loc.size) },
+    { id: 'c13', tid: 't_bolleBlocco', nome: 'Card 13 — Bolle, blocchi', file: 'israele_13_bolle_blocchi.png', fn: CV.bolleBlocco.fn, fig: CV.bolleBlocco.fig, ok: s => !!(s.R && s.R.loc && s.R.loc.size) },
+    { id: 'c14', tid: 't_spostaLoc', nome: 'Card 14 — Lo spostamento per località', file: 'israele_14_spostamento_localita.png', fn: CV.spostaLoc.fn, fig: CV.spostaLoc.fig, ok: s => !!(s.spo && s.spo.naz) }
   ];
 
   /* ---------- titoli e testi automatici ---------- */
@@ -3585,6 +3702,12 @@ window.CARD = (function () {
     else t.t7 = 'Come potrebbe finire';
     if (s.spo && s.spo.naz) { const v = s.spo.naz.N; t.t8 = 'Rispetto al 2022 il blocco Netanyahu ' + (v < 0 ? 'perde ' : 'guadagna ') + nf(Math.abs(v) * 100, 1) + ' punti'; }
     else t.t8 = 'Lo spostamento rispetto al 2022';
+    t.t_primoLoc = 'Chi vince dove: la prima lista località per località';
+    t.t_bloccoSd = 'I tre blocchi, area per area';
+    t.t_bloccoLoc = 'I tre blocchi, località per località';
+    t.t_bollePrimo = 'Dove sono i voti: una bolla per ogni località';
+    t.t_bolleBlocco = 'Dove sono i voti dei tre blocchi';
+    t.t_spostaLoc = s.spo && s.spo.naz ? 'Lo spostamento località per località: il blocco Netanyahu ' + punti(s.spo.naz.N) + ' punti' : 'Lo spostamento località per località';
     return t;
   }
   function autoPost(s) {
@@ -3619,6 +3742,15 @@ window.CARD = (function () {
     if (s.spo && s.spo.naz) {
       const z = s.spo, a = areeSpo(z), giu = a.slice(0, 2), su = a.slice(-2).reverse().filter(o => o.t.N > 0);
       p.c8 = 'Israele, lo spostamento rispetto al 2022 sulle località già contate: blocco Netanyahu ' + punti(z.naz.N) + ' punti, opposizione ' + punti(z.naz.O) + ', partiti arabi ' + punti(z.naz.A) + '. Perde di più in ' + giu.map(o => NOMI_SD[o.i] + ' (' + punti(o.t.N) + ')').join(' e ') + (su.length ? '; guadagna in ' + su.map(o => NOMI_SD[o.i] + ' (' + punti(o.t.N) + ')').join(' e ') : '') + '.';
+    }
+    if (s.R && s.R.loc) {
+      const sc = scr(s), qn = quote({ v: s.R.voti, val: s.R.val });
+      p.c9 = 'La mappa del voto in Israele località per località, con la lista più votata in ognuna. ' + sc + '.';
+      p.c10 = 'Israele, i tre blocchi area per area. Nei voti contati: blocco Netanyahu ' + nf(qn.bl.N * 100, 1) + '%, opposizione ' + nf(qn.bl.O * 100, 1) + '%, partiti arabi ' + nf(qn.bl.A * 100, 1) + '%. ' + sc + '.';
+      p.c11 = 'Israele, i tre blocchi località per località: blocco Netanyahu ' + nf(qn.bl.N * 100, 1) + '%, opposizione ' + nf(qn.bl.O * 100, 1) + '%, partiti arabi ' + nf(qn.bl.A * 100, 1) + '%. ' + sc + '.';
+      p.c12 = 'Dove sono i voti in Israele: una bolla per ogni località, grande quanto i voti validi, con il colore della lista più votata. ' + sc + '.';
+      p.c13 = 'Dove sono i voti dei tre blocchi in Israele: una bolla per località, grande quanto i voti validi, con il colore del blocco più votato. ' + sc + '.';
+      if (s.spo && s.spo.naz) p.c14 = 'Israele, lo spostamento località per località rispetto al 2022: nel complesso il blocco Netanyahu ' + punti(s.spo.naz.N) + ' punti sulle località già contate. ' + sc + '.';
     }
     Object.keys(p).forEach(k => p[k] = taglia(p[k]));
     return p;
