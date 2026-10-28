@@ -141,13 +141,27 @@ select{background:var(--s2);color:var(--t1);border:1px solid var(--line-2);borde
 .magg-lab{position:relative;display:flex;justify-content:space-between;gap:16px;margin-top:9px;font-size:13px;color:var(--t2)}
 .magg-lab b{color:var(--t1);font-weight:600;font-variant-numeric:tabular-nums}
 .magg-lab .n b{font:600 22px/1 var(--sans);margin-right:6px}
-.proiez{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
-.proiez h3{margin:0 0 4px;font-size:15px}
+.proiezbody{padding:6px 18px 16px}
 .proiezliste{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:10px;font-size:13px;font-weight:600}
 .proiezliste span{display:inline-flex;align-items:center;gap:5px}
 .proiezliste i{width:8px;height:8px;border-radius:50%}
 .proiezliste .rg,.proiezbl .rg{font-weight:500;color:var(--t3);font-size:12px}
 .proiezbl{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:13.5px;font-weight:600}
+/* il grafico dei blocchi: barra della proiezione, margine sopra, linea dei 61 */
+.pgraf{display:grid;gap:12px;margin:14px 0 6px}
+.pgraf .pr{display:grid;grid-template-columns:130px 1fr 92px;gap:12px;align-items:center}
+.pgraf .pn{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:7px}
+.pgraf .pn i{width:10px;height:10px;border-radius:2px;flex:0 0 10px}
+.pgraf .pt{position:relative;height:22px;background:rgba(255,255,255,.05);border-radius:3px}
+.pgraf .pb{position:absolute;left:0;top:0;bottom:0;border-radius:3px 0 0 3px;opacity:.9}
+.pgraf .pm{position:absolute;top:-4px;bottom:-4px;border:2px solid var(--white);border-radius:3px;opacity:.75}
+.pgraf .p61{position:absolute;top:-8px;bottom:-8px;width:2px;margin-left:-1px;background:var(--white)}
+.pgraf .pv{font:600 20px/1 var(--sans);font-variant-numeric:tabular-nums;text-align:right}
+.pgraf .pv small{display:block;font-size:11.5px;font-weight:500;color:var(--t3);margin-top:3px}
+.pgraf .pscala{display:grid;grid-template-columns:130px 1fr 92px;gap:12px;font-size:11px;color:var(--t3)}
+.pgraf .pscala div{position:relative;height:12px}
+.pgraf .pscala div div span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+@media(max-width:560px){.pgraf .pr,.pgraf .pscala{grid-template-columns:96px 1fr 70px;gap:8px}.pgraf .pv{font-size:17px}}
 .proiezbl span{display:inline-flex;align-items:center;gap:6px}
 .proiezbl i{width:9px;height:9px;border-radius:2px}
 .simpre{display:flex;gap:8px;flex-wrap:wrap;padding:0 18px 12px}
@@ -597,6 +611,11 @@ footer a{color:var(--t2)}
   </section>
 
   <section id="verdetto" class="verdetto"></section>
+
+  <section class="card hidden" id="proiezCard" style="margin-bottom:14px">
+    <div class="cardhead"><div><h2>Come potrebbe finire</h2></div><span class="cmeta" id="proiezMeta">proiezione</span></div>
+    <div id="proiezBody" class="proiezbody"></div>
+  </section>
   <div id="alert" class="alert hidden"></div>
 
   <section class="card" style="margin-bottom:14px">
@@ -2248,6 +2267,26 @@ function renderScrutinio() {
    - le doppie buste votano come i voti già contati in tutto il paese.
    I votanti diventano voti validi con il rapporto dei voti già contati. Poi soglia e
    Bader-Ofer con gli accordi, come per lo scrutinio. */
+/* LE DOPPIE BUSTE: nel 2022 hanno votato diversamente dal paese, e lo scarto per blocco si
+   misura sulla loro riga (codice 9999) contro il totale nazionale. Per il 2026 si suppone lo
+   stesso scarto rispetto ai voti già contati; dentro ogni blocco le liste si dividono come
+   nel paese. */
+const SCARTO_BUSTE22 = (() => {
+  let v = 0; const t = { N: 0, O: 0, A: 0 };
+  for (const b of Object.values(BASE22.loc)) { v += b[3]; t.N += b[3] * b[6] / 1000; t.O += b[3] * b[7] / 1000; t.A += b[3] * b[8] / 1000; }
+  const e = BASE22.loc[ENV_CODE];
+  return e && v ? { N: e[6] / 1000 - t.N / v, O: e[7] / 1000 - t.O / v, A: e[8] / 1000 - t.A / v } : { N: 0, O: 0, A: 0 };
+})();
+function quoteBuste(nazQ) {
+  const bk = { N: 0, O: 0, A: 0, X: 0 };
+  for (const l in nazQ) bk[infoLista(l).b] += nazQ[l];
+  const e = { N: Math.max(0, bk.N + SCARTO_BUSTE22.N), O: Math.max(0, bk.O + SCARTO_BUSTE22.O), A: Math.max(0, bk.A + SCARTO_BUSTE22.A) };
+  e.X = Math.max(0, 1 - e.N - e.O - e.A);
+  const q = {};
+  for (const l in nazQ) { const k = infoLista(l).b; if (bk[k] > 0) q[l] = e[k] * nazQ[l] / bk[k]; }
+  return { q, bk, e };
+}
+const SCARTO_NAZ = 0.075, SCARTO_AREA = 0.2, SCARTO_BUSTE = 0.2;
 function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
   const d = R.d, vr = d.vot ? R.val / d.vot : 1;
   const sd = aggregaSD(loc);
@@ -2266,7 +2305,8 @@ function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
     for (const l in qa) { const k = infoLista(l).b; if (bk[k] > 0) q[l] = e[k] * qa[l] / bk[k]; }
     add(i, q, v);
   }
-  add('buste', nazQ, envM * vr);
+  const QB = quoteBuste(nazQ);
+  add('buste', QB.q, envM * vr);
   const lettere = Object.keys(R.voti);
   const ripartisci = varia => {
     const voti = { ...R.voti };
@@ -2283,8 +2323,12 @@ function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
 
   /* IL MARGINE D'ERRORE. Si rifà la ripartizione 400 volte con numeri casuali (sempre gli
      stessi, così la pagina non cambia a ogni ricarica). In ogni giro ogni lista prende un
-     fattore nazionale (scarto tipico 6%) e, in ogni area, uno locale (12%); per le doppie
-     buste lo scarto è del 25%, perché votano diversamente dal resto e non le vediamo ancora.
+     fattore nazionale e, in ogni area, uno locale; per le doppie buste lo scarto è del 20%:
+     lo scarto del 2022 aiuta, ma le buste non le vediamo ancora.
+     GLI SCARTI SONO TARATI SULLA NOTTE DEL 28 OTTOBRE: con il file delle 4:51 e quello delle
+     6:09 (ora israeliana) il metodo ha previsto i voti delle località contate dopo, fino alle
+     11:10, e lo scarto fra previsto e contato è stato del 7-8% per lista sul totale nazionale
+     e del 21-22% nelle aree, che tolta la parte nazionale fa circa il 20%.
      Il totale di ogni area resta quello stimato: cambia solo come si divide. L'intervallo è
      quello che contiene 8 simulazioni su 10. */
   let seme = 20261027;
@@ -2293,8 +2337,8 @@ function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
   const SIMUL = 400, sim = { N: [], O: [], A: [] }, simL = {}; let magg = 0;
   lettere.forEach(l => simL[l] = []);
   for (let k = 0; k < SIMUL; k++) {
-    const fn = {}; lettere.forEach(l => fn[l] = Math.exp(0.06 * gauss()));
-    const v = ripartisci(g => { const f = {}; const s = g === 'buste' ? 0.25 : 0.12; lettere.forEach(l => f[l] = fn[l] * Math.exp(s * gauss())); return f; });
+    const fn = {}; lettere.forEach(l => fn[l] = Math.exp(SCARTO_NAZ * gauss()));
+    const v = ripartisci(g => { const f = {}; const s = g === 'buste' ? SCARTO_BUSTE : SCARTO_AREA; lettere.forEach(l => f[l] = fn[l] * Math.exp(s * gauss())); return f; });
     const sg = baderOfer(v, accordi()).seggi, tb = totBlocchi({ seggi: sg });
     sim.N.push(tb.N); sim.O.push(tb.O); sim.A.push(tb.A); if (tb.N >= MAGG) magg++;
     lettere.forEach(l => simL[l].push(sg[l] || 0));
@@ -2304,14 +2348,22 @@ function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
 
   const ord = Object.keys(voti).map(l => ({ l, p: infoLista(l), q: voti[l] / val, s: bo.seggi[l] || 0 })).sort((x, y) => y.q - x.q);
   const filo = ord.filter(x => x.q >= 0.025 && x.q < 0.045);
-  let h = '<div class="proiez"><h3>Come potrebbe finire</h3>';
-  h += '<div class="muted" style="font-size:12px;margin-bottom:6px">Se le stime qui sopra sono giuste: voti contati più quelli che mancano, ripartiti con Bader-Ofer. Fra parentesi il margine: l’intervallo che contiene 8 simulazioni su 10.</div>';
-  h += barraMaggioranza(t);
-  h += '<div class="proiezbl">' + [['N', 'Blocco Netanyahu'], ['O', 'Opposizione'], ['A', 'Partiti arabi']].map(([b, n]) => '<span><i style="background:' + BLOCCHI[b].c + '"></i>' + n + ' <b>' + t[b] + '</b>' + rng(sim[b]) + '</span>').join('') + '</div>';
-  h += '<div class="muted" style="font-size:12px;margin-top:4px">Il blocco Netanyahu arriva a 61 in ' + nf(magg / SIMUL * 100, 0) + ' simulazioni su 100.</div>';
+  let h = '<div class="proiez">';
+  h += '<div class="muted" style="font-size:13px;margin-bottom:6px">I voti contati più una stima di quelli che mancano (vedi «Cosa manca da contare»), ripartiti con soglia e Bader-Ofer. Accanto a ogni numero il margine: l’intervallo che contiene 8 simulazioni su 10.</div>';
+  /* il grafico dei blocchi, su una scala da 0 a 70 seggi */
+  const MAX = 70, x = v => (Math.min(v, MAX) / MAX * 100).toFixed(2) + '%';
+  h += '<div class="pgraf">' + [['N', 'Blocco Netanyahu'], ['O', 'Opposizione'], ['A', 'Partiti arabi']].map(([b, n]) => {
+    const [lo, hi] = fra(sim[b]);
+    return '<div class="pr"><div class="pn"><i style="background:' + BLOCCHI[b].c + '"></i>' + n + '</div><div class="pt"><div class="pb" style="width:' + x(t[b]) + ';background:' + BLOCCHI[b].c + '"></div>' +
+      (hi > lo ? '<div class="pm" style="left:' + x(lo) + ';width:calc(' + x(hi) + ' - ' + x(lo) + ')" title="margine ' + lo + '–' + hi + '"></div>' : '') +
+      '<i class="p61" style="left:' + x(MAGG) + '"></i></div><div class="pv">' + t[b] + '<small>' + (hi > lo ? lo + '–' + hi : 'stabile') + '</small></div></div>';
+  }).join('') + '<div class="pscala"><div></div><div><div>' + [0, 20, 40, 61].map(v => '<span style="left:' + x(v) + '">' + (v === 61 ? '61' : v) + '</span>').join('') + '</div></div><div></div></div></div>';
+  h += '<div style="font-size:14px;margin-top:10px">Il blocco Netanyahu arriva a 61 in <b>' + nf(magg / SIMUL * 100, 0) + ' simulazioni su 100</b>.</div>';
   h += '<div class="proiezliste">' + ord.filter(x => x.s > 0 || fra(simL[x.l])[1] > 0).map(x => '<span><i style="background:' + x.p.c + '"></i>' + esc(nomeBreve(x.p)) + ' <b>' + x.s + '</b>' + rng(simL[x.l]) + '</span>').join('') + '</div>';
+  const pt = x => (x >= 0 ? '+' : '−') + nf(Math.abs(x) * 100, 1);
+  if (envM > 0) h += '<div class="muted" style="font-size:12px;margin-top:6px">Doppie buste, ' + nf(envM) + ' votanti stimati: nel 2022 rispetto al paese avevano dato ' + pt(SCARTO_BUSTE22.N) + ' punti al blocco Netanyahu, ' + pt(SCARTO_BUSTE22.O) + ' all’opposizione e ' + pt(SCARTO_BUSTE22.A) + ' ai partiti arabi. Con lo stesso scarto sui voti contati oggi: Netanyahu ' + nf(QB.e.N * 100, 1) + '%, opposizione ' + nf(QB.e.O * 100, 1) + '%, arabi ' + nf(QB.e.A * 100, 1) + '%.</div>';
   if (filo.length) h += '<div class="muted" style="font-size:12px;margin-top:6px">Vicino alla soglia del 3,25%: ' + filo.map(x => esc(nomeBreve(x.p)) + ' ' + nf(x.q * 100, 2) + '%').join(', ') + '.</div>';
-  return h + '<div class="muted" style="font-size:11.5px;margin-top:8px">Non è un risultato: le località che mancano possono votare diversamente dalla loro area, e le doppie buste (soldati, diplomatici, malati) di solito non votano come il resto del paese. Il margine non tiene conto di un’affluenza diversa dal 77,7%.</div></div>';
+  return h + '<div class="muted" style="font-size:11.5px;margin-top:8px">Non è un risultato: le località che mancano possono votare diversamente dalla loro area, e le doppie buste (soldati, diplomatici, malati) sono stimate sullo scarto del 2022. Il margine non tiene conto di un’affluenza diversa dal 77,7%.</div></div>';
 }
 function renderManca() {
   const R = risultato(), box = $('manca');
@@ -2367,7 +2419,10 @@ function renderManca() {
   h += '<div class="rampl" style="gap:14px;justify-content:flex-start;flex-wrap:wrap;margin-top:4px;font-size:11px">' + ['N', 'O', 'A', 'X'].map(k => '<span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:' + BLOCCHI[k].c + ';margin-right:5px"></i>' + BLOCCHI[k].s + '</span>').join('') + '</div>';
   h += '<p class="muted" style="font-size:11.5px;margin:8px 0 0">I colori sono una stima: il voto 2022 di ogni località, spostato quanto si è spostata la sua area fra il 2022 e i voti 2026 già contati (blocco Netanyahu ' + (SWN.N >= 0 ? '+' : '−') + nf(Math.abs(SWN.N) * 100, 1) + ' punti a livello nazionale).</p>';
   if (a26) h += '<p class="muted" style="font-size:11.5px;margin:8px 0 0">In alcune località l’affluenza supera la media nazionale: il totale segue l’affluenza ufficiale, le località sono stimate una per una.</p>';
-  if (a26 && R.fonte !== 'manuale' && ord + envM > 0) h += proiezioneFinale(R, loc, grandi, ord / (tot || 1), envM, stima);
+  const pro = a26 && R.fonte !== 'manuale' && ord + envM > 0;
+  $('proiezCard').classList.toggle('hidden', !pro);
+  if (pro) { $('proiezBody').innerHTML = proiezioneFinale(R, loc, grandi, ord / (tot || 1), envM, stima); $('proiezMeta').textContent = 'scrutinio ' + alPct(avanzamento(R).f); }
+  h += pro ? '<p class="muted" style="font-size:11.5px;margin:8px 0 0">La proiezione a fine spoglio costruita su queste stime è in alto, in «Come potrebbe finire».</p>' : '';
   box.innerHTML = h;
 }
 
