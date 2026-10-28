@@ -3136,7 +3136,8 @@ window.CARD = (function () {
     z.aree.forEach((t, i) => {
       if (!t || t.v < FRECCIA_MIN_VOTI) return;
       const bx = bboxArea(i); if (!isFinite(bx[0])) return;
-      const m = /d="([^"]+)"/.exec(freccia((bx[0] + bx[2]) / 2, (bx[1] + bx[3]) / 2, t.N)); if (!m) return;
+      /* sulla card la mappa è piccola: le frecce sono lunghe due volte e mezzo quelle della pagina */
+      const m = /d="([^"]+)"/.exec(freccia((bx[0] + bx[2]) / 2, (bx[1] + bx[3]) / 2, t.N * 2.5)); if (!m) return;
       x.strokeStyle = t.N > 0 ? '#5b93ff' : '#ff6f8a'; x.lineWidth = 3.2 / k; x.stroke(new Path2D(m[1]));
     });
     x.restore();
@@ -3161,15 +3162,15 @@ window.CARD = (function () {
   const maxSpo = z => Math.max(4, Math.ceil(Math.max(...[z.naz.N].concat(areeSpo(z).map(o => o.t.N)).map(v => Math.abs(v) * 100)) / 2) * 2);
   function card8(x, s, N) {
     const z = s.spo;
-    frame(x, { badge: 'SPOSTAMENTO', kicker: s.ambito, title: g('t8').value, sub: z && z.naz ? scr(s) + ' · blocco Netanyahu, punti rispetto al 2022 sulle stesse località' : '', nota: NOTA8, fonte: fonteCEC(s) + ' (2022 e 2026)', n: N.n, tot: N.tot });
+    frame(x, { badge: 'SPOSTAMENTO', kicker: s.ambito, title: g('t8').value, sub: z && z.naz ? scr(s) + ' · blocco Netanyahu, punti rispetto al 2022 sulle stesse località' : '', nota: NOTA8, fonte: 'Commissione elettorale centrale, voti 2022 e 2026 (' + s.data + ')', n: N.n, tot: N.tot });
     if (!z || !z.naz) return attesa(x, 'In attesa dei voti contati');
     mappaFrecce(x, z, 62, 236, 530);
-    const rr_ = righeSpo(z, 16), h = Math.min(32, 520 / rr_.length);
+    const rr_ = righeSpo(z, 16), h = Math.min(32, 470 / rr_.length);
     barreSpo(x, rr_, 420, 1060, 330, 1538, 262, h, 19, maxSpo(z));
   }
   function ig8(x, s, N) {
     const z = s.spo, M = IG.M, Rr = IG.W - M;
-    const zz = frameIG(x, { badge: 'SPOSTAMENTO', kicker: s.ambito, title: g('t8').value, sub: z && z.naz ? scr(s) + ' · punti rispetto al 2022' : '', nota: NOTA8, fonte: fonteCEC(s) + ' (2022 e 2026)', n: N.n, tot: N.tot });
+    const zz = frameIG(x, { badge: 'SPOSTAMENTO', kicker: s.ambito, title: g('t8').value, sub: z && z.naz ? scr(s) + ' · punti rispetto al 2022' : '', nota: NOTA8, fonte: 'Commissione elettorale centrale, voti 2022 e 2026 (' + s.data + ')', n: N.n, tot: N.tot });
     if (!z || !z.naz) return attesaIG(x, zz, 'In attesa dei voti contati');
     const H = zz.y1 - zz.y0 - 10;
     mappaFrecce(x, z, M - 10, zz.y0, H);
