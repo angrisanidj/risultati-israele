@@ -165,8 +165,8 @@ select{background:var(--s2);color:var(--t1);border:1px solid var(--line-2);borde
 .proiezbl span{display:inline-flex;align-items:center;gap:6px}
 .proiezbl i{width:9px;height:9px;border-radius:2px}
 .flussi{padding:4px 18px 0}
-.flussi svg{display:block;width:100%;max-width:680px;height:auto;margin:0 auto}
-.flussi text{font:600 17px var(--sans);fill:var(--t1)}
+.flussi svg{display:block;width:100%;max-width:860px;height:auto;margin:0 auto}
+.flussi text{font:600 15px var(--sans);fill:var(--t1)}
 .flussi text.v,.flussi tspan.v{fill:var(--t2);font-weight:500}
 .flussitesto{padding:8px 18px 0;display:grid;gap:6px;font-size:13.5px;color:var(--t2);max-width:92ch}
 .flussitesto b{color:var(--t1)}
@@ -1955,7 +1955,7 @@ function renderFlussi() {
   const fl = R && R.loc && R.fonte !== 'manuale' && ED === '26' ? flussi(R.loc) : null;
   card.classList.toggle('hidden', !fl);
   if (!fl) return;
-  const W = 900, H = 340, nw = 16, g = geomFlussi(fl, W, H, [210, W - 210 - nw]);
+  const W = 900, H = 370, nw = 16, g = geomFlussi(fl, W, H, [210, W - 210 - nw]);
   const nastro = n => { const x0 = 210 + nw, x1 = W - 210 - nw, m = (x0 + x1) / 2; return '<path d="M' + x0 + ',' + n.y0.toFixed(1) + 'C' + m + ',' + n.y0.toFixed(1) + ' ' + m + ',' + n.y1.toFixed(1) + ' ' + x1 + ',' + n.y1.toFixed(1) + 'L' + x1 + ',' + (n.y1 + n.h).toFixed(1) + 'C' + m + ',' + (n.y1 + n.h).toFixed(1) + ' ' + m + ',' + (n.y0 + n.h).toFixed(1) + ' ' + x0 + ',' + (n.y0 + n.h).toFixed(1) + 'Z" fill="' + FL_COL[n.j] + '" fill-opacity=".42"><title>' + esc(FL_NOMI[n.j] + ' 2022 → ' + FL_NOMI[n.k] + ' 2026: ' + nf(n.q * 100, 1) + '% degli elettori') + '</title></path>'; };
   const nodo = (n, sx) => {
     const tx = sx ? n.x - 8 : n.x + nw + 8, an = sx ? 'end' : 'start', r_ = '<rect x="' + n.x + '" y="' + n.y.toFixed(1) + '" width="' + nw + '" height="' + Math.max(1, n.h).toFixed(1) + '" fill="' + FL_COL[n.k] + '" rx="2"></rect>';
