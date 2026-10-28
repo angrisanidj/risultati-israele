@@ -931,6 +931,12 @@ TOPO.objects.localities.geometries.forEach(g => { NOMI[g.id] = g.properties; });
 const nomeLoc = (code, he) => (NOMI[code] && NOMI[code].en) || (code === ENV_CODE ? 'Doppie buste' : (he || ('Località ' + code)));
 const SEGGI_MIN_ELENCO = 10000;
 const VAL22_ORD = Object.entries(BASE22.loc).reduce((s, [c, v]) => s + (Number(c) === ENV_CODE ? 0 : v[3]), 0);
+/* L'AVANZAMENTO NEL 2026 si stima sull'affluenza di quest'anno: 7.331.981 aventi diritto e il
+   77,7% di votanti (Commissione elettorale, alla chiusura dei seggi). Le doppie buste si
+   contano a parte, alla fine: dai votanti attesi si tolgono nella stessa quota del 2022. */
+const AVENTI_26 = 7331981, AFFLUENZA_26 = 0.777;
+const ENV_QUOTA22 = (() => { let t = 0; for (const v of Object.values(BASE22.loc)) t += v[2]; const e = BASE22.loc[ENV_CODE]; return e && t ? e[2] / t : 0; })();
+const VOT26_ORD = Math.round(AVENTI_26 * AFFLUENZA_26 * (1 - ENV_QUOTA22));
 const VAL22_ENV = (BASE22.loc[ENV_CODE] || [0, 0, 0, 0])[3];
 
 /* =====================================================================
@@ -1091,6 +1097,7 @@ function avanzamento(R) {
      quelli contati, e il conto dei seggi darebbe sempre il 100%. Vale solo se il file li ha
      tutti (oltre 10.000); altrimenti l'avanzamento si stima dai voti, contro quelli del 2022. */
   if (seg && seg.tot >= SEGGI_MIN_ELENCO) return { f: seg.fatti / seg.tot, tipo: 'seggi', fatti: seg.fatti, tot: seg.tot, ord };
+  if (ED === '26') { const vo = d.vot - (d.env ? d.env.vot : 0); return { f: clamp(vo / VOT26_ORD, 0, 1), tipo: 'affluenza', ord, vo, seggi: seg ? seg.fatti : 0 }; }
   return { f: clamp(ord / VAL22_ORD, 0, 1), tipo: 'volumi', ord, seggi: seg ? seg.fatti : 0 };
 }
 /* L'ORA DEGLI EXIT POLL si scrive com'è nei grafici delle reti, cioè in ora israeliana
@@ -1186,7 +1193,7 @@ function renderKpi() {
     $('kVoti').textContent = nf(R.val);
     $('kVotiMeta').textContent = R.fonte === 'manuale' ? 'inseriti a mano'
       : av.tipo === 'seggi' ? nf(av.fatti) + ' seggi elettorali su ' + nf(av.tot) + ' (' + pct(av.f) + ')'
-        : (av.seggi ? nf(av.seggi) + ' seggi elettorali contati · ' : '') + 'circa ' + pctScr(av.f) + ' dei voti ordinari, sui volumi del 2022';
+        : (av.seggi ? nf(av.seggi) + ' seggi elettorali contati · ' : '') + 'circa ' + pctScr(av.f) + (av.tipo === 'affluenza' ? ' dei votanti attesi, sull’affluenza 2026 (' + pct(AFFLUENZA_26) + ')' : ' dei voti ordinari, sui volumi del 2022');
     if (R.d) {
       let n = 0, tot = 0;
       for (const a of R.d.loc.values()) { if (a.code === ENV_CODE) continue; tot++; if (a.val > 0) n++; }
@@ -2057,9 +2064,10 @@ function renderScrutinio() {
   const R = risultato(), av = avanzamento(R);
   $('progressBar').style.width = (av.f * 100).toFixed(1) + '%';
   $('progressPct').textContent = R ? pct(av.f) : '—';
-  $('progPill').textContent = av.tipo === 'seggi' ? 'seggi elettorali' : av.tipo === 'volumi' ? 'stima sui volumi 2022' : av.tipo === 'manuale' ? 'manuale' : '—';
+  $('progPill').textContent = av.tipo === 'seggi' ? 'seggi elettorali' : av.tipo === 'affluenza' ? 'stima sull’affluenza 2026' : av.tipo === 'volumi' ? 'stima sui volumi 2022' : av.tipo === 'manuale' ? 'manuale' : '—';
   $('progressText').textContent = !R ? 'In attesa del file della Commissione'
     : av.tipo === 'seggi' ? nf(av.fatti) + ' seggi elettorali scrutinati su ' + nf(av.tot)
+      : av.tipo === 'affluenza' ? (av.seggi ? nf(av.seggi) + ' seggi elettorali contati, ' : '') + nf(av.vo) + ' votanti contati su circa ' + nf(VOT26_ORD) + ' attesi (' + pct(AFFLUENZA_26) + ' di ' + nf(AVENTI_26) + ' aventi diritto, doppie buste escluse)'
       : av.tipo === 'volumi' ? (av.seggi ? nf(av.seggi) + ' seggi elettorali contati, ' : '') + nf(av.ord) + ' voti ordinari su ' + nf(VAL22_ORD) + ' nel 2022' : 'Risultato inserito a mano';
   let cc = '';
   if (R && R.d) {
