@@ -168,8 +168,18 @@ select{background:var(--s2);color:var(--t1);border:1px solid var(--line-2);borde
 .flussi svg{display:block;width:100%;max-width:860px;height:auto;margin:0 auto}
 .flussi text{font:600 15px var(--sans);fill:var(--t1)}
 .flussi text.v,.flussi tspan.v{fill:var(--t2);font-weight:500}
-.flussitesto{padding:8px 18px 0;display:grid;gap:6px;font-size:13.5px;color:var(--t2);max-width:92ch}
-.flussitesto b{color:var(--t1)}
+.flussitesto{max-width:860px;margin:14px auto 0;padding:0 18px;box-sizing:content-box}
+.flussitesto h4{margin:0 0 10px;font-size:13px;font-weight:600;color:var(--t2)}
+.fr{display:grid;grid-template-columns:190px 1fr;gap:4px 16px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.fr .fn{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;color:var(--t1)}
+.fr .fn i{width:10px;height:10px;border-radius:2px;flex:0 0 10px}
+.fr .fn small{display:block;font-weight:500;font-size:12px;color:var(--t3)}
+.fr .fb{display:flex;height:22px;border-radius:3px;overflow:hidden;background:rgba(255,255,255,.05)}
+.fr .fb span{display:flex;align-items:center;justify-content:center;font:700 12px var(--sans);color:#fff;white-space:nowrap;overflow:hidden}
+.fr .fd{grid-column:2;font-size:13px;color:var(--t2)}
+.fr .fd b{color:var(--t1);font-variant-numeric:tabular-nums}
+#flussiNota{max-width:860px;margin:6px auto 0;padding:10px 18px 16px;box-sizing:content-box}
+@media(max-width:560px){.fr{grid-template-columns:1fr}.fr .fd{grid-column:1}.flussitesto{padding:0 14px}#flussiNota{padding:10px 14px 14px}}
 @media(max-width:560px){.flussi text{font-size:22px}.flussi{padding:4px 10px 0}}
 .simpre{display:flex;gap:8px;flex-wrap:wrap;padding:0 18px 12px}
 .simliste{display:flex;flex-wrap:wrap;gap:8px;padding:0 18px}
@@ -749,7 +759,7 @@ footer a{color:var(--t2)}
 
   <section class="card hidden" id="flussiCard" style="margin-bottom:14px">
     <div class="cardhead"><div><h2>Da dove vengono i voti</h2></div><span class="cmeta" id="flussiMeta">stima</span></div>
-    <p class="subcopy">Come si sono spostati gli elettori fra il 2022 e il 2026: a sinistra come avevano votato nel 2022, a destra come hanno votato oggi. Sono stime, non conteggi: nessuno sa come ha votato il singolo elettore.</p>
+    <p class="subcopy">Come si sono spostati gli elettori fra il 2022 e il 2026: a sinistra come avevano votato allora, a destra come hanno votato oggi. Sono stime, non conteggi: nessuno sa come ha votato il singolo elettore.</p>
     <div class="flussi" id="flussiGraf"></div>
     <div class="flussitesto" id="flussiTesto"></div>
     <p class="methodnote" id="flussiNota"></p>
@@ -1939,16 +1949,20 @@ function geomFlussi(fl, W, H, colX) {
   }));
   return { L, R, nastri, tot };
 }
-/* le frasi: di 100 elettori di ogni blocco del 2022, dove sono andati */
-function frasiFlussi(fl) {
-  const F = fl.F, out = [];
-  [['N', 'il blocco Netanyahu'], ['O', 'l’opposizione'], ['A', 'i partiti arabi'], ['S', 'nessuno: non avevano votato']].forEach(([c, nome]) => {
-    const j = FL_CAT.indexOf(c), riga = F[j], t = riga.reduce((a, b) => a + b, 0); if (!t) return;
-    const dest = FL_CAT.map((k, i) => ({ k, q: riga[i] / t })).filter(d => d.q >= .04).sort((a, b) => b.q - a.q);
-    const nomeD = k => k === c ? (c === 'S' ? 'non hanno votato neanche stavolta' : 'hanno rivotato ' + (c === 'N' ? 'il blocco' : c === 'O' ? 'l’opposizione' : 'i partiti arabi')) : k === 'S' ? 'non hanno votato' : 'hanno votato ' + { N: 'il blocco Netanyahu', O: 'l’opposizione', A: 'i partiti arabi', X: 'altre liste' }[k];
-    out.push('Di 100 elettori che nel 2022 avevano votato ' + nome + ', circa ' + dest.map(d => '<b>' + nf(d.q * 100, 0) + '</b> ' + nomeD(d.k)).join(', ') + '.');
-  });
-  return out.map(f => f.replace('avevano votato nessuno: non avevano votato', 'non avevano votato'));
+/* Per ogni gruppo del 2022, una barra: come hanno votato nel 2026 cento suoi elettori. Sotto,
+   i numeri; nella barra solo quelli che ci stanno. */
+const FL_DEST = { N: 'blocco Netanyahu', O: 'opposizione', A: 'partiti arabi', X: 'altre liste', S: 'non votano' };
+const FL_STESSO = { N: 'di nuovo il blocco Netanyahu', O: 'di nuovo l’opposizione', A: 'di nuovo i partiti arabi', X: 'di nuovo altre liste', S: 'non votano neanche stavolta' };
+function righeFlussi(fl) {
+  const F = fl.F, tot = F.flat().reduce((a, b) => a + b, 0);
+  return '<h4>Cento elettori di ciascun gruppo del 2022: come hanno votato nel 2026</h4>' + FL_CAT.map((c, j) => {
+    const t = F[j].reduce((a, b) => a + b, 0); if (!t || t / tot < .005) return '';
+    const dest = FL_CAT.map((k, i) => ({ k, q: F[j][i] / t })).filter(d => d.q >= .005).sort((a, b) => (b.k === c) - (a.k === c) || b.q - a.q);
+    const barra = dest.map(d => '<span style="width:' + (d.q * 100).toFixed(2) + '%;background:' + FL_COL[d.k] + '" title="' + esc(FL_DEST[d.k] + ': ' + nf(d.q * 100, 0) + ' su 100') + '">' + (d.q >= .07 ? nf(d.q * 100, 0) : '') + '</span>').join('');
+    const testo = dest.filter(d => d.q >= .03).map(d => '<b>' + nf(d.q * 100, 0) + '</b> ' + (d.k === c ? FL_STESSO[c] : FL_DEST[d.k])).join(' · ');
+    return '<div class="fr"><div class="fn"><i style="background:' + FL_COL[c] + '"></i><div>' + (c === 'S' ? 'Non votanti' : FL_NOMI[c]) + '<small>' + nf(t / tot * 100, 1) + '% degli aventi diritto</small></div></div>' +
+      '<div class="fb">' + barra + '</div><div class="fd">' + testo + '</div></div>';
+  }).join('');
 }
 function renderFlussi() {
   const R = risultato(), card = $('flussiCard');
@@ -1967,9 +1981,9 @@ function renderFlussi() {
   $('flussiGraf').innerHTML = '<svg viewBox="0 -24 ' + W + ' ' + (H + 30) + '" role="img" aria-label="Flussi di voto fra il 2022 e il 2026">' +
     '<text x="' + (210 + nw / 2) + '" y="-8" text-anchor="middle" class="v">2022</text><text x="' + (W - 210 - nw / 2) + '" y="-8" text-anchor="middle" class="v">2026</text>' +
     g.nastri.map(nastro).join('') + g.L.map(n => nodo(n, true)).join('') + g.R.map(n => nodo(n, false)).join('') + '</svg>';
-  $('flussiTesto').innerHTML = frasiFlussi(fl).map(f => '<div>' + f + '</div>').join('');
+  $('flussiTesto').innerHTML = righeFlussi(fl);
   $('flussiMeta').textContent = 'stima su ' + nf(fl.n) + ' località';
-  $('flussiNota').textContent = 'Regressione ecologica sulle ' + nf(fl.n) + ' località contate almeno al 90% (' + pct(fl.copertura, 0) + ' degli elettori del 2022), stimata a parte per le località ebraiche e per le ' + nf(fl.nA) + ' arabe: insieme darebbero flussi falsi. Le percentuali sono sugli aventi diritto delle località stimate. Le doppie buste restano fuori: i loro elettori figurano fra i non votanti, nel 2022 come nel 2026. I nuovi elettori finiscono soprattutto fra i non votanti del 2022. I flussi grandi sono affidabili; quelli di pochi punti molto meno. In particolare questo metodo vede poco i passaggi diretti fra blocco Netanyahu e opposizione: uno spostamento netto di pochi punti tende a comparire come elettori nuovi o tornati al voto. Blocchi del 2022: Netanyahu = Likud, Sionismo religioso, Shas, UTJ; nel 2026 anche Otzma, Noam e Popolo d’Israele.';
+  $('flussiNota').textContent = 'Come si stima: con la regressione ecologica sulle ' + nf(fl.n) + ' località contate almeno al 90%, che raccolgono il ' + pct(fl.copertura, 0) + ' degli aventi diritto del 2022. Le località arabe (' + nf(fl.nA) + ') si stimano a parte: insieme a quelle ebraiche darebbero flussi falsi. Le percentuali sono sugli aventi diritto di queste località. Le doppie buste restano fuori: chi vota così risulta fra i non votanti, nel 2022 come oggi; anche i diciottenni al primo voto finiscono soprattutto fra i non votanti del 2022. I flussi grandi sono affidabili, quelli di pochi punti molto meno: il metodo vede poco chi è passato direttamente dal blocco Netanyahu all’opposizione o viceversa, e tende a mostrarlo come elettori che tornano al voto o lo lasciano. Blocchi del 2022: Netanyahu vuol dire Likud, Sionismo religioso, Shas e UTJ; nel 2026 anche Otzma, Noam e Popolo d’Israele.';
 }
 function flussi(loc) {
   const chiave = [...loc.values()].reduce((a, x) => a + x.val, 0) + '/' + loc.size;
