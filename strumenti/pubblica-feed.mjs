@@ -17,8 +17,9 @@
    - lo sposta in Download/israele-2026/ con l'ora nel nome: la cartella Download resta pulita e
      resta l'archivio della notte.
    Se da un po' non arriva un file, ricorda di scaricarlo (notifica di Windows e messaggio qui).
-   L'intervallo segue il ritmo con cui la Commissione ha cambiato il file finora, fra 2 e 15 minuti.
-   Si ferma con Ctrl+C. */
+   L'intervallo segue il ritmo con cui la Commissione ha cambiato il file finora, fra 2 e 45 minuti
+   (dal 28 ottobre arriva un file ogni mezz'ora circa).
+   Si ferma con Ctrl+C, e da solo il 5 novembre: i risultati ufficiali escono il 4. */
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -32,7 +33,8 @@ const ARCHIVIO = path.join(DA, 'israele-2026');
 const DEST = PROVA ? 'dati/prova/live/' : 'dati/live/';
 const SITO = (process.env.URL_SITO || 'https://angrisanidj.github.io/risultati-israele/') + DEST;   /* sovrascrivibile solo per le prove */
 const NOME = /^(expc|expb)(?: ?\(\d+\))?\.csv$/i;
-const RICORDA_MIN = 5, RICORDA_DA = 2, RICORDA_A = 15;
+const RICORDA_MIN = 5, RICORDA_DA = 2, RICORDA_A = 45;
+const FINE = new Date('2026-11-05T00:00:00+01:00');   /* mezzanotte del 5 novembre, ora italiana */
 
 if (!fs.existsSync(DA)) { console.error('Cartella non trovata: ' + DA); process.exit(1); }
 fs.mkdirSync(ARCHIVIO, { recursive: true });
@@ -127,6 +129,10 @@ function archivia(file, tipo, quando) {
 const visti = new Map();   /* nome → dimensione all'ultimo giro: si legge solo un file che ha smesso di crescere */
 function giro() {
   if (S.inCorso) return;
+  if (Date.now() >= FINE) {
+    log('Fine: è il 5 novembre e i risultati ufficiali sono usciti il 4. Lo script si ferma.');
+    process.exit(0);
+  }
   let nomi;
   try { nomi = fs.readdirSync(DA).filter(n => NOME.test(n)); } catch (e) { log('✗ Non riesco a leggere ' + DA + ': ' + e.message); return; }
   const pronti = [];
@@ -177,7 +183,7 @@ function giro() {
 
 console.log('Sorveglio ' + DA + (PROVA ? '  ·  PROVA: pubblico in ' + DEST : '') + '\n' +
   'Scarica dal browser https://media26.bechirot.gov.il/files/expc.csv (ed expb.csv, se vuoi l’avanzamento per seggi).\n' +
-  'Ogni file nuovo va online da solo. Ctrl+C per fermare.\n');
+  'Ogni file nuovo va online da solo. Ctrl+C per fermare; si ferma da solo il 5 novembre.\n');
 setInterval(giro, 1500);
 setInterval(promemoria, 15000);
 giro();

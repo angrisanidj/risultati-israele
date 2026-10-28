@@ -19,10 +19,10 @@ $NOME = 'Sorveglia feed Israele'
 if ($Installa) {
   $vbs = Join-Path $PSScriptRoot 'sorveglia-feed.vbs'
   $azione = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument ('"' + $vbs + '"')
-  $quando = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 2) -RepetitionDuration (New-TimeSpan -Days 3)
+  $quando = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 2) -RepetitionDuration ([datetime]'2026-11-05' - (Get-Date))
   $imp = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -MultipleInstances IgnoreNew
   Register-ScheduledTask -TaskName $NOME -Action $azione -Trigger $quando -Settings $imp -Description 'Avvisa se strumenti/pubblica-feed.mjs (risultati-israele) si ferma' -Force | Out-Null
-  Write-Host "Attività «$NOME» registrata: controlla ogni 2 minuti per 3 giorni."
+  Write-Host "Attività «$NOME» registrata: controlla ogni 2 minuti fino al 5 novembre."
   exit 0
 }
 if ($Rimuovi) {
@@ -41,6 +41,9 @@ function Notifica([string]$titolo, [string]$testo) {
 }
 
 if ($Prova) { Notifica 'Feed Israele: prova' 'Le notifiche del controllo arrivano.'; exit 0 }
+
+# dal 5 novembre lo script del feed si ferma da solo: niente più avvisi
+if ((Get-Date) -ge [datetime]'2026-11-05') { exit 0 }
 
 $vivo = Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" -ErrorAction SilentlyContinue |
   Where-Object { $_.CommandLine -match 'pubblica-feed\.mjs' }
