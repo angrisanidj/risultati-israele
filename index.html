@@ -2276,8 +2276,8 @@ function renderScrutinio() {
    liste nuove contano 1. Quest'anno ci sono più riservisti, di ogni orientamento: per questo
    il margine delle buste resta largo. */
 const RAPPORTO_BUSTE22 = { 'מחל': 1.00, 'רק': 0.95, 'ט': 1.43, 'ב': 1.43, 'דרך': 1.17, 'כן': 1.17, 'שס': 0.83, 'ג': 0.64, 'ל': 1.27, 'עם': 0.43, 'ודם': 0.50, 'אמת': 1.21 };
-/* la Commissione stima circa 600.000 doppie buste (Times of Israel, 28 ottobre) */
-const BUSTE_ATTESE_26 = 600000;
+/* la Commissione stima fra 600.000 e 650.000 doppie buste (Ynet, Times of Israel): si usa il valore di mezzo */
+const BUSTE_ATTESE_26 = 625000;
 const ENV_QUOTA26 = BUSTE_ATTESE_26 / VOT26;
 function quoteBuste(nazQ) {
   const q = {}; let t = 0;
@@ -2367,7 +2367,7 @@ function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
   h += '<div class="muted" style="font-size:12px;margin-top:4px">La proiezione fa ' + (t.N + t.O + t.A + t.X) + ' seggi' + (non120 ? '' : ', e così ogni simulazione') + '. I margini dei blocchi non si sommano: quando uno sta in alto, gli altri scendono.</div>';
   h += '<div class="proiezliste">' + ord.filter(x => x.s > 0 || fra(simL[x.l])[1] > 0).map(x => '<span><i style="background:' + x.p.c + '"></i>' + esc(nomeBreve(x.p)) + ' <b>' + x.s + '</b>' + rng(simL[x.l]) + '</span>').join('') + '</div>';
   const pt = x => (x >= 0 ? '+' : '−') + nf(Math.abs(x) * 100, 1);
-  if (envM > 0) h += '<div class="muted" style="font-size:12px;margin-top:6px">Doppie buste: ' + (envM >= BUSTE_ATTESE_26 ? 'circa ' + nf(BUSTE_ATTESE_26) + ' secondo la Commissione, ancora tutte da contare' : 'ne mancano circa ' + nf(envM) + ', sulle ' + nf(BUSTE_ATTESE_26) + ' stimate dalla Commissione') + '. Nel 2022 i partiti arabi vi avevano preso meno della metà della loro quota nazionale, UTJ due terzi e Shas l’83%; più della media Sionismo religioso con Ben Gvir, i Laburisti e Yisrael Beitenu. Con gli stessi rapporti sui voti contati oggi: Netanyahu ' + nf(QB.e.N * 100, 1) + '%, opposizione ' + nf(QB.e.O * 100, 1) + '%, arabi ' + nf(QB.e.A * 100, 1) + '%.</div>';
+  if (envM > 0) h += '<div class="muted" style="font-size:12px;margin-top:6px">Doppie buste: ' + (envM >= BUSTE_ATTESE_26 ? 'circa ' + nf(BUSTE_ATTESE_26) + ' secondo la Commissione (che ne stima fra 600.000 e 650.000), ancora tutte da contare' : 'ne mancano circa ' + nf(envM) + ', sulle ' + nf(BUSTE_ATTESE_26) + ' stimate (la Commissione ne prevede fra 600.000 e 650.000)') + '. Nel 2022 i partiti arabi vi avevano preso meno della metà della loro quota nazionale, UTJ due terzi e Shas l’83%; più della media Sionismo religioso con Ben Gvir, i Laburisti e Yisrael Beitenu. Con gli stessi rapporti sui voti contati oggi: Netanyahu ' + nf(QB.e.N * 100, 1) + '%, opposizione ' + nf(QB.e.O * 100, 1) + '%, arabi ' + nf(QB.e.A * 100, 1) + '%.</div>';
   /* gli stessi numeri servono alla card 7 */
   PROIEZ = { t, rg: { N: fra(sim.N), O: fra(sim.O), A: fra(sim.A), X: fra(sim.X) }, magg: magg / SIMUL, f: avanzamento(R).f,
     liste: ord.filter(x => x.s > 0).map(x => ({ p: x.p, s: x.s, rg: fra(simL[x.l]) })), filo: filo.map(x => ({ p: x.p, q: x.q })) };
