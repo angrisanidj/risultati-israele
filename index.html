@@ -361,9 +361,6 @@ table.conf th .corto{display:none}
 .bolleg div{display:grid;justify-items:center;gap:3px;font-size:11.5px;color:var(--t3)}
 .bolleg svg circle{fill:none;stroke:var(--t2);stroke-width:1}
 /* le frecce dello spostamento */
-#arrLayer{pointer-events:none}
-#arrLayer path{fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
-#arrLayer path.N{stroke:#5b93ff}#arrLayer path.O{stroke:#ff6f8a}
 .mapfonte button:disabled{opacity:.4;cursor:not-allowed}
 .spotot{font-size:13px;color:var(--t2);margin:2px 0 10px;line-height:1.5}
 .spotot b{color:var(--t1)}
@@ -724,7 +721,7 @@ footer a{color:var(--t2)}
       <div class="mapside l maplist"><h4 id="listTitle">Le aree</h4><input id="cerca" class="cerca" placeholder="Cerca una località…" autocomplete="off"><div id="locList" class="rows"></div></div>
       <div class="mapcol">
         <div class="mapstage" id="mapStage">
-          <svg id="locMap" role="img" aria-label="Mappa delle località israeliane"><g id="baseLayer"></g><g id="locLayer"></g><g id="bubLayer"></g><g id="arrLayer"></g><g id="hiLayer"></g></svg>
+          <svg id="locMap" role="img" aria-label="Mappa delle località israeliane"><g id="baseLayer"></g><g id="locLayer"></g><g id="bubLayer"></g><g id="hiLayer"></g></svg>
           <span class="maphint" id="mapHint">Tocca un’area per vedere le sue località</span>
           <button id="mapBack" class="sm mapback hidden">← Tutto il paese</button>
           <div class="mapzoom">
@@ -1844,14 +1841,17 @@ const livello = () => S.mapLivello === 'loc' || S.mapLivello === 'bolle' ? 'loc'
 const bolle = () => S.mapLivello === 'bolle';
 const BOLLA_MAX = 30, BOLLA_VAL = 250000;
 const raggioBolla = v => Math.max(1.3, BOLLA_MAX * Math.sqrt(v / BOLLA_VAL));
-/* LO SPOSTAMENTO: per ogni area o località, una freccia dal suo centro. Verso destra e blu se
-   il blocco Netanyahu ha guadagnato quota rispetto al 2022, verso sinistra e rossa se l'ha
-   persa; la lunghezza è la differenza in punti. Nel 2022 il blocco era Likud, Sionismo
+/* LO SPOSTAMENTO: ogni area o località ha un colore, blu se il blocco Netanyahu ha guadagnato
+   quota rispetto al 2022, rosso se l'ha persa, più pieno quanto più si è spostata: pieno da
+   SPOSTA_SCALA (10 punti) in su, grigio dove non si è mossa. Le frecce di prima si accavallavano
+   nelle centinaia di località; il colore no, e funziona anche sulle bolle. Nel 2022 il blocco era Likud, Sionismo
    religioso, Shas e UTJ; nel 2026 Likud, SR–Zehut, Otzma Yehudit, Shas, UTJ, Noam e Popolo
    d'Israele. Si attiva dal 75% dello scrutinio, quando quasi ovunque i voti sono abbastanza;
    ?sposta=1 la accende prima, per le prove. */
 const SPOSTA_DA = 0.75, SPOSTA_FORZA = PARAM.get('sposta') === '1';
-const FRECCIA_10PT = 80, FRECCIA_MIN_VOTI = 300;
+const SPOSTA_MIN_VOTI = 300, SPOSTA_SCALA = 0.10, COL_FERMO = '#3b4256';
+/* il colore di uno spostamento, in quota (0,05 = 5 punti); null se non si può calcolare */
+const colSpost = dq => dq == null ? COL_VUOTO : mix(COL_FERMO, dq > 0 ? BLOCCHI.N.c : BLOCCHI.O.c, 0.12 + 0.88 * clamp(Math.abs(dq) / SPOSTA_SCALA, 0, 1));
 const spostaAttivo = R => SPOSTA_FORZA || (!!R && R.fonte !== 'manuale' && avanzamento(R).f >= SPOSTA_DA);
 /* Lo spostamento sulle stesse località: per ogni area e per tutto il paese, la quota dei
    blocchi nei voti contati nel 2026 meno quella che le stesse località avevano nel 2022,
@@ -1869,22 +1869,6 @@ function spostamenti(loc) {
   return { naz: sw(naz), aree: sp.map(sw) };
 }
 const punti = x => (x >= 0 ? '+' : '−') + nf(Math.abs(x) * 100, 1);
-/* Per le aree la lunghezza è proporzionale ai punti. Per le località no: dove si vota poco gli
-   spostamenti arrivano a 30-40 punti e le frecce uscirebbero dalla scala, quindi la lunghezza
-   cresce con il logaritmo, e oltre i 30 punti non cresce più. 10 punti valgono FRECCIA_10PT in
-   tutte e due le scale. */
-const FRECCIA_LOG_MAX = 30;
-const lunghezzaLog = pt => FRECCIA_10PT * Math.log1p(Math.min(pt, FRECCIA_LOG_MAX) / 5) / Math.log1p(2);
-function freccia(x, y, dq, log) {
-  const pt = Math.abs(dq) * 100;
-  const L = log ? lunghezzaLog(pt) : Math.min(pt / 10 * FRECCIA_10PT, FRECCIA_10PT * 2.5);
-  if (L < 1.5) return '';
-  const s = dq > 0 ? 1 : -1, a = Math.PI / 4, ex = x + s * L * Math.cos(a), ey = y - L * Math.sin(a);
-  const h = Math.max(3, Math.min(10, L * 0.25)), b = Math.atan2(ey - y, ex - x);
-  const p1 = [ex - h * Math.cos(b - 0.5), ey - h * Math.sin(b - 0.5)], p2 = [ex - h * Math.cos(b + 0.5), ey - h * Math.sin(b + 0.5)];
-  return '<path class="' + (dq > 0 ? 'N' : 'O') + '" d="M' + x.toFixed(1) + ',' + y.toFixed(1) + 'L' + ex.toFixed(1) + ',' + ey.toFixed(1) +
-    'M' + p1[0].toFixed(1) + ',' + p1[1].toFixed(1) + 'L' + ex.toFixed(1) + ',' + ey.toFixed(1) + 'L' + p2[0].toFixed(1) + ',' + p2[1].toFixed(1) + '"></path>';
-}
 function costruisciMappa() {
   const layer = $('locLayer');
   $('baseLayer').innerHTML = MAPPA.base.map((g, i) => '<path d="' + g.d + '" data-sd="' + i + '"></path>').join('');
@@ -2014,7 +1998,7 @@ function quote(a) {
   arr.forEach(x => bl[infoLista(x.l).b] += x.q);
   return { arr, bl };
 }
-function coloreLoc(a, modo, aree) {
+function coloreLoc(a, modo, aree, sw) {
   modo = modo || S.mapMode;
   const q = quote(a); if (!q) return COL_VUOTO;
   if (modo === 'blocco') {
@@ -2022,7 +2006,12 @@ function coloreLoc(a, modo, aree) {
     const b = ['N', 'O', 'A'].reduce((m, k) => q.bl[k] > q.bl[m] ? k : m, 'N');
     return mix(COL_BASE, BLOCCHI[b].c, 0.35 + 0.65 * clamp((q.bl[b] - 0.35) / 0.45, 0, 1));
   }
-  if (modo === 'sposta') return COL_BASE;
+  if (modo === 'sposta') {
+    /* l'area usa lo spostamento sulle stesse località (sw); la località il suo 2022 */
+    if (aree) return colSpost(sw && sw.v >= SPOSTA_MIN_VOTI ? sw.N : null);
+    const b = BASE22.loc[a.code];
+    return colSpost(b && a.val >= SPOSTA_MIN_VOTI ? q.bl.N - b[6] / 1000 : null);
+  }
   if (modo === 'lista') {
     const l = S.mapLista, p = infoLista(l), v = (a.v[l] || 0) / a.val;
     return mix(COL_BASE, p.c, clamp(v / 0.6, 0, 1) * 0.9 + (v > 0 ? 0.1 : 0));
@@ -2037,8 +2026,9 @@ function coloreLoc(a, modo, aree) {
    colorate per aggregato e la pagina le attenua. */
 function coloriMappa(loc, liv, modo, foc) {
   const sd = aggregaSD(loc), aperta = liv === 'sd' && foc != null;
-  const base = MAPPA.base.map((g, i) => liv !== 'sd' ? COL_TERRA : (aperta && i === foc ? COL_TERRA : coloreLoc(sd[i], modo, true)));
-  const gs = coloreLoc(sd[SD_GS], modo, true);
+  const sp = modo === 'sposta' || (!modo && S.mapMode === 'sposta') ? spostamenti(loc) : null;
+  const base = MAPPA.base.map((g, i) => liv !== 'sd' ? COL_TERRA : (aperta && i === foc ? COL_TERRA : coloreLoc(sd[i], modo, true, sp && sp.aree[i])));
+  const gs = coloreLoc(sd[SD_GS], modo, true, sp && sp.aree[SD_GS]);
   const locs = MAPPA.geo.map(g => {
     if (liv !== 'sd') return coloreLoc(loc.get(g.id), modo);
     const i = sdDi(g.id);
@@ -2078,12 +2068,6 @@ function renderMappa() {
   const bs = document.querySelector('#mapMode button[data-mode="sposta"]');
   bs.disabled = !sposta;
   bs.title = sposta ? 'Le frecce dello spostamento rispetto al 2022' : 'Si attiva al 75% dello scrutinio';
-  /* con lo spostamento niente bolle: le frecce partono dal centro delle località, e i cerchi le
-     coprirebbero o ne sarebbero coperti */
-  const bb = document.querySelector('#mapLivello button[data-liv="bolle"]');
-  bb.disabled = S.mapMode === 'sposta';
-  bb.title = bb.disabled ? 'Le bolle non si usano con lo spostamento' : 'Un cerchio per località, grande quanto i voti validi';
-  if (S.mapMode === 'sposta' && S.mapLivello === 'bolle') S.mapLivello = 'loc';
   if (liv !== 'sd') S.focusSD = null;
   const foc = liv === 'sd' ? S.focusSD : null;
   const col = coloriMappa(loc, liv, undefined, foc);
@@ -2106,24 +2090,6 @@ function renderMappa() {
     B.sort((a, b) => b.r - a.r);
     $('bubLayer').innerHTML = B.map(b => '<circle data-id="' + b.id + '" cx="' + b.x.toFixed(1) + '" cy="' + b.y.toFixed(1) + '" r="' + b.r.toFixed(2) + '" fill="' + b.c + '"></circle>').join('');
   } else $('bubLayer').innerHTML = '';
-  let fr = '';
-  if (S.mapMode === 'sposta') {
-    if (liv === 'sd' && foc == null) {
-      spostamenti(loc).aree.forEach((t, i) => {
-        if (!t || t.v < FRECCIA_MIN_VOTI) return;
-        const bx = bboxArea(i); if (!isFinite(bx[0])) return;
-        fr += freccia((bx[0] + bx[2]) / 2, (bx[1] + bx[3]) / 2, t.N);
-      });
-    } else {
-      MAPPA.geo.forEach(g => {
-        if (foc != null && sdDi(g.id) !== foc) return;
-        const a = loc.get(g.id), b = stessaLocalita22(g.id), q = quote(a);
-        if (!q || !b || !b.val || a.val < FRECCIA_MIN_VOTI || !isFinite(g.bx[0])) return;
-        fr += freccia((g.bx[0] + g.bx[2]) / 2, (g.bx[1] + g.bx[3]) / 2, q.bl.N - b.N, true);
-      });
-    }
-  }
-  $('arrLayer').innerHTML = fr;
   let fatte = 0;
   for (const a of loc.values()) if (a.val > 0 && MAPPA.byId[a.code]) fatte++;
   const sdFatti = col.sd.filter(o => o.val > 0).length;
@@ -2157,17 +2123,11 @@ function renderMappa() {
     lg = '<h4>Primo blocco · ' + (liv === 'sd' ? 'aree' : 'località') + '</h4><div class="lg">' + ['N', 'O', 'A'].map(b => '<div><i style="background:' + BLOCCHI[b].c + '"></i><span>' + BLOCCHI[b].n + '</span><b>' + nf(cnt[b]) + '</b></div>').join('') +
       '</div><p>Ogni ' + (liv === 'sd' ? 'area' : 'località') + ' ha il colore del blocco con più voti, più pieno quanto più è forte: dal 35% all’80% dei voti validi.</p>';
   } else if (S.mapMode === 'sposta') {
-    const es = (dq, c) => '<svg width="44" height="34" viewBox="0 0 44 34">' + freccia(dq > 0 ? 6 : 38, 32, dq * 0.6).replace('class="N"', 'stroke="#5b93ff"').replace('class="O"', 'stroke="#ff6f8a"') + '</svg>';
-    const SN = spostamenti(loc).naz;
+    const SN = spostamenti(loc).naz, aree = liv === 'sd' && foc == null;
     lg = '<h4>Spostamento rispetto al 2022</h4>' + (SN ? '<div class="spotot">Nel complesso, sulle località già contate: blocco Netanyahu <b>' + punti(SN.N) + '</b> punti, opposizione <b>' + punti(SN.O) + '</b>, partiti arabi <b>' + punti(SN.A) + '</b>.</div>' : '') +
-      '<div class="frecceleg"><div>' + es(0.05) + '<span>il blocco Netanyahu guadagna</span></div><div>' + es(-0.05) + '<span>il blocco Netanyahu perde</span></div></div>' +
-      (() => {
-        const aree = liv === 'sd' && foc == null, px = v => Math.round(v * (($('locMap').getBoundingClientRect().height || 600) / MAPPA.H));
-        return '<p>La freccia parte dal centro di ' + (aree ? 'ogni area' : 'ogni località') + ' e misura quanto è cambiata la quota del blocco Netanyahu sui voti validi rispetto a come avevano votato le stesse località nel 2022. Il numero, in punti, è nell’elenco a sinistra. ' +
-          (aree ? 'La lunghezza è proporzionale: con la mappa intera 10 punti sono circa ' + px(FRECCIA_10PT) + ' pixel.'
-            : 'Per le località la lunghezza cresce più lentamente dei punti (scala logaritmica), perché nei centri piccoli gli spostamenti sono molto grandi: con la mappa intera 10 punti sono circa ' + px(lunghezzaLog(10)) + ' pixel, 30 punti circa ' + px(lunghezzaLog(30)) + '; oltre i 30 punti la freccia non si allunga più.') +
-          ' Solo dove sono contati almeno ' + nf(FRECCIA_MIN_VOTI) + ' voti validi.</p>';
-      })();
+      '<div class="ramp" style="background:linear-gradient(90deg,' + colSpost(-SPOSTA_SCALA) + ',' + colSpost(0) + ',' + colSpost(SPOSTA_SCALA) + ')"></div><div class="rampl"><span>−10 punti o più</span><span>0</span><span>+10 o più</span></div>' +
+      '<p>Il colore dice quanto è cambiata la quota del blocco Netanyahu rispetto a come avevano votato ' + (aree ? 'le stesse località di ogni area' : 'le stesse località') + ' nel 2022: rosso dove perde, blu dove guadagna, più pieno quanto più si sposta. Il numero, in punti, è nell’elenco a sinistra.' +
+      (bolle() ? ' La grandezza della bolla è il numero di voti validi.' : '') + ' In grigio scuro dove sono contati meno di ' + nf(SPOSTA_MIN_VOTI) + ' voti validi.</p>';
   } else {
     const p = infoLista(S.mapLista);
     lg = '<h4>' + esc(p.n) + '</h4><div class="ramp" style="background:linear-gradient(90deg,' + COL_BASE + ',' + p.c + ')"></div><div class="rampl"><span>0%</span><span>30%</span><span>60% e oltre</span></div><p>Quota della lista sui voti validi di ogni ' + (liv === 'sd' ? 'area' : 'località') + '.</p>';
@@ -3142,25 +3102,8 @@ window.CARD = (function () {
   }
 
   /* ---------- CARD 8 — lo spostamento rispetto al 2022 ---------- */
-  const NOTA8 = 'Differenza fra la quota del blocco Netanyahu nei voti contati e quella che le stesse località gli avevano dato nel 2022, in punti. Nel 2022 il blocco era Likud, Sionismo religioso, Shas e UTJ; nel 2026 anche Otzma Yehudit, Noam e Popolo d’Israele.';
+  const NOTA8 = 'Differenza fra la quota del blocco Netanyahu nei voti contati e quella che le stesse località gli avevano dato nel 2022, in punti: nella mappa rosso dove perde, blu dove guadagna. Nel 2022 il blocco era Likud, Sionismo religioso, Shas e UTJ; nel 2026 anche Otzma Yehudit, Noam e Popolo d’Israele.';
   const areeSpo = (z, min) => z.aree.map((t, i) => ({ i, t })).filter(o => o.t && o.t.v >= (min || 2000)).sort((a, b) => a.t.N - b.t.N);
-  /* la mappa delle aree con le frecce, come nella pagina */
-  function mappaFrecce(x, z, ox, oy, H) {
-    const k = H / MAPPA.H;
-    x.save(); x.translate(ox, oy); x.scale(k, k);
-    x.lineWidth = .9 / k; x.strokeStyle = '#2c3a58';
-    MAPPA.base.forEach(gm => { const pth = new Path2D(gm.d); x.fillStyle = COL_BASE; x.fill(pth); x.stroke(pth); });
-    MAPPA.geo.forEach(gm => { if (sdDi(gm.id) !== SD_GS) return; const pth = new Path2D(gm.d); x.fillStyle = COL_BASE; x.fill(pth); });
-    x.lineCap = 'round'; x.lineJoin = 'round';
-    z.aree.forEach((t, i) => {
-      if (!t || t.v < FRECCIA_MIN_VOTI) return;
-      const bx = bboxArea(i); if (!isFinite(bx[0])) return;
-      /* sulla card la mappa è piccola: le frecce sono lunghe due volte e mezzo quelle della pagina */
-      const m = /d="([^"]+)"/.exec(freccia((bx[0] + bx[2]) / 2, (bx[1] + bx[3]) / 2, t.N * 2.5)); if (!m) return;
-      x.strokeStyle = t.N > 0 ? '#5b93ff' : '#ff6f8a'; x.lineWidth = 3.2 / k; x.stroke(new Path2D(m[1]));
-    });
-    x.restore();
-  }
   /* le barre divergenti dello spostamento: a sinistra il blocco Netanyahu perde, a destra guadagna */
   function barreSpo(x, righe, x0, cx, half, vx, y0, h, fs, maxPt) {
     const sx = v => cx + Math.max(-1, Math.min(1, v * 100 / maxPt)) * half;
@@ -3183,7 +3126,8 @@ window.CARD = (function () {
     const z = s.spo;
     frame(x, { badge: 'SPOSTAMENTO', kicker: s.ambito, title: g('t8').value, sub: z && z.naz ? scr(s) + ' · blocco Netanyahu, punti rispetto al 2022 sulle stesse località' : '', nota: NOTA8, fonte: 'Commissione elettorale centrale, voti 2022 e 2026 (' + s.data + ')', n: N.n, tot: N.tot });
     if (!z || !z.naz) return attesa(x, 'In attesa dei voti contati');
-    mappaFrecce(x, z, 62, 236, 530);
+    mappaVista(x, s, { liv: 'sd', modo: 'sposta' }, 62 + (330 - MAPPA.W * 470 / MAPPA.H) / 2, 236, 470);
+    rampaSpo(x, 62, 728, 300, 14);
     const rr_ = righeSpo(z, 16), h = Math.min(32, 470 / rr_.length);
     barreSpo(x, rr_, 420, 1060, 330, 1538, 262, h, 19, maxSpo(z));
   }
@@ -3192,7 +3136,7 @@ window.CARD = (function () {
     const zz = frameIG(x, { badge: 'SPOSTAMENTO', kicker: s.ambito, title: g('t8').value, sub: z && z.naz ? scr(s) + ' · punti rispetto al 2022' : '', nota: NOTA8, fonte: 'Commissione elettorale centrale, voti 2022 e 2026 (' + s.data + ')', n: N.n, tot: N.tot });
     if (!z || !z.naz) return attesaIG(x, zz, 'In attesa dei voti contati');
     const H = zz.y1 - zz.y0 - 10;
-    mappaFrecce(x, z, M - 10, zz.y0, H);
+    mappaVista(x, s, { liv: 'sd', modo: 'sposta' }, M - 10, zz.y0, H);
     const rr_ = righeSpo(z, 16), h = Math.min(38, (H - 40) / rr_.length), x0 = M + MAPPA.W * H / MAPPA.H + 10;
     barreSpo(x, rr_, x0, x0 + 300, 130, Rr, zz.y0 + 30, h, 19, maxSpo(z));
   }
@@ -3207,35 +3151,35 @@ window.CARD = (function () {
     bloccoLoc: { liv: 'loc', modo: 'blocco', badge: 'I BLOCCHI', sub: 'il blocco più votato località per località', nota: 'Ogni poligono è una località, con il colore del blocco più votato, più pieno dove è più forte. I poligoni coprono solo l’abitato.' },
     bollePrimo:  { liv: 'bolle', modo: 'primo', badge: 'DOVE SONO I VOTI', sub: 'una bolla per località, grande quanto i voti validi', nota: 'Un cerchio per località, con l’area proporzionale ai voti validi contati e il colore della lista più votata: la mappa mostra dove sono gli elettori, non quanta terra c’è.' },
     bolleBlocco: { liv: 'bolle', modo: 'blocco', badge: 'DOVE SONO I VOTI', sub: 'una bolla per località, con il colore del blocco più votato', nota: 'Un cerchio per località, con l’area proporzionale ai voti validi contati e il colore del blocco più votato: la mappa mostra dove sono gli elettori, non quanta terra c’è.' },
-    spostaLoc: { liv: 'loc', modo: 'sposta', badge: 'SPOSTAMENTO', sub: 'il blocco Netanyahu rispetto al 2022, località per località', nota: 'La freccia misura quanto è cambiata la quota del blocco Netanyahu rispetto al 2022 nella stessa località. La lunghezza cresce con il logaritmo e oltre 30 punti non cresce più. Solo località con almeno 300 voti validi.' }
+    spostaLoc: { liv: 'loc', modo: 'sposta', badge: 'SPOSTAMENTO', sub: 'il blocco Netanyahu rispetto al 2022, località per località', nota: 'Ogni località ha il colore dello spostamento del blocco Netanyahu rispetto al 2022 nella stessa località: rosso dove perde, blu dove guadagna, pieno da 10 punti in su. In grigio scuro le località con meno di 300 voti validi contati.' },
+    bolleSposta: { liv: 'bolle', modo: 'sposta', badge: 'SPOSTAMENTO', sub: 'una bolla per località, grande quanto i voti, colorata per lo spostamento', nota: 'Un cerchio per località, con l’area proporzionale ai voti validi e il colore dello spostamento del blocco Netanyahu rispetto al 2022: rosso dove perde, blu dove guadagna, pieno da 10 punti in su.' }
   };
   /* il disegno della mappa sulla tela, in una vista; ritorna la scala */
   function mappaVista(x, s, v, ox, oy, H) {
     const loc = s.R.loc, k = H / MAPPA.H, liv = v.liv === 'sd' ? 'sd' : 'loc';
-    const col = v.modo === 'sposta' ? null : coloriMappa(loc, liv, v.modo);
+    const col = coloriMappa(loc, liv, v.modo);
     x.save(); x.translate(ox, oy); x.scale(k, k);
     x.lineWidth = .9 / k; x.strokeStyle = liv === 'sd' ? '#08101f' : '#2c3a58';
-    MAPPA.base.forEach((gm, i) => { const pth = new Path2D(gm.d); x.fillStyle = col && liv === 'sd' ? col.base[i] : v.modo === 'sposta' ? COL_BASE : COL_TERRA; x.fill(pth); x.stroke(pth); });
+    MAPPA.base.forEach((gm, i) => { const pth = new Path2D(gm.d); x.fillStyle = col.base[i]; x.fill(pth); x.stroke(pth); });
     if (v.liv === 'bolle') {
       const B = [];
       MAPPA.geo.forEach((gm, i) => { const a = loc.get(gm.id); if (a && a.val > 0 && isFinite(gm.bx[0])) B.push({ x: (gm.bx[0] + gm.bx[2]) / 2, y: (gm.bx[1] + gm.bx[3]) / 2, r: raggioBolla(a.val), c: col.locs[i] }); });
       B.sort((a, b) => b.r - a.r).forEach(b => { x.beginPath(); x.arc(b.x, b.y, b.r, 0, 7); x.globalAlpha = .9; x.fillStyle = b.c; x.fill(); x.globalAlpha = 1; x.lineWidth = .8 / k; x.strokeStyle = '#08101f'; x.stroke(); });
-    } else if (v.modo === 'sposta') {
-      x.lineCap = 'round'; x.lineJoin = 'round';
-      MAPPA.geo.forEach(gm => {
-        const a = loc.get(gm.id), b = stessaLocalita22(gm.id), q = quote(a);
-        if (!q || !b || !b.val || a.val < FRECCIA_MIN_VOTI || !isFinite(gm.bx[0])) return;
-        /* sulla card le frecce sono più corte di quelle della pagina: sono centinaia, e la mappa è piccola */
-        const dq = q.bl.N - b.N, cx = (gm.bx[0] + gm.bx[2]) / 2, cy = (gm.bx[1] + gm.bx[3]) / 2, m = /d="([^"]+)"/.exec(freccia(0, 0, dq, true)); if (!m) return;
-        x.save(); x.translate(cx, cy); x.scale(.6, .6);
-        x.strokeStyle = dq > 0 ? '#5b93ff' : '#ff6f8a'; x.lineWidth = 1.3 / k / .6; x.stroke(new Path2D(m[1])); x.restore();
-      });
     } else {
       x.lineWidth = .4 / k; x.strokeStyle = '#08101f';
       MAPPA.geo.forEach((gm, i) => { if (col.locs[i] == null) return; const pth = new Path2D(gm.d); x.fillStyle = col.locs[i]; x.fill(pth); x.stroke(pth); });
     }
     x.restore();
     return k;
+  }
+  /* la striscia dei colori dello spostamento, con i punti sotto */
+  function rampaSpo(x, lx, y, w, fs) {
+    const g_ = x.createLinearGradient(lx, 0, lx + w, 0);
+    g_.addColorStop(0, colSpost(-SPOSTA_SCALA)); g_.addColorStop(.5, colSpost(0)); g_.addColorStop(1, colSpost(SPOSTA_SCALA));
+    x.fillStyle = g_; x.fillRect(lx, y, w, fs * .8);
+    T(x, '−10', lx, y + fs * 2, { font: F(600, fs), color: C.t2 });
+    T(x, '0', lx + w / 2, y + fs * 2, { font: F(600, fs), color: C.t2, align: 'center' });
+    T(x, '+10 punti', lx + w, y + fs * 2, { font: F(600, fs), color: C.t2, align: 'right' });
   }
   const primoBlocco = q => ['N', 'O', 'A'].reduce((m, b) => q.bl[b] > q.bl[m] ? b : m, 'N');
   /* la colonna a destra della mappa: conteggi, scala delle bolle o gli spostamenti delle città */
@@ -3277,6 +3221,8 @@ window.CARD = (function () {
     }
     if (v.modo === 'sposta') {
       const z = s.spo;
+      T(x, 'BLOCCO NETANYAHU, PUNTI RISPETTO AL 2022', lx, y, { font: F(800, fs * .7), color: C.t3, ls: 2 }); y += rh * .4;
+      rampaSpo(x, lx, y, Math.min(w, 420), fs * .7); y += rh * 1.6;
       T(x, 'TUTTO IL PAESE', lx, y, { font: F(800, fs * .7), color: C.t3, ls: 2 }); y += rh * .9;
       T(x, 'Blocco Netanyahu', lx, y, { font: F(700, fs) }); T(x, punti(z.naz.N), lx + w, y, { font: F(800, fs), color: z.naz.N >= 0 ? '#7aa7ff' : '#ff7d95', align: 'right' }); y += rh * 1.3;
       T(x, 'LE CITTÀ PIÙ GRANDI', lx, y, { font: F(800, fs * .7), color: C.t3, ls: 2 }); y += rh * .9;
@@ -3675,7 +3621,8 @@ window.CARD = (function () {
     { id: 'c11', tid: 't_bloccoLoc', nome: 'Card 11 — Blocchi per località', file: 'israele_11_blocchi_localita.png', fn: CV.bloccoLoc.fn, fig: CV.bloccoLoc.fig, ok: s => !!(s.R && s.R.loc && s.R.loc.size) },
     { id: 'c12', tid: 't_bollePrimo', nome: 'Card 12 — Bolle, prima lista', file: 'israele_12_bolle_liste.png', fn: CV.bollePrimo.fn, fig: CV.bollePrimo.fig, ok: s => !!(s.R && s.R.loc && s.R.loc.size) },
     { id: 'c13', tid: 't_bolleBlocco', nome: 'Card 13 — Bolle, blocchi', file: 'israele_13_bolle_blocchi.png', fn: CV.bolleBlocco.fn, fig: CV.bolleBlocco.fig, ok: s => !!(s.R && s.R.loc && s.R.loc.size) },
-    { id: 'c14', tid: 't_spostaLoc', nome: 'Card 14 — Lo spostamento per località', file: 'israele_14_spostamento_localita.png', fn: CV.spostaLoc.fn, fig: CV.spostaLoc.fig, ok: s => !!(s.spo && s.spo.naz) }
+    { id: 'c14', tid: 't_spostaLoc', nome: 'Card 14 — Lo spostamento per località', file: 'israele_14_spostamento_localita.png', fn: CV.spostaLoc.fn, fig: CV.spostaLoc.fig, ok: s => !!(s.spo && s.spo.naz) },
+    { id: 'c15', tid: 't_bolleSposta', nome: 'Card 15 — Bolle, spostamento', file: 'israele_15_bolle_spostamento.png', fn: CV.bolleSposta.fn, fig: CV.bolleSposta.fig, ok: s => !!(s.spo && s.spo.naz) }
   ];
 
   /* ---------- titoli e testi automatici ---------- */
@@ -3707,6 +3654,7 @@ window.CARD = (function () {
     t.t_bloccoLoc = 'I tre blocchi, località per località';
     t.t_bollePrimo = 'Dove sono i voti: una bolla per ogni località';
     t.t_bolleBlocco = 'Dove sono i voti dei tre blocchi';
+    t.t_bolleSposta = 'Dove si sono spostati i voti rispetto al 2022';
     t.t_spostaLoc = s.spo && s.spo.naz ? 'Lo spostamento località per località: il blocco Netanyahu ' + punti(s.spo.naz.N) + ' punti' : 'Lo spostamento località per località';
     return t;
   }
@@ -3750,6 +3698,7 @@ window.CARD = (function () {
       p.c11 = 'Israele, i tre blocchi località per località: blocco Netanyahu ' + nf(qn.bl.N * 100, 1) + '%, opposizione ' + nf(qn.bl.O * 100, 1) + '%, partiti arabi ' + nf(qn.bl.A * 100, 1) + '%. ' + sc + '.';
       p.c12 = 'Dove sono i voti in Israele: una bolla per ogni località, grande quanto i voti validi, con il colore della lista più votata. ' + sc + '.';
       p.c13 = 'Dove sono i voti dei tre blocchi in Israele: una bolla per località, grande quanto i voti validi, con il colore del blocco più votato. ' + sc + '.';
+      if (s.spo && s.spo.naz) p.c15 = 'Israele, dove si sono spostati i voti rispetto al 2022: una bolla per località, grande quanto i voti, rossa dove il blocco Netanyahu perde e blu dove guadagna. Nel complesso ' + punti(s.spo.naz.N) + ' punti. ' + sc + '.';
       if (s.spo && s.spo.naz) p.c14 = 'Israele, lo spostamento località per località rispetto al 2022: nel complesso il blocco Netanyahu ' + punti(s.spo.naz.N) + ' punti sulle località già contate. ' + sc + '.';
     }
     Object.keys(p).forEach(k => p[k] = taglia(p[k]));
