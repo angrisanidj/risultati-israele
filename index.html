@@ -141,6 +141,16 @@ select{background:var(--s2);color:var(--t1);border:1px solid var(--line-2);borde
 .magg-lab{position:relative;display:flex;justify-content:space-between;gap:16px;margin-top:9px;font-size:13px;color:var(--t2)}
 .magg-lab b{color:var(--t1);font-weight:600;font-variant-numeric:tabular-nums}
 .magg-lab .n b{font:600 22px/1 var(--sans);margin-right:6px}
+.simpre{display:flex;gap:8px;flex-wrap:wrap;padding:0 18px 12px}
+.simliste{display:flex;flex-wrap:wrap;gap:8px;padding:0 18px}
+.simchip{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;color:var(--t2);font-weight:600}
+.simchip i{width:9px;height:9px;border-radius:50%;flex:0 0 9px}
+.simchip b{color:var(--t1);font-variant-numeric:tabular-nums}
+.simchip[aria-pressed="true"]{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.45);color:var(--t1)}
+.simbarra{padding:6px 18px 0}
+.simtot{margin-top:16px;font-size:14px;color:var(--t2)}
+.simtot b{font:600 24px/1 var(--sans);color:var(--t1);margin-right:6px;font-variant-numeric:tabular-nums}
+.simtot .ok{color:var(--green)}.simtot .ko{color:var(--red)}
 .magg-lab .m61{position:absolute;transform:translateX(-50%);top:-48px;font-size:11.5px;font-weight:600;color:var(--white);background:var(--s1);padding:0 4px}
 .alert{border:1px solid rgba(255,102,128,.4);background:rgba(255,102,128,.08);color:#ffd6de;border-radius:var(--r);padding:11px 14px;margin:0 0 16px;font-size:13.5px}
 
@@ -612,6 +622,18 @@ footer a{color:var(--t2)}
     </article>
   </section>
 
+  <section class="card" id="simCard" style="margin-bottom:14px">
+    <div class="cardhead">
+      <div><h2>Simulatore di maggioranza</h2></div>
+      <div class="seatsrc"><label for="simSrc">Seggi</label><select id="simSrc"></select></div>
+    </div>
+    <p class="subcopy">Tocca le liste per comporre una coalizione: alla Knesset la maggioranza è a 61 seggi su 120. I seggi sono quelli della fonte scelta; le scorciatoie partono dai blocchi.</p>
+    <div class="simpre" id="simPre"></div>
+    <div class="simliste" id="simListe"></div>
+    <div id="simBarra" class="simbarra"></div>
+    <p class="methodnote" id="simNota"></p>
+  </section>
+
   <section class="card" style="margin-bottom:14px">
     <div class="cardhead">
       <h2>Il voto, lista per lista</h2>
@@ -937,6 +959,13 @@ const VAL22_ORD = Object.entries(BASE22.loc).reduce((s, [c, v]) => s + (Number(c
    buste arrivano per ultime, e solo con loro si arriva al 100%. */
 const AVENTI_26 = 7331981, AFFLUENZA_26 = 0.777;
 const VOT26 = Math.round(AVENTI_26 * AFFLUENZA_26);
+/* Lo stesso per un'area o una località: i votanti attesi sono gli aventi diritto del 2022,
+   cresciuti come quelli nazionali, per l'affluenza nazionale del 2026. Dove si vota più o meno
+   della media la stima sbaglia un po'; sopra il 100% si ferma al 100%. Nella prova del 2022
+   resta il confronto con i voti validi di allora. */
+const AVENTI_22 = Object.values(BASE22.loc).reduce((s, v) => s + v[1], 0);
+const quotaContata = (vot, val, bzb22, val22) => ED === '26' ? (bzb22 ? vot / (bzb22 * AVENTI_26 / AVENTI_22 * AFFLUENZA_26) : null) : (val22 ? val / val22 : null);
+const TESTO_QUOTA = ED === '26' ? ' dei votanti attesi' : ' dei voti del 2022';
 const VAL22_ENV = (BASE22.loc[ENV_CODE] || [0, 0, 0, 0])[3];
 
 /* =====================================================================
@@ -1170,7 +1199,7 @@ function infoPer(f, l) { return f.k === 'k22' ? (L25MAP[l] || { l, n: l, c: '#5f
    ===================================================================== */
 function render() {
   renderHero(); renderKpi(); renderVerdetto(); renderTabella(); renderEmiciclo();
-  renderBarre(); renderValidazione(); renderMappa(); renderScrutinio(); renderManca(); renderConfronto();
+  renderBarre(); renderValidazione(); renderMappa(); renderScrutinio(); renderManca(); renderConfronto(); renderSimulatore();
   if (window.CARD) window.CARD.segnaSporco();
 }
 
@@ -1438,6 +1467,41 @@ function applicaFiltro() {
   centroEmiciclo();
 }
 
+/* ---------- simulatore di maggioranza ----------
+   Il lettore sceglie le liste di una coalizione e vede se arriva a 61. I seggi vengono dalla
+   fonte scelta (di base la stessa dell'emiciclo); la scelta delle liste resta cambiando fonte. */
+const SIM = { src: 'auto', sel: new Set(), pronto: false };
+function simFonte() {
+  const F = fontiSeggi(), f = F.find(x => x.k === SIM.src);
+  return f || fonteAttiva();
+}
+function renderSimulatore() {
+  const F = fontiSeggi(), f = simFonte(), sl = $('simSrc');
+  sl.innerHTML = [['auto', 'Come l’emiciclo · ' + nomeFonte(fonteAttiva())]].concat(F.map(x => [x.k, nomeFonte(x)])).map(([k, n]) => '<option value="' + esc(k) + '">' + esc(n) + '</option>').join('');
+  sl.value = F.some(x => x.k === SIM.src) ? SIM.src : 'auto';
+  const info = l => (f.liste || L).find(p => p.l === l) || infoLista(l);
+  const liste = Object.keys(f.seggi).filter(l => f.seggi[l] > 0).sort((a, b) => f.seggi[b] - f.seggi[a]);
+  const di = b => liste.filter(l => bloccoDi(f, l) === b);
+  const pre = [
+    ['Blocco Netanyahu', di('N')],
+    ['Opposizione', di('O')],
+    ['Opposizione e arabi', di('O').concat(di('A'))],
+    ['Likud e Yashar', liste.filter(l => ['מחל', 'דרך'].includes(l))]
+  ].filter(([, ls]) => ls.length);
+  if (!SIM.pronto) { SIM.sel = new Set(di('N')); SIM.pronto = true; }   /* si parte dal blocco Netanyahu */
+  $('simPre').innerHTML = pre.map(([n, ls], i) => '<button class="sm" data-pre="' + i + '">' + esc(n) + '</button>').join('') + '<button class="sm" data-pre="x">Svuota</button>';
+  $('simPre').onclick = e => { const b = e.target.closest('[data-pre]'); if (!b) return; SIM.sel = new Set(b.dataset.pre === 'x' ? [] : pre[+b.dataset.pre][1]); renderSimulatore(); };
+  $('simListe').innerHTML = liste.map(l => { const p = info(l); return '<button class="simchip" data-l="' + esc(l) + '" aria-pressed="' + SIM.sel.has(l) + '"><i style="background:' + p.c + '"></i>' + esc(nomeBreve(p)) + ' <b>' + f.seggi[l] + '</b></button>'; }).join('');
+  $('simListe').onclick = e => { const b = e.target.closest('[data-l]'); if (!b) return; const l = b.dataset.l; SIM.sel.has(l) ? SIM.sel.delete(l) : SIM.sel.add(l); renderSimulatore(); };
+  const scelte = liste.filter(l => SIM.sel.has(l)), tot = scelte.reduce((a, l) => a + f.seggi[l], 0);
+  const seg = scelte.map(l => '<span style="width:' + (f.seggi[l] / SEGGI * 100).toFixed(3) + '%;background:' + info(l).c + '" title="' + esc(nomeBreve(info(l)) + ': ' + f.seggi[l]) + '"></span>').join('');
+  const esito = !scelte.length ? '<span>Nessuna lista scelta</span>' : tot >= MAGG ? '<span class="ok">maggioranza' + (tot > MAGG ? ', ' + (tot - MAGG) + ' oltre la soglia' : ' esatta') + '</span>' : '<span class="ko">ne mancano ' + (MAGG - tot) + ' per la maggioranza</span>';
+  $('simBarra').innerHTML = '<div class="magg"><div class="magg-bar">' + seg + '<i class="magg-61" style="left:' + (MAGG / SEGGI * 100).toFixed(3) + '%"></i></div></div>' +
+    '<div class="simtot"><b>' + tot + '</b>seggi · ' + esito + '</div>';
+  $('simNota').textContent = 'Seggi: ' + nomeFonte(f, true) + (f.k === 'scrutinio' ? ', ricalcolati con Bader-Ofer sui voti contati finora: possono ancora cambiare.' : f.k === 'k22' ? ', la Knesset uscente.' : '.') + ' Il simulatore somma soltanto i seggi: non dice quali alleanze sono politicamente possibili.';
+  sl.onchange = e => { SIM.src = e.target.value; renderSimulatore(); };
+}
+
 /* ---------- il modello alla prova ----------
    La proiezione del modello previsionale contro gli exit poll, appena escono, e contro lo
    scrutinio da metà dei seggi contati (CONFRONTO_DA). Gli scarti sono fonte meno modello. */
@@ -1655,10 +1719,10 @@ function aggregaSD(loc) {
   return out;
 }
 const BASE22_SD = (function () {
-  const out = NOMI_SD.map(() => ({ val: 0, N: 0, O: 0, A: 0, n: 0 }));
+  const out = NOMI_SD.map(() => ({ val: 0, bzb: 0, N: 0, O: 0, A: 0, n: 0 }));
   for (const [c, b] of Object.entries(BASE22.loc)) {
     const i = sdDi(c); if (i == null || !out[i]) continue;
-    const o = out[i]; o.val += b[3]; o.N += b[3] * b[6] / 1000; o.O += b[3] * b[7] / 1000; o.A += b[3] * b[8] / 1000; o.n++;
+    const o = out[i]; o.val += b[3]; o.bzb += b[1]; o.N += b[3] * b[6] / 1000; o.O += b[3] * b[7] / 1000; o.A += b[3] * b[8] / 1000; o.n++;
   }
   out.forEach(o => { if (o.val) { o.N /= o.val; o.O /= o.val; o.A /= o.val; } });
   return out;
@@ -1987,7 +2051,7 @@ function renderDettaglio() {
   if (typeof id === 'string') {
     const i = Number(id.slice(2)), o = aggregaSD(loc)[i], b = BASE22_SD[i], q = quote(o);
     let h = '<div class="dh"><h3>' + esc(NOMI_SD[i]) + '</h3><span class="muted" style="font-size:12px">' + (i === SD_GS ? 'insediamenti' : 'sottodistretto') + '</span></div>';
-    h += '<div class="dm">' + nf(o.n) + ' località, ' + nf(o.fatte) + ' con voti · ' + nf(o.val) + ' voti validi' + (b.val ? ' · ' + pct(Math.min(o.val / b.val, 9.99), 0) + ' dei voti del 2022' : '') + '</div>';
+    h += '<div class="dm">' + nf(o.n) + ' località, ' + nf(o.fatte) + ' con voti · ' + nf(o.val) + ' voti validi' + (quotaContata(o.vot, o.val, b.bzb, b.val) != null ? ' · ' + pct(Math.min(quotaContata(o.vot, o.val, b.bzb, b.val), 1), 0) + TESTO_QUOTA : '') + '</div>';
     if (q) {
       h += righeListeDett(q);
       h += '<div class="cmp">Blocco Netanyahu <b>' + pct(q.bl.N) + '</b> (2022: <b>' + pct(b.N) + '</b>) · opposizione <b>' + pct(q.bl.O) + '</b> (' + pct(b.O) + ') · arabi <b>' + pct(q.bl.A) + '</b> (' + pct(b.A) + ')</div>';
@@ -2001,8 +2065,8 @@ function renderDettaglio() {
   const q = quote(a);
   if (!q) h += '<div class="dm">Nessun voto ancora contato.' + (b ? ' Nel 2022: ' + nf(b.val) + ' voti validi.' : '') + '</div>';
   else {
-    const fr = b && b.val ? a.val / b.val : null;
-    h += '<div class="dm">' + nf(a.val) + ' voti validi' + (fr != null ? ' · ' + pct(Math.min(fr, 9.99), 0) + ' dei voti del 2022' : '') + (a.bzb && a.vot ? ' · affluenza ' + pct(a.vot / a.bzb) : '') + '</div>';
+    const fr = b ? quotaContata(a.vot, a.val, b.bzb, b.val) : null;
+    h += '<div class="dm">' + nf(a.val) + ' voti validi' + (fr != null ? ' · ' + pct(Math.min(fr, 1), 0) + TESTO_QUOTA : '') + (a.bzb && a.vot ? ' · affluenza ' + pct(a.vot / a.bzb) : '') + '</div>';
     h += righeListeDett(q);
     if (b) {
       const lead22 = L25MAP[b.lead] ? L25MAP[b.lead].n : b.lead;
@@ -2017,7 +2081,7 @@ function renderDettaglio() {
 function rigaLista(key, nome, q, fr, sel, muta) {
   const p = q ? infoLista(q.arr[0].l) : null;
   return '<div class="lanrow' + (q ? '' : ' mute') + (sel ? ' sel' : '') + '" data-id="' + key + '"><span class="ln"><i style="background:' + (p ? p.c : COL_VUOTO) + '"></i>' + esc(nome) + '</span>' +
-    '<span class="lp">' + (q ? esc(nomeBreve(p)) + ' ' + nf(q.arr[0].q * 100, 0) + '%' : '—') + '</span><span class="lc" title="voti contati rispetto al 2022">' + (q && fr != null ? pct(Math.min(fr, 1), 0) : '') + '</span></div>';
+    '<span class="lp">' + (q ? esc(nomeBreve(p)) + ' ' + nf(q.arr[0].q * 100, 0) + '%' : '—') + '</span><span class="lc" title="' + (ED === '26' ? 'votanti contati su quelli attesi con l’affluenza 2026' : 'voti contati rispetto al 2022') + '">' + (q && fr != null ? pct(Math.min(fr, 1), 0) : '') + '</span></div>';
 }
 function renderLista() {
   const R = risultato(), loc = R && R.loc ? R.loc : new Map();
@@ -2030,7 +2094,7 @@ function renderLista() {
     for (const c of loc.keys()) if (sdDi(c) === i) cod.add(c);
     const rows = [...cod].map(c => ({ c, v22: BASE22.loc[c] ? BASE22.loc[c][3] : 0, a: loc.get(c) })).sort((x, y) => Math.max(y.v22, y.a ? y.a.val : 0) - Math.max(x.v22, x.a ? x.a.val : 0));
     $('locList').innerHTML = '<div class="lanrow" data-id="sd' + i + '"><span class="ln"><b>Tutta l’area</b></span><span class="lp"></span><span class="lc"></span></div>' +
-      rows.slice(0, 60).map(({ c, a }) => { const b = BASE22.loc[c], g = MAPPA.byId[c]; return rigaLista(c, g ? g.en : nomeLoc(c, a ? a.nome : b && b[0]), quote(a), a && b && b[3] ? a.val / b[3] : null, S.sel === c); }).join('') +
+      rows.slice(0, 60).map(({ c, a }) => { const b = BASE22.loc[c], g = MAPPA.byId[c]; return rigaLista(c, g ? g.en : nomeLoc(c, a ? a.nome : b && b[0]), quote(a), a && b ? quotaContata(a.vot, a.val, b[1], b[3]) : null, S.sel === c); }).join('') +
       (rows.length > 60 ? '<div class="dm" style="padding:6px 9px;font-size:11.5px;color:var(--t3)">altre ' + (rows.length - 60) + ' località: usa la ricerca</div>' : '');
     return;
   }
@@ -2038,7 +2102,7 @@ function renderLista() {
     const sd = aggregaSD(loc);
     $('listTitle').textContent = 'Le aree';
     $('locList').innerHTML = sd.map((o, i) => [o, i]).sort((x, y) => BASE22_SD[y[1]].val - BASE22_SD[x[1]].val)
-      .map(([o, i]) => rigaLista('sd' + i, NOMI_SD[i], quote(o), BASE22_SD[i].val ? o.val / BASE22_SD[i].val : null, S.sel === 'sd' + i)).join('');
+      .map(([o, i]) => rigaLista('sd' + i, NOMI_SD[i], quote(o), quotaContata(o.vot, o.val, BASE22_SD[i].bzb, BASE22_SD[i].val), S.sel === 'sd' + i)).join('');
     return;
   }
   let codici;
@@ -2055,7 +2119,7 @@ function renderLista() {
   }
   $('locList').innerHTML = codici.map(c => {
     const a = loc.get(c), b = BASE22.loc[c], g = MAPPA.byId[c];
-    return rigaLista(c, g ? g.en : nomeLoc(c, a ? a.nome : b && b[0]), quote(a), a && b && b[3] ? a.val / b[3] : null, S.sel === c);
+    return rigaLista(c, g ? g.en : nomeLoc(c, a ? a.nome : b && b[0]), quote(a), a && b ? quotaContata(a.vot, a.val, b[1], b[3]) : null, S.sel === c);
   }).join('');
 }
 
