@@ -365,6 +365,9 @@ table.conf th .corto{display:none}
 #arrLayer path{fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
 #arrLayer path.N{stroke:#5b93ff}#arrLayer path.O{stroke:#ff6f8a}
 .mapfonte button:disabled{opacity:.4;cursor:not-allowed}
+.spotot{font-size:13px;color:var(--t2);margin:2px 0 10px;line-height:1.5}
+.spotot b{color:var(--t1)}
+.lanrow .spN{color:#7aa7ff;font-weight:600}.lanrow .spO{color:#ff7d95;font-weight:600}
 .frecceleg{display:grid;gap:6px;margin-top:6px;font-size:12px;color:var(--t2)}
 .frecceleg div{display:flex;align-items:center;gap:8px}
 .frecceleg svg path{fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -772,7 +775,7 @@ footer a{color:var(--t2)}
   <header class="hero hero-card">
     <div class="eyebrow">X 1600×900 · Instagram 1080×1350 · PNG a doppia risoluzione</div>
     <h1>Card per X e Instagram</h1>
-    <p>Le card si compilano da sole con i dati della dashboard: scrutinio, seggi, blocchi, exit poll, soglia del 3,25%, mappa e proiezione a fine spoglio. Scegli il formato, poi scarica o condividi: «Condividi» apre il menu del sistema con immagine e testo (da lì Instagram, X, WhatsApp); «Pubblica su X» apre X con il testo, e l’immagine si allega a mano.</p>
+    <p>Le card si compilano da sole con i dati della dashboard: scrutinio, seggi, blocchi, exit poll, soglia del 3,25%, mappa, proiezione a fine spoglio e spostamento rispetto al 2022. Scegli il formato, poi scarica o condividi: «Condividi» apre il menu del sistema con immagine e testo (da lì Instagram, X, WhatsApp); «Pubblica su X» apre X con il testo, e l’immagine si allega a mano.</p>
   </header>
   <div class="card-grid">
     <aside class="side">
@@ -1177,9 +1180,11 @@ function avanzamento(R) {
   const ord = d.val - (d.env ? d.env.val : 0);
   const seg = d.seggi || (S.expb && S.expb.tot ? S.expb : null);
   /* Nel 2022 expb elencava tutti i seggi, anche quelli ancora da contare; nel 2026 elenca solo
-     quelli contati, e il conto dei seggi darebbe sempre il 100%. Vale solo se il file li ha
-     tutti (oltre 10.000); altrimenti l'avanzamento si stima dai voti, contro quelli del 2022. */
-  if (seg && seg.tot >= SEGGI_MIN_ELENCO) return { f: seg.fatti / seg.tot, tipo: 'seggi', fatti: seg.fatti, tot: seg.tot, ord };
+     quelli contati, e il conto dei seggi darebbe sempre il 100%. Nel 2026 quindi non si usa
+     mai (la mattina del 28 le sezioni contate hanno passato le 10.000 e la pagina ha mostrato
+     il 100%): l'avanzamento si stima sull'affluenza. Nella prova del 2022 vale se il file le ha
+     tutte. */
+  if (seg && seg.tot >= SEGGI_MIN_ELENCO && ED !== '26') return { f: seg.fatti / seg.tot, tipo: 'seggi', fatti: seg.fatti, tot: seg.tot, ord };
   if (ED === '26') return { f: clamp(d.vot / VOT26, 0, 1), tipo: 'affluenza', ord, vo: d.vot, seggi: seg ? seg.fatti : 0 };
   return { f: clamp(ord / VAL22_ORD, 0, 1), tipo: 'volumi', ord, seggi: seg ? seg.fatti : 0 };
 }
@@ -1848,6 +1853,22 @@ const raggioBolla = v => Math.max(1.3, BOLLA_MAX * Math.sqrt(v / BOLLA_VAL));
 const SPOSTA_DA = 0.75, SPOSTA_FORZA = PARAM.get('sposta') === '1';
 const FRECCIA_10PT = 80, FRECCIA_MIN_VOTI = 300;
 const spostaAttivo = R => SPOSTA_FORZA || (!!R && R.fonte !== 'manuale' && avanzamento(R).f >= SPOSTA_DA);
+/* Lo spostamento sulle stesse località: per ogni area e per tutto il paese, la quota dei
+   blocchi nei voti contati nel 2026 meno quella che le stesse località avevano nel 2022,
+   pesata sui voti di oggi. Così un'area contata a metà non si confronta con tutta l'area del
+   2022. Lo usano la mappa, l'elenco delle aree, «Cosa manca da contare» e la card 8. */
+function spostamenti(loc) {
+  const vuoto = () => ({ v: 0, N: 0, O: 0, A: 0, n: 0, o: 0, a: 0 });
+  const sp = NOMI_SD.map(vuoto), naz = vuoto();
+  for (const a of loc.values()) {
+    const b = BASE22.loc[a.code]; if (!b || a.code === ENV_CODE || !a.val) continue;
+    const q = quote(a), i = sdDi(a.code);
+    [i != null ? sp[i] : null, naz].forEach(t => { if (!t) return; t.v += a.val; t.N += q.bl.N * a.val; t.O += q.bl.O * a.val; t.A += q.bl.A * a.val; t.n += b[6] / 1000 * a.val; t.o += b[7] / 1000 * a.val; t.a += b[8] / 1000 * a.val; });
+  }
+  const sw = t => t.v ? { v: t.v, N: (t.N - t.n) / t.v, O: (t.O - t.o) / t.v, A: (t.A - t.a) / t.v } : null;
+  return { naz: sw(naz), aree: sp.map(sw) };
+}
+const punti = x => (x >= 0 ? '+' : '−') + nf(Math.abs(x) * 100, 1);
 function freccia(x, y, dq) {
   const L = Math.min(Math.abs(dq) * 100 / 10 * FRECCIA_10PT, FRECCIA_10PT * 2.5);
   if (L < 1.5) return '';
@@ -2075,10 +2096,10 @@ function renderMappa() {
   let fr = '';
   if (S.mapMode === 'sposta') {
     if (liv === 'sd' && foc == null) {
-      col.sd.forEach((o, i) => {
-        const b = BASE22_SD[i], q = quote(o); if (!q || !b.val || o.val < FRECCIA_MIN_VOTI) return;
+      spostamenti(loc).aree.forEach((t, i) => {
+        if (!t || t.v < FRECCIA_MIN_VOTI) return;
         const bx = bboxArea(i); if (!isFinite(bx[0])) return;
-        fr += freccia((bx[0] + bx[2]) / 2, (bx[1] + bx[3]) / 2, q.bl.N - b.N);
+        fr += freccia((bx[0] + bx[2]) / 2, (bx[1] + bx[3]) / 2, t.N);
       });
     } else {
       MAPPA.geo.forEach(g => {
@@ -2124,8 +2145,10 @@ function renderMappa() {
       '</div><p>Ogni ' + (liv === 'sd' ? 'area' : 'località') + ' ha il colore del blocco con più voti, più pieno quanto più è forte: dal 35% all’80% dei voti validi.</p>';
   } else if (S.mapMode === 'sposta') {
     const es = (dq, c) => '<svg width="44" height="34" viewBox="0 0 44 34">' + freccia(dq > 0 ? 6 : 38, 32, dq * 0.6).replace('class="N"', 'stroke="#5b93ff"').replace('class="O"', 'stroke="#ff6f8a"') + '</svg>';
-    lg = '<h4>Spostamento rispetto al 2022</h4><div class="frecceleg"><div>' + es(0.05) + '<span>verso il blocco Netanyahu</span></div><div>' + es(-0.05) + '<span>verso opposizione e partiti arabi</span></div></div>' +
-      '<p>La freccia parte dal centro di ' + (liv === 'sd' && foc == null ? 'ogni area' : 'ogni località') + ' ed è lunga quanto la differenza nella quota del blocco Netanyahu sui voti validi, in punti, rispetto al 2022: con la mappa intera 10 punti sono circa ' + Math.round(FRECCIA_10PT * (($('locMap').getBoundingClientRect().height || 600) / MAPPA.H)) + ' pixel. Solo dove sono contati almeno ' + nf(FRECCIA_MIN_VOTI) + ' voti validi.</p>';
+    const SN = spostamenti(loc).naz;
+    lg = '<h4>Spostamento rispetto al 2022</h4>' + (SN ? '<div class="spotot">Nel complesso, sulle località già contate: blocco Netanyahu <b>' + punti(SN.N) + '</b> punti, opposizione <b>' + punti(SN.O) + '</b>, partiti arabi <b>' + punti(SN.A) + '</b>.</div>' : '') +
+      '<div class="frecceleg"><div>' + es(0.05) + '<span>il blocco Netanyahu guadagna</span></div><div>' + es(-0.05) + '<span>il blocco Netanyahu perde</span></div></div>' +
+      '<p>La freccia parte dal centro di ' + (liv === 'sd' && foc == null ? 'ogni area' : 'ogni località') + ' ed è lunga quanto la differenza nella quota del blocco Netanyahu sui voti validi, in punti, rispetto a come avevano votato le stesse località nel 2022. Nell’elenco a sinistra lo stesso numero: con la mappa intera 10 punti sono circa ' + Math.round(FRECCIA_10PT * (($('locMap').getBoundingClientRect().height || 600) / MAPPA.H)) + ' pixel. Solo dove sono contati almeno ' + nf(FRECCIA_MIN_VOTI) + ' voti validi.</p>';
   } else {
     const p = infoLista(S.mapLista);
     lg = '<h4>' + esc(p.n) + '</h4><div class="ramp" style="background:linear-gradient(90deg,' + COL_BASE + ',' + p.c + ')"></div><div class="rampl"><span>0%</span><span>30%</span><span>60% e oltre</span></div><p>Quota della lista sui voti validi di ogni ' + (liv === 'sd' ? 'area' : 'località') + '.</p>';
@@ -2183,13 +2206,22 @@ function renderDettaglio() {
   if (S.focusSD != null) h += '<button class="sm" style="margin-top:10px" data-torna="sd' + S.focusSD + '">← Tutta l’area</button>';
   box.innerHTML = h;
 }
+let SPO_ULT = null;   /* lo spostamento delle aree, calcolato da renderLista per le sue righe */
 function rigaLista(key, nome, q, fr, sel, muta) {
   const p = q ? infoLista(q.arr[0].l) : null;
+  let sw = null;
+  if (S.mapMode === 'sposta' && q) {
+    if (typeof key === 'string' && key.startsWith('sd')) { const t = SPO_ULT && SPO_ULT.aree[+key.slice(2)]; sw = t ? t.N : null; }
+    else { const b = BASE22.loc[key]; if (b) sw = q.bl.N - b[6] / 1000; }
+  }
+  if (sw != null) return '<div class="lanrow' + (sel ? ' sel' : '') + '" data-id="' + key + '"><span class="ln"><i style="background:' + (sw >= 0 ? BLOCCHI.N.c : BLOCCHI.O.c) + '"></i>' + esc(nome) + '</span>' +
+    '<span class="lp"><span class="' + (sw >= 0 ? 'spN' : 'spO') + '">Netanyahu ' + punti(sw) + '</span></span><span class="lc" title="punti rispetto al 2022, sulle stesse località">pt</span></div>';
   return '<div class="lanrow' + (q ? '' : ' mute') + (sel ? ' sel' : '') + '" data-id="' + key + '"><span class="ln"><i style="background:' + (p ? p.c : COL_VUOTO) + '"></i>' + esc(nome) + '</span>' +
     '<span class="lp">' + (q ? esc(nomeBreve(p)) + ' ' + nf(q.arr[0].q * 100, 0) + '%' : '—') + '</span><span class="lc" title="' + (ED === '26' ? 'votanti contati su quelli attesi con l’affluenza 2026' : 'voti contati rispetto al 2022') + '">' + (q && fr != null ? pct(Math.min(fr, 1), 0) : '') + '</span></div>';
 }
 function renderLista() {
   const R = risultato(), loc = R && R.loc ? R.loc : new Map();
+  SPO_ULT = S.mapMode === 'sposta' ? spostamenti(loc) : null;
   const qs = ($('cerca').value || '').trim().toLowerCase();
   if (!qs && livello() === 'sd' && S.focusSD != null) {
     const i = S.focusSD;
@@ -2385,15 +2417,7 @@ function renderManca() {
      nei voti già contati meno la quota che le stesse località avevano nel 2022, pesata sui
      voti di oggi. Sommato al 2022 di ogni località che manca, dà la stima di come voterà.
      Un'area con meno di 2.000 voti contati usa lo spostamento nazionale. */
-  const vuoto = () => ({ v: 0, N: 0, O: 0, A: 0, n: 0, o: 0, a: 0 });
-  const sp = NOMI_SD.map(vuoto), naz = vuoto();
-  for (const a of loc.values()) {
-    const b = BASE22.loc[a.code]; if (!b || a.code === ENV_CODE || !a.val) continue;
-    const q = quote(a), i = sdDi(a.code);
-    [i != null ? sp[i] : null, naz].forEach(t => { if (!t) return; t.v += a.val; t.N += q.bl.N * a.val; t.O += q.bl.O * a.val; t.A += q.bl.A * a.val; t.n += b[6] / 1000 * a.val; t.o += b[7] / 1000 * a.val; t.a += b[8] / 1000 * a.val; });
-  }
-  const swing = t => ({ N: (t.N - t.n) / t.v, O: (t.O - t.o) / t.v, A: (t.A - t.a) / t.v });
-  const SWN = naz.v ? swing(naz) : { N: 0, O: 0, A: 0 }, SW = sp.map(t => t.v >= 2000 ? swing(t) : SWN);
+  const SPO = spostamenti(loc), SWN = SPO.naz || { N: 0, O: 0, A: 0 }, SW = SPO.aree.map(t => t && t.v >= 2000 ? t : SWN);
   const stima = (code, b) => {
     const w = SW[sdDi(code)] || SWN;
     const N = clamp(b[6] / 1000 + w.N, 0, 1), O = clamp(b[7] / 1000 + w.O, 0, 1), A = clamp(b[8] / 1000 + w.A, 0, 1), X = Math.max(0, 1 - N - O - A), t = N + O + A + X;
@@ -2963,7 +2987,7 @@ window.CARD = (function () {
     const R = risultato(), av = avanzamento(R), f = fonteAttiva(), F_ = fontiSeggi();
     const bo = R ? baderOfer(R.voti, accordi()) : null;
     const ex = EXIT.map(e => ({ ...e, x: exitDi(e.k) })).filter(e => e.x);
-    return { R, av, f, fonti: F_, bo, ex, cf: datiConfronto(), tb: totBlocchi(f), pz: PROIEZ, ambito: g('ambito').value.trim() || 'Israele · 27 ottobre 2026', data: g('dataFonte').value.trim() || '27 ottobre 2026' };
+    return { R, av, f, fonti: F_, bo, ex, cf: datiConfronto(), tb: totBlocchi(f), pz: PROIEZ, spo: R && R.loc && R.fonte !== 'manuale' ? spostamenti(R.loc) : null, ambito: g('ambito').value.trim() || 'Israele · 27 ottobre 2026', data: g('dataFonte').value.trim() || '27 ottobre 2026' };
   }
   const nomeF = s => s.f.k === 'scrutinio' ? (s.R.fonte === 'manuale' ? 'voti inseriti a mano' : 'voti contati') : s.f.k === 'k22' ? 'Knesset 2022' : s.f.k === 'modello' ? 'modello previsionale' : 'exit poll di ' + s.f.s;
   /* testata, sottotitolo e fonte della card dei seggi, uguali nei due formati */
@@ -3096,6 +3120,61 @@ window.CARD = (function () {
     const yb = barrePz(x, pz, M, M + 300, Rr - M - 300 - 110, Rr, z.y0 + 90, 104, 25);
     T(x, 'Netanyahu a 61 in ' + nf(pz.magg * 100, 0) + ' simulazioni su 100', M, yb + 58, { font: F(700, 27), color: pz.magg >= .5 ? C.acc : C.t1 });
     listePz(x, pz, M, Rr, yb + 116, 23, 40);
+  }
+
+  /* ---------- CARD 8 — lo spostamento rispetto al 2022 ---------- */
+  const NOTA8 = 'Differenza fra la quota del blocco Netanyahu nei voti contati e quella che le stesse località gli avevano dato nel 2022, in punti. Nel 2022 il blocco era Likud, Sionismo religioso, Shas e UTJ; nel 2026 anche Otzma Yehudit, Noam e Popolo d’Israele.';
+  const areeSpo = (z, min) => z.aree.map((t, i) => ({ i, t })).filter(o => o.t && o.t.v >= (min || 2000)).sort((a, b) => a.t.N - b.t.N);
+  /* la mappa delle aree con le frecce, come nella pagina */
+  function mappaFrecce(x, z, ox, oy, H) {
+    const k = H / MAPPA.H;
+    x.save(); x.translate(ox, oy); x.scale(k, k);
+    x.lineWidth = .9 / k; x.strokeStyle = '#2c3a58';
+    MAPPA.base.forEach(gm => { const pth = new Path2D(gm.d); x.fillStyle = COL_BASE; x.fill(pth); x.stroke(pth); });
+    MAPPA.geo.forEach(gm => { if (sdDi(gm.id) !== SD_GS) return; const pth = new Path2D(gm.d); x.fillStyle = COL_BASE; x.fill(pth); });
+    x.lineCap = 'round'; x.lineJoin = 'round';
+    z.aree.forEach((t, i) => {
+      if (!t || t.v < FRECCIA_MIN_VOTI) return;
+      const bx = bboxArea(i); if (!isFinite(bx[0])) return;
+      const m = /d="([^"]+)"/.exec(freccia((bx[0] + bx[2]) / 2, (bx[1] + bx[3]) / 2, t.N)); if (!m) return;
+      x.strokeStyle = t.N > 0 ? '#5b93ff' : '#ff6f8a'; x.lineWidth = 3.2 / k; x.stroke(new Path2D(m[1]));
+    });
+    x.restore();
+  }
+  /* le barre divergenti dello spostamento: a sinistra il blocco Netanyahu perde, a destra guadagna */
+  function barreSpo(x, righe, x0, cx, half, vx, y0, h, fs, maxPt) {
+    const sx = v => cx + Math.max(-1, Math.min(1, v * 100 / maxPt)) * half;
+    righe.forEach((o, j) => {
+      const y = y0 + j * h, v = o.v, naz = o.naz;
+      T(x, cut(x, o.nome, cx - half - x0 - 16, F(naz ? 800 : 600, fs)), x0, y, { font: F(naz ? 800 : 600, fs), color: naz ? C.t1 : C.t2 });
+      const a = Math.min(sx(v), cx), b = Math.max(sx(v), cx);
+      fillRR(x, a, y - fs * .72, Math.max(3, b - a), fs * .82, 4, v >= 0 ? '#5b93ff' : '#ff6f8a');
+      T(x, punti(v), vx, y, { font: F(800, fs), color: naz ? C.t1 : C.t2, align: 'right' });
+    });
+    const yb = y0 + (righe.length - 1) * h;
+    line(x, cx, y0 - h * .8, cx, yb + h * .35, 'rgba(255,255,255,.35)', 1.2);
+    T(x, '−' + maxPt, cx - half, yb + h * .95, { font: F(500, fs * .7), color: C.t3, align: 'center' });
+    T(x, '0', cx, yb + h * .95, { font: F(500, fs * .7), color: C.t3, align: 'center' });
+    T(x, '+' + maxPt, cx + half, yb + h * .95, { font: F(500, fs * .7), color: C.t3, align: 'center' });
+  }
+  const righeSpo = (z, n) => [{ nome: 'Tutto il paese', v: z.naz.N, naz: true }].concat(areeSpo(z).slice(0, n).map(o => ({ nome: NOMI_SD[o.i], v: o.t.N })));
+  const maxSpo = z => Math.max(4, Math.ceil(Math.max(...[z.naz.N].concat(areeSpo(z).map(o => o.t.N)).map(v => Math.abs(v) * 100)) / 2) * 2);
+  function card8(x, s, N) {
+    const z = s.spo;
+    frame(x, { badge: 'SPOSTAMENTO', kicker: s.ambito, title: g('t8').value, sub: z && z.naz ? scr(s) + ' · blocco Netanyahu, punti rispetto al 2022 sulle stesse località' : '', nota: NOTA8, fonte: fonteCEC(s) + ' (2022 e 2026)', n: N.n, tot: N.tot });
+    if (!z || !z.naz) return attesa(x, 'In attesa dei voti contati');
+    mappaFrecce(x, z, 62, 236, 530);
+    const rr_ = righeSpo(z, 16), h = Math.min(32, 520 / rr_.length);
+    barreSpo(x, rr_, 420, 1060, 330, 1538, 262, h, 19, maxSpo(z));
+  }
+  function ig8(x, s, N) {
+    const z = s.spo, M = IG.M, Rr = IG.W - M;
+    const zz = frameIG(x, { badge: 'SPOSTAMENTO', kicker: s.ambito, title: g('t8').value, sub: z && z.naz ? scr(s) + ' · punti rispetto al 2022' : '', nota: NOTA8, fonte: fonteCEC(s) + ' (2022 e 2026)', n: N.n, tot: N.tot });
+    if (!z || !z.naz) return attesaIG(x, zz, 'In attesa dei voti contati');
+    const H = zz.y1 - zz.y0 - 10;
+    mappaFrecce(x, z, M - 10, zz.y0, H);
+    const rr_ = righeSpo(z, 16), h = Math.min(38, (H - 40) / rr_.length), x0 = M + MAPPA.W * H / MAPPA.H + 10;
+    barreSpo(x, rr_, x0, x0 + 300, 130, Rr, zz.y0 + 30, h, 19, maxSpo(z));
   }
 
   /* ---------- CARD 3 — gli exit poll a confronto ---------- */
@@ -3458,7 +3537,8 @@ window.CARD = (function () {
     { id: 'c4', tid: 't4', nome: 'Card 4 — La mappa', file: 'israele_4_mappa.png', fn: card4, fig: ig4, ok: s => !!(s.R && s.R.loc && s.R.loc.size) },
     { id: 'c5', tid: 't5', nome: 'Card 5 — La soglia', file: 'israele_5_soglia.png', fn: card5, fig: ig5, ok: s => !!s.R },
     { id: 'c6', tid: 't6', nome: 'Card 6 — Il modello alla prova', file: 'israele_6_modello.png', fn: card6, fig: ig6, ok: s => !!(s.cf && s.cf.col.length) },
-    { id: 'c7', tid: 't7', nome: 'Card 7 — Come potrebbe finire', file: 'israele_7_proiezione.png', fn: card7, fig: ig7, ok: s => !!s.pz }
+    { id: 'c7', tid: 't7', nome: 'Card 7 — Come potrebbe finire', file: 'israele_7_proiezione.png', fn: card7, fig: ig7, ok: s => !!s.pz },
+    { id: 'c8', tid: 't8', nome: 'Card 8 — Lo spostamento', file: 'israele_8_spostamento.png', fn: card8, fig: ig8, ok: s => !!(s.spo && s.spo.naz) }
   ];
 
   /* ---------- titoli e testi automatici ---------- */
@@ -3483,6 +3563,8 @@ window.CARD = (function () {
     }
     if (s.pz) { const n = s.pz.t.N; t.t7 = n >= MAGG ? 'La proiezione: il blocco Netanyahu verso la maggioranza, ' + n + ' seggi' : 'La proiezione: il blocco Netanyahu si fermerebbe a ' + n + ' seggi'; }
     else t.t7 = 'Come potrebbe finire';
+    if (s.spo && s.spo.naz) { const v = s.spo.naz.N; t.t8 = 'Rispetto al 2022 il blocco Netanyahu ' + (v < 0 ? 'perde ' : 'guadagna ') + nf(Math.abs(v) * 100, 1) + ' punti'; }
+    else t.t8 = 'Lo spostamento rispetto al 2022';
     return t;
   }
   function autoPost(s) {
@@ -3513,6 +3595,10 @@ window.CARD = (function () {
     if (s.pz) {
       const z = s.pz, mg = b => z.rg[b][1] > z.rg[b][0] ? ' (' + z.rg[b][0] + '–' + z.rg[b][1] + ')' : '';
       p.c7 = 'Israele, come potrebbe finire con lo scrutinio ' + alPct(z.f) + ': blocco Netanyahu ' + z.t.N + mg('N') + ', opposizione ' + z.t.O + mg('O') + ', partiti arabi ' + z.t.A + mg('A') + ' seggi. Maggioranza a 61 in ' + nf(z.magg * 100, 0) + ' simulazioni su 100. Una stima, non il risultato.';
+    }
+    if (s.spo && s.spo.naz) {
+      const z = s.spo, a = areeSpo(z), giu = a.slice(0, 2), su = a.slice(-2).reverse().filter(o => o.t.N > 0);
+      p.c8 = 'Israele, lo spostamento rispetto al 2022 sulle località già contate: blocco Netanyahu ' + punti(z.naz.N) + ' punti, opposizione ' + punti(z.naz.O) + ', partiti arabi ' + punti(z.naz.A) + '. Perde di più in ' + giu.map(o => NOMI_SD[o.i] + ' (' + punti(o.t.N) + ')').join(' e ') + (su.length ? '; guadagna in ' + su.map(o => NOMI_SD[o.i] + ' (' + punti(o.t.N) + ')').join(' e ') : '') + '.';
     }
     Object.keys(p).forEach(k => p[k] = taglia(p[k]));
     return p;
