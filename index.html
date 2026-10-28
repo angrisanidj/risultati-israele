@@ -772,7 +772,7 @@ footer a{color:var(--t2)}
   <header class="hero hero-card">
     <div class="eyebrow">X 1600×900 · Instagram 1080×1350 · export PNG in doppia risoluzione</div>
     <h1>Card per X e Instagram</h1>
-    <p>Le card si compilano da sole con i dati della dashboard: scrutinio, seggi, blocchi, exit poll, soglia del 3,25% e mappa. Scegli il formato, poi scarica o condividi: «Condividi» apre il menu del sistema con immagine e testo (da lì Instagram, X, WhatsApp); «Pubblica su X» apre X con il testo, e l’immagine si allega a mano.</p>
+    <p>Le card si compilano da sole con i dati della dashboard: scrutinio, seggi, blocchi, exit poll, soglia del 3,25%, mappa e proiezione a fine spoglio. Scegli il formato, poi scarica o condividi: «Condividi» apre il menu del sistema con immagine e testo (da lì Instagram, X, WhatsApp); «Pubblica su X» apre X con il testo, e l’immagine si allega a mano.</p>
   </header>
   <div class="card-grid">
     <aside class="side">
@@ -2287,6 +2287,7 @@ function quoteBuste(nazQ) {
   return { q, bk, e };
 }
 const SCARTO_NAZ = 0.075, SCARTO_AREA = 0.2, SCARTO_BUSTE = 0.2;
+let PROIEZ = null;
 function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
   const d = R.d, vr = d.vot ? R.val / d.vot : 1;
   const sd = aggregaSD(loc);
@@ -2367,6 +2368,9 @@ function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
   h += '<div class="proiezliste">' + ord.filter(x => x.s > 0 || fra(simL[x.l])[1] > 0).map(x => '<span><i style="background:' + x.p.c + '"></i>' + esc(nomeBreve(x.p)) + ' <b>' + x.s + '</b>' + rng(simL[x.l]) + '</span>').join('') + '</div>';
   const pt = x => (x >= 0 ? '+' : '−') + nf(Math.abs(x) * 100, 1);
   if (envM > 0) h += '<div class="muted" style="font-size:12px;margin-top:6px">Doppie buste, ' + nf(envM) + ' votanti stimati: nel 2022 rispetto al paese avevano dato ' + pt(SCARTO_BUSTE22.N) + ' punti al blocco Netanyahu, ' + pt(SCARTO_BUSTE22.O) + ' all’opposizione e ' + pt(SCARTO_BUSTE22.A) + ' ai partiti arabi. Con lo stesso scarto sui voti contati oggi: Netanyahu ' + nf(QB.e.N * 100, 1) + '%, opposizione ' + nf(QB.e.O * 100, 1) + '%, arabi ' + nf(QB.e.A * 100, 1) + '%.</div>';
+  /* gli stessi numeri servono alla card 7 */
+  PROIEZ = { t, rg: { N: fra(sim.N), O: fra(sim.O), A: fra(sim.A), X: fra(sim.X) }, magg: magg / SIMUL, f: avanzamento(R).f,
+    liste: ord.filter(x => x.s > 0).map(x => ({ p: x.p, s: x.s, rg: fra(simL[x.l]) })), filo: filo.map(x => ({ p: x.p, q: x.q })) };
   if (filo.length) h += '<div class="muted" style="font-size:12px;margin-top:6px">Vicino alla soglia del 3,25%: ' + filo.map(x => esc(nomeBreve(x.p)) + ' ' + nf(x.q * 100, 2) + '%').join(', ') + '.</div>';
   return h + '<div class="muted" style="font-size:11.5px;margin-top:8px">Non è un risultato: le località che mancano possono votare diversamente dalla loro area, e le doppie buste (soldati, diplomatici, malati) sono stimate sullo scarto del 2022. Il margine non tiene conto di un’affluenza diversa dal 77,7%.</div></div>';
 }
@@ -2426,6 +2430,7 @@ function renderManca() {
   if (a26) h += '<p class="muted" style="font-size:11.5px;margin:8px 0 0">In alcune località l’affluenza supera la media nazionale: il totale segue l’affluenza ufficiale, le località sono stimate una per una.</p>';
   const pro = a26 && R.fonte !== 'manuale' && ord + envM > 0;
   $('proiezCard').classList.toggle('hidden', !pro);
+  if (!pro) PROIEZ = null;
   if (pro) { $('proiezBody').innerHTML = proiezioneFinale(R, loc, grandi, ord / (tot || 1), envM, stima); $('proiezMeta').textContent = 'scrutinio ' + alPct(avanzamento(R).f); }
   h += pro ? '<p class="muted" style="font-size:11.5px;margin:8px 0 0">La proiezione a fine spoglio costruita su queste stime è in alto, in «Come potrebbe finire».</p>' : '';
   box.innerHTML = h;
@@ -2954,7 +2959,7 @@ window.CARD = (function () {
     const R = risultato(), av = avanzamento(R), f = fonteAttiva(), F_ = fontiSeggi();
     const bo = R ? baderOfer(R.voti, accordi()) : null;
     const ex = EXIT.map(e => ({ ...e, x: exitDi(e.k) })).filter(e => e.x);
-    return { R, av, f, fonti: F_, bo, ex, cf: datiConfronto(), tb: totBlocchi(f), ambito: g('ambito').value.trim() || 'Israele · 27 ottobre 2026', data: g('dataFonte').value.trim() || '27 ottobre 2026' };
+    return { R, av, f, fonti: F_, bo, ex, cf: datiConfronto(), tb: totBlocchi(f), pz: PROIEZ, ambito: g('ambito').value.trim() || 'Israele · 27 ottobre 2026', data: g('dataFonte').value.trim() || '27 ottobre 2026' };
   }
   const nomeF = s => s.f.k === 'scrutinio' ? (s.R.fonte === 'manuale' ? 'voti inseriti a mano' : 'voti contati') : s.f.k === 'k22' ? 'Knesset 2022' : s.f.k === 'modello' ? 'modello previsionale' : 'exit poll di ' + s.f.s;
   /* testata, sottotitolo e fonte della card dei seggi, uguali nei due formati */
@@ -3031,6 +3036,62 @@ window.CARD = (function () {
     const [msg, msgO] = righe61(t);
     T(x, msg, ox + 280 * k, oy + 330 * k + 22, { font: F(700, 24), color: win ? C.acc : C.red, align: 'center' });
     T(x, msgO, ox + 280 * k, oy + 330 * k + 54, { font: F(600, 19), color: C.t2, align: 'center' });
+  }
+
+  /* ---------- CARD 7 — come potrebbe finire ---------- */
+  const NOTA7 = 'Una proiezione, non un risultato: ai voti contati si aggiunge una stima di quelli che mancano, località per località, e delle doppie buste. Il margine è l’intervallo che contiene 8 simulazioni su 10.';
+  const fonte7 = s => 'Commissione elettorale centrale; stima e simulazioni della redazione (' + s.data + ')';
+  const righePz = pz => [['N', 'Blocco Netanyahu'], ['O', 'Opposizione'], ['A', 'Partiti arabi']].concat(pz.t.X || pz.rg.X[1] ? [['X', 'Altre liste']] : []);
+  /* il grafico dei blocchi: barra della proiezione, riquadro del margine, linea dei 61 */
+  function barrePz(x, pz, x0, bx, bw, vx, y0, h, fs) {
+    const MAX = 70, sx = v => bx + Math.min(v, MAX) / MAX * bw, rr_ = righePz(pz);
+    rr_.forEach(([b, n], i) => {
+      const y = y0 + i * h, v = pz.t[b], [lo, hi] = pz.rg[b];
+      fillRR(x, x0, y - 16, 16, 16, 4, BLOCCHI[b].c);
+      T(x, n, x0 + 28, y, { font: F(700, fs), color: C.t1 });
+      fillRR(x, bx, y - 26, bw, 34, 6, C.track);
+      fillRR(x, bx, y - 26, Math.max(6, sx(v) - bx), 34, 6, BLOCCHI[b].c);
+      if (hi > lo) { x.save(); rr(x, sx(lo), y - 31, Math.max(4, sx(hi) - sx(lo)), 44, 5); x.strokeStyle = 'rgba(244,247,255,.85)'; x.lineWidth = 2.5; x.stroke(); x.restore(); }
+      T(x, String(v), vx, y + 4, { font: F(700, fs * 1.9, 'serif'), color: C.t1, align: 'right' });
+      T(x, hi > lo ? lo + '–' + hi : 'stabile', vx, y + 30, { font: F(500, fs * .72), color: C.t3, align: 'right' });
+    });
+    const yb = y0 + (rr_.length - 1) * h;
+    line(x, sx(MAGG), y0 - 46, sx(MAGG), yb + 20, C.white, 2.5);
+    T(x, '61', sx(MAGG), y0 - 52, { font: F(800, fs * .8), color: C.white, align: 'center' });
+    [0, 20, 40].forEach(v => T(x, String(v), sx(v), yb + 46, { font: F(500, fs * .7), color: C.t3, align: 'center' }));
+    return yb + 46;
+  }
+  /* le liste in fila, con il margine accanto, andando a capo */
+  function listePz(x, pz, x0, x1, y, fs, lh) {
+    let cx = x0;
+    pz.liste.forEach(e => {
+      const nome = nomeBreve(e.p) + ' ', num = String(e.s), mg = e.rg[1] > e.rg[0] ? ' ' + e.rg[0] + '–' + e.rg[1] : '';
+      const w = 22 + W(x, nome, F(600, fs)) + W(x, num, F(800, fs)) + W(x, mg, F(500, fs * .8)) + 28;
+      if (cx + w > x1 && cx > x0) { cx = x0; y += lh; }
+      fillRR(x, cx, y - fs * .62, 12, 12, 6, e.p.c);
+      let px = cx + 20;
+      T(x, nome, px, y, { font: F(600, fs), color: C.t2 }); px += W(x, nome, F(600, fs));
+      T(x, num, px, y, { font: F(800, fs), color: C.t1 }); px += W(x, num, F(800, fs));
+      if (mg) T(x, mg, px, y, { font: F(500, fs * .8), color: C.t3 });
+      cx += w;
+    });
+    return y;
+  }
+  function card7(x, s, N) {
+    const pz = s.pz;
+    frame(x, { badge: 'PROIEZIONE', kicker: s.ambito, title: g('t7').value, sub: pz ? 'Come potrebbe finire lo spoglio, con lo scrutinio ' + alPct(pz.f) + ' · seggi su 120' : '', nota: NOTA7, fonte: fonte7(s), n: N.n, tot: N.tot });
+    if (!pz) return attesa(x, 'In attesa dei voti contati');
+    const yb = barrePz(x, pz, 62, 420, 920, 1538, 318, 86, 26);
+    T(x, 'Il blocco Netanyahu arriva a 61 in ' + nf(pz.magg * 100, 0) + ' simulazioni su 100', 62, yb + 54, { font: F(700, 26), color: pz.magg >= .5 ? C.acc : C.t1 });
+    listePz(x, pz, 62, 1538, yb + 104, 22, 36);
+  }
+  function ig7(x, s, N) {
+    const pz = s.pz, M = IG.M, Rr = IG.W - M;
+    const z = frameIG(x, { badge: 'PROIEZIONE', kicker: s.ambito, title: g('t7').value, sub: pz ? 'Come potrebbe finire, con lo scrutinio ' + alPct(pz.f) : '', nota: NOTA7, fonte: fonte7(s), n: N.n, tot: N.tot });
+    if (!pz) return attesaIG(x, z, 'In attesa dei voti contati');
+    const yb = barrePz(x, pz, M, M + 300, Rr - M - 300 - 110, Rr, z.y0 + 90, 104, 25);
+    T(x, 'Netanyahu a 61 in ' + nf(pz.magg * 100, 0) + ' simulazioni su 100', M, yb + 58, { font: F(700, 27), color: pz.magg >= .5 ? C.acc : C.t1 });
+    listePz(x, pz, M, Rr, yb + 116, 23, 40);
   }
 
   /* ---------- CARD 3 — gli exit poll a confronto ---------- */
@@ -3393,7 +3454,8 @@ window.CARD = (function () {
     { id: 'c3', tid: 't3', nome: 'Card 3 — Exit poll a confronto', file: 'israele_3_exit_poll.png', fn: card3, fig: ig3, ok: s => s.ex.length > 0 },
     { id: 'c4', tid: 't4', nome: 'Card 4 — La mappa', file: 'israele_4_mappa.png', fn: card4, fig: ig4, ok: s => !!(s.R && s.R.loc && s.R.loc.size) },
     { id: 'c5', tid: 't5', nome: 'Card 5 — La soglia', file: 'israele_5_soglia.png', fn: card5, fig: ig5, ok: s => !!s.R },
-    { id: 'c6', tid: 't6', nome: 'Card 6 — Il modello alla prova', file: 'israele_6_modello.png', fn: card6, fig: ig6, ok: s => !!(s.cf && s.cf.col.length) }
+    { id: 'c6', tid: 't6', nome: 'Card 6 — Il modello alla prova', file: 'israele_6_modello.png', fn: card6, fig: ig6, ok: s => !!(s.cf && s.cf.col.length) },
+    { id: 'c7', tid: 't7', nome: 'Card 7 — Come potrebbe finire', file: 'israele_7_proiezione.png', fn: card7, fig: ig7, ok: s => !!s.pz }
   ];
 
   /* ---------- titoli e testi automatici ---------- */
@@ -3416,6 +3478,8 @@ window.CARD = (function () {
       else if (ex.length) { const a = Math.min(...ex), b = Math.max(...ex); t.t6 = 'Il modello dava ' + D.tm.N + ' seggi al blocco Netanyahu, gli exit poll ' + (a === b ? a : 'fra ' + a + ' e ' + b); }
       else t.t6 = 'Il modello alla prova';
     }
+    if (s.pz) { const n = s.pz.t.N; t.t7 = n >= MAGG ? 'La proiezione: il blocco Netanyahu verso la maggioranza, ' + n + ' seggi' : 'La proiezione: il blocco Netanyahu si fermerebbe a ' + n + ' seggi'; }
+    else t.t7 = 'Come potrebbe finire';
     return t;
   }
   function autoPost(s) {
@@ -3442,6 +3506,10 @@ window.CARD = (function () {
       const nomeC = c => c.reale ? 'scrutinio' : D.col.length > 3 ? c.c : c.n;
       p.c6 = 'Israele, il modello previsionale alla prova. Blocco Netanyahu: ' + D.tm.N + ' seggi nel modello; ' + D.col.map((c, j) => nomeC(c) + ' ' + D.tc[j].N).join(', ') +
         '. Seggi spostati rispetto al modello: ' + D.col.map((c, j) => nomeC(c) + ' ' + nf(D.spost[j], 0)).join(', ') + (D.conScr ? ' (scrutinio ' + D.col[D.col.length - 1].sub + ').' : '.');
+    }
+    if (s.pz) {
+      const z = s.pz, mg = b => z.rg[b][1] > z.rg[b][0] ? ' (' + z.rg[b][0] + '–' + z.rg[b][1] + ')' : '';
+      p.c7 = 'Israele, come potrebbe finire con lo scrutinio ' + alPct(z.f) + ': blocco Netanyahu ' + z.t.N + mg('N') + ', opposizione ' + z.t.O + mg('O') + ', partiti arabi ' + z.t.A + mg('A') + ' seggi. Maggioranza a 61 in ' + nf(z.magg * 100, 0) + ' simulazioni su 100. Una stima, non il risultato.';
     }
     Object.keys(p).forEach(k => p[k] = taglia(p[k]));
     return p;
