@@ -572,7 +572,7 @@ footer a{color:var(--t2)}
     <div class="hero-main">
       <div class="eyebrow" id="heroEyebrow">Elezioni della 26ª Knesset, martedì 27 ottobre 2026</div>
       <h1 id="heroTitle">Israele 2026</h1>
-      <p id="heroText">Lo spoglio in diretta dai file della Commissione elettorale centrale: i 120 seggi ripartiti con il metodo Bader-Ofer e gli accordi di eccedenza, gli exit poll delle reti, la mappa delle località. I seggi chiudono alle 22 in Israele, le 21 in Italia.</p>
+      <p id="heroText">Lo spoglio in diretta dai file della Commissione elettorale centrale: i 120 seggi ripartiti con il metodo Bader-Ofer e gli accordi di eccedenza, gli exit poll delle reti, la mappa delle località. Le urne chiudono alle 22 in Israele, le 21 in Italia.</p>
     </div>
     <div class="hero-side">
       <div class="metaline">
@@ -633,7 +633,7 @@ footer a{color:var(--t2)}
 
   <section id="manualPanel" class="card hidden solo-red" style="margin-bottom:14px">
     <div class="cardhead"><div><h2>Risultato manuale</h2></div></div>
-    <p class="subcopy">Se il feed si blocca, inserisci i voti nazionali che mostra il sito della Commissione: soglia e seggi si ricalcolano qui. Il risultato manuale ha la precedenza sul feed finché non lo rimuovi.</p>
+    <p class="subcopy">Se i dati della Commissione si fermano, inserisci qui i voti nazionali che mostra il suo sito: soglia e seggi si ricalcolano da soli. Il risultato inserito a mano vale finché non lo rimuovi.</p>
     <div id="manualInputs" class="manual-grid"></div>
     <div class="manual-actions"><button id="applyManual" class="primary">Applica risultato</button><button id="clearManual" class="sm">Rimuovi risultato manuale</button></div>
   </section>
@@ -654,7 +654,7 @@ footer a{color:var(--t2)}
 
     <article class="card">
       <div class="cardhead"><div><h2>Exit poll</h2></div><span class="cmeta">seggi su 120</span></div>
-      <p class="subcopy" id="exitSub">Kan 11, Canale 12, Canale 13, Canale 14 e i24 (con Direct Polls) pubblicano gli exit poll in seggi alla chiusura dei seggi, alle 21 italiane, e li aggiornano nella notte con i voti reali.</p>
+      <p class="subcopy" id="exitSub">Kan 11, Canale 12, Canale 13, Canale 14 e i24 (con Direct Polls) pubblicano gli exit poll in seggi alla chiusura delle urne, alle 21 italiane, e li aggiornano nella notte con i voti reali.</p>
       <div class="feedprog solo-red" id="boxWiki"><div><b>Exit poll da Wikipedia</b><span id="statoWiki">legge la tabella dei sondaggi e precompila le caselle, da verificare con la diretta</span></div><button id="cercaWiki" class="sm">Cerca su Wikipedia</button></div>
       <div class="feedprog solo-red" id="boxStime"><div><b>Stime pubblicate nel repository</b><span id="statoStime">lettura di stime.json…</span></div><button id="copyStime" class="sm">Copia per stime.json</button></div>
       <div class="exit-wrap">
@@ -673,15 +673,15 @@ footer a{color:var(--t2)}
       <div><h2>Simulatore di maggioranza</h2></div>
       <div class="seatsrc"><label for="simSrc">Seggi</label><select id="simSrc"></select></div>
     </div>
-    <p class="subcopy">Tocca le liste per comporre una coalizione: alla Knesset la maggioranza è a 61 seggi su 120. I seggi sono quelli della fonte scelta; le scorciatoie partono dai blocchi.</p>
+    <p class="subcopy">Tocca le liste per comporre una coalizione: alla Knesset la maggioranza è a 61 seggi su 120. I seggi sono quelli della fonte scelta; i pulsanti qui sotto caricano i blocchi già composti.</p>
     <div class="simpre" id="simPre"></div>
     <div class="simliste" id="simListe"></div>
     <div id="simBarra" class="simbarra"></div>
     <div id="simVetiSel" class="simvetisel"></div>
     <div class="simsez">
       <h3>Le strade verso quota 61</h3>
-      <p class="simlede">Le coalizioni minime vincenti, cioè quelle che arrivano a 61 e perdono la maggioranza se esce una lista qualsiasi, ordinate per praticabilità politica: prima quelle senza veti dichiarati, poi quelle con meno veti, a parità con meno liste. La Lista unita araba non entra nei governi: può solo appoggiarli da fuori. Tocca una coalizione per caricarla qui sopra.</p>
-      <div class="simvetitit">Veti dichiarati, dal modello previsionale · tocca per non contarne uno</div>
+      <p class="simlede">Le coalizioni minime vincenti, cioè quelle che arrivano a 61 e perdono la maggioranza se esce una lista qualsiasi, ordinate per praticabilità politica: prima quelle senza veti dichiarati, poi quelle con meno veti e, a parità, con meno liste. La Lista unita araba non entra nei governi: può solo appoggiarli da fuori. Tocca una coalizione per caricarla qui sopra.</p>
+      <div class="simvetitit">Veti dichiarati, raccolti dal modello previsionale: toccane uno per non contarlo</div>
       <div id="simVeti" class="simveti"></div>
       <div id="simStrade"></div>
     </div>
@@ -694,7 +694,7 @@ footer a{color:var(--t2)}
       <span class="cmeta" id="barsKicker">In attesa</span>
     </div>
     <div id="bars" class="bars"></div>
-    <p class="methodnote" id="barsNote">Percentuali sui voti validi scrutinati, linea verticale alla soglia del 3,25%. A destra i seggi; per le liste entro un punto e mezzo dalla soglia, la distanza in punti (in ambra entro un punto).</p>
+    <p class="methodnote" id="barsNote">Percentuali sui voti validi scrutinati, linea verticale alla soglia del 3,25%. A destra i seggi; per le liste entro un punto e mezzo dalla soglia, la distanza in punti (in giallo se è entro un punto).</p>
   </section>
 
   <section class="card" style="margin-bottom:14px">
@@ -754,11 +754,11 @@ footer a{color:var(--t2)}
       <div class="progresslabels"><span id="progressText">In attesa del file della Commissione</span><span id="progressPct" class="mono">—</span></div>
       <div id="countCheck" class="countcheck">—</div>
       <div class="timeline" id="timeline"></div>
-      <div class="nota" id="progressNote"><strong>Le doppie buste.</strong> Chi vota fuori dal proprio seggio — militari, diplomatici, personale di ospedali e carceri, persone con disabilità — vota in doppia busta. Questi voti, circa 460.000 nel 2022, si contano dopo i seggi ordinari e compaiono nel file come un'unica riga, «מעטפות חיצוניות». Possono spostare un seggio, soprattutto per le liste vicine alla soglia.</div>
+      <div class="nota" id="progressNote"><strong>Le doppie buste.</strong> Chi vota fuori dalla propria sezione — militari, diplomatici, personale di ospedali e carceri, persone con disabilità — vota in doppia busta. Questi voti, circa 460.000 nel 2022, si contano dopo le sezioni ordinarie e compaiono nel file come un'unica riga, «מעטפות חיצוניות». Possono spostare un seggio, soprattutto per le liste vicine alla soglia.</div>
     </article>
     <article class="card">
       <div class="cardhead"><div><h2>Cosa manca da contare</h2></div><span class="cmeta" id="mancaMeta">sui volumi del 2022</span></div>
-      <p class="subcopy">Per ogni località, i voti che mancano rispetto ai voti validi del 2022, e come avevano votato quelle stesse località allora. Non è una previsione: dice da dove arriveranno i voti ancora da contare.</p>
+      <p class="subcopy">Quanti votanti mancano, rispetto a quelli attesi con l’affluenza di quest’anno, e dove: le località con più voti ancora da contare. I colori sono una stima di come voteranno.</p>
       <div id="manca" class="manca"></div>
       <p class="methodnote" id="mancaNote">I blocchi del 2022: Netanyahu = Likud, Sionismo religioso, Shas, UTJ; opposizione = Yesh Atid, Unità nazionale, Yisrael Beitenu, Laburisti, Meretz; arabi = Ra'am, Hadash–Ta'al, Balad.</p>
     </article>
@@ -770,7 +770,7 @@ footer a{color:var(--t2)}
 <!-- ============================ TAB 2 — CARD ============================ -->
 <section id="tab-card" role="tabpanel" aria-labelledby="tabbtn-card" class="hidden">
   <header class="hero hero-card">
-    <div class="eyebrow">X 1600×900 · Instagram 1080×1350 · export PNG in doppia risoluzione</div>
+    <div class="eyebrow">X 1600×900 · Instagram 1080×1350 · PNG a doppia risoluzione</div>
     <h1>Card per X e Instagram</h1>
     <p>Le card si compilano da sole con i dati della dashboard: scrutinio, seggi, blocchi, exit poll, soglia del 3,25%, mappa e proiezione a fine spoglio. Scegli il formato, poi scarica o condividi: «Condividi» apre il menu del sistema con immagine e testo (da lì Instagram, X, WhatsApp); «Pubblica su X» apre X con il testo, e l’immagine si allega a mano.</p>
   </header>
@@ -780,7 +780,7 @@ footer a{color:var(--t2)}
         <div class="cardhead"><div><h2>Impostazioni</h2></div></div>
         <div class="inner" style="padding-top:12px">
           <div class="fld"><label for="ambito">Ambito e data (occhiello)</label><input id="ambito" value="Israele · elezioni del 27 ottobre 2026"></div>
-          <div class="fld"><label for="dataFonte">Data fonte (piede)</label><input id="dataFonte" value="27 ottobre 2026"></div>
+          <div class="fld"><label for="dataFonte">Data della fonte (in fondo alla card)</label><input id="dataFonte" value="27 ottobre 2026"></div>
           <div class="fld"><label for="firma">Firma</label><input id="firma" value="@putino"></div>
           <button id="reauto" style="width:100%">Rigenera titoli e testi</button>
         </div>
@@ -1008,7 +1008,7 @@ const nomeLoc = (code, he) => (NOMI[code] && NOMI[code].en) || (code === ENV_COD
 const SEGGI_MIN_ELENCO = 10000;
 const VAL22_ORD = Object.entries(BASE22.loc).reduce((s, [c, v]) => s + (Number(c) === ENV_CODE ? 0 : v[3]), 0);
 /* L'AVANZAMENTO NEL 2026 si stima sull'affluenza di quest'anno: 7.331.981 aventi diritto e il
-   77,7% di votanti (Commissione elettorale, alla chiusura dei seggi). I votanti contati si
+   77,7% di votanti (Commissione elettorale, alla chiusura delle urne). I votanti contati si
    dividono per tutti quelli attesi, doppie buste comprese, come fanno Haaretz e le reti: le
    buste arrivano per ultime, e solo con loro si arriva al 100%. */
 const AVENTI_26 = 7331981, AFFLUENZA_26 = 0.777;
@@ -1266,7 +1266,7 @@ function renderHero() {
   if (PROVA) { lu.textContent = 'Prova · spoglio 2022 al ' + $('provaPct').textContent; lu.className = 'pill'; }
   else if (R && R.fonte === 'manuale') { lu.textContent = 'Risultato inserito a mano'; lu.className = 'pill danger'; }
   else if (S.aggiornato) { lu.textContent = 'File della Commissione delle ' + oraIT(S.aggiornato) + ' (' + oraIT(S.aggiornato, 'Asia/Jerusalem') + ' in Israele)'; lu.className = 'pill'; }
-  if (ED === '25' && !PROVA) { $('testBadge').textContent = 'Feed 2022, prova del proxy'; $('testBadge').classList.remove('hidden'); }
+  if (ED === '25' && !PROVA) { $('testBadge').textContent = 'Dati del 2022, prova del proxy'; $('testBadge').classList.remove('hidden'); }
   if (PROVA) $('testBadge').classList.remove('hidden');
 }
 
@@ -1278,8 +1278,8 @@ function renderKpi() {
   } else {
     $('kVoti').textContent = nf(R.val);
     $('kVotiMeta').textContent = R.fonte === 'manuale' ? 'inseriti a mano'
-      : av.tipo === 'seggi' ? nf(av.fatti) + ' seggi elettorali su ' + nf(av.tot) + ' (' + pct(av.f) + ')'
-        : (av.seggi ? nf(av.seggi) + ' seggi elettorali contati · ' : '') + 'circa ' + pctScr(av.f) + (av.tipo === 'affluenza' ? ' dei votanti attesi, sull’affluenza 2026 (' + pct(AFFLUENZA_26) + ')' : ' dei voti ordinari, sui volumi del 2022');
+      : av.tipo === 'seggi' ? nf(av.fatti) + ' sezioni su ' + nf(av.tot) + ' (' + pct(av.f) + ')'
+        : (av.seggi ? nf(av.seggi) + ' sezioni scrutinate · ' : '') + 'circa ' + pctScr(av.f) + (av.tipo === 'affluenza' ? ' dei votanti attesi, sull’affluenza 2026 (' + pct(AFFLUENZA_26) + ')' : ' dei voti ordinari, sui volumi del 2022');
     if (R.d) {
       let n = 0, tot = 0;
       for (const a of R.d.loc.values()) { if (a.code === ENV_CODE) continue; tot++; if (a.val > 0) n++; }
@@ -1301,7 +1301,7 @@ function renderKpi() {
     $('kBusteMeta').textContent = 'voti validi in doppia busta contati (2022: ' + nf(VAL22_ENV) + ')';
   } else {
     $('kBuste').textContent = R ? 'Non ancora' : '—';
-    $('kBusteMeta').textContent = 'nel 2022 erano ' + nf(VAL22_ENV) + ' voti validi: si contano dopo i seggi ordinari';
+    $('kBusteMeta').textContent = 'nel 2022 erano ' + nf(VAL22_ENV) + ' voti validi: si contano dopo le sezioni ordinarie';
   }
 }
 
@@ -1325,7 +1325,7 @@ function renderVerdetto() {
   const box = $('verdetto'), f = fonteAttiva(), R = risultato(), av = avanzamento(R);
   if (f.k === 'k22') {
     box.className = 'verdetto';
-    box.innerHTML = '<div class="vw">Chi ha la maggioranza</div><h2>In attesa del primo dato</h2><div class="vd">I seggi chiudono alle <b>22 in Israele, le 21 in Italia</b>; gli exit poll di Kan 11, Canale 12, 13 e 14 arrivano subito dopo. Qui sotto la Knesset uscente, eletta nel 2022.</div>' + barraMaggioranza(totBlocchi(f));
+    box.innerHTML = '<div class="vw">Chi ha la maggioranza</div><h2>In attesa del primo dato</h2><div class="vd">Le urne chiudono alle <b>22 in Israele, le 21 in Italia</b>; gli exit poll di Kan 11, Canale 12, 13 e 14 arrivano subito dopo. Qui sotto la Knesset uscente, eletta nel 2022.</div>' + barraMaggioranza(totBlocchi(f));
     return;
   }
   const t = totBlocchi(f), n = t.N, win = n >= MAGG;
@@ -1342,11 +1342,11 @@ function renderVerdetto() {
   }
   let cav = '';
   if (f.k === 'scrutinio' && R.fonte !== 'manuale') {
-    if (av.f < 0.97) cav = 'Scrutinio parziale: le prime località a riportare non rappresentano il paese';
+    if (av.f < 0.97) cav = 'Scrutinio parziale: le prime località contate non rappresentano il paese';
     else if (!(R.env && R.env.val > 0)) cav = 'Mancano ancora le doppie buste, circa 460.000 voti nel 2022';
   } else if (f.k === 'modello') {
     cav = 'Proiezione sui sondaggi fino ' + conData('al', modello().ultimo) + ', non voti contati';
-    if (S.seatSrc === 'auto') det += ' I seggi chiudono alle <b>22 in Israele, le 21 in Italia</b>: da lì gli exit poll di Kan 11, Canale 12, 13 e 14 prendono il posto del modello.';
+    if (S.seatSrc === 'auto') det += ' Le urne chiudono alle <b>22 in Israele, le 21 in Italia</b>: da lì gli exit poll di Kan 11, Canale 12, 13 e 14 prendono il posto del modello.';
   } else if (f.k !== 'scrutinio') cav = 'Stima, non voti contati';
   box.className = 'verdetto ' + (win ? 'win' : 'hung');
   box.innerHTML = '<div class="vw">Chi ha la maggioranza, a 61 seggi</div><h2>' + esc(titolo) + '</h2><div class="vd">' + det + '</div>' + barraMaggioranza(t) + (cav ? '<span class="vcav">' + esc(cav) + '</span>' : '');
@@ -1669,11 +1669,11 @@ function renderConfronto() {
   $('confrontoTable').innerHTML = h + '</tbody>';
   $('confrontoMeta').textContent = 'proiezione ' + conData('del', M.data);
   let sub = 'La proiezione del <a href="' + URL_MODELLO + '" target="_blank" rel="noopener">modello previsionale</a> (media ponderata di ' + M.rilevazioni + ' sondaggi, l’ultimo ' + conData('del', M.ultimo) + ') messa a confronto con i numeri della notte. ';
-  if (!col.length) sub += 'Gli exit poll entrano appena pubblicati, alle 21 italiane; lo scrutinio quando è contata metà dei seggi.';
-  else if (!conScr) sub += 'Gli scarti accanto ai seggi sono la differenza dal modello. Lo scrutinio entra quando è contata metà dei seggi' + (R && R.fonte !== 'manuale' ? ': ora siamo ' + alPct(av.f) + '.' : '.');
+  if (!col.length) sub += 'Gli exit poll entrano appena pubblicati, alle 21 italiane; lo scrutinio quando è contata metà dei voti.';
+  else if (!conScr) sub += 'Gli scarti accanto ai seggi sono la differenza rispetto al modello. Lo scrutinio entra quando è contata metà dei voti' + (R && R.fonte !== 'manuale' ? ': ora siamo ' + alPct(av.f) + '.' : '.');
   else sub += 'Gli scarti accanto ai seggi sono la differenza dal modello; sotto i seggi dello scrutinio, la quota di voto e lo scarto in punti dalla quota stimata.';
   const nascoste = col.filter(c => !tenute.has(c.k)).map(c => c.n);
-  if (nascoste.length) sub += '<span class="solo-tel"> Da telefono non entrano ' + esc(nascoste.join(' e ')) + ': si vedono da computer o girando lo schermo.</span>';
+  if (nascoste.length) sub += '<span class="solo-tel"> Sul telefono non ci stanno ' + esc(nascoste.join(' e ')) + ': si vedono dal computer o girando il telefono.</span>';
   $('confrontoSub').innerHTML = sub;
   $('confrontoNote').textContent = 'Lo scrutinio entra nel confronto al ' + pct(CONFRONTO_DA, 0) + ' dei seggi contati: nel 2022 è successo verso le 7 del mattino israeliano (le 6 in Italia), nove ore dopo la chiusura; prima, le località che riportano per prime non rappresentano il paese. ' +
     'Ipotesi del modello: Popolo d’Israele contata nel blocco Netanyahu, i quattro accordi di eccedenza firmati applicati. «Seggi spostati» è la metà della somma degli scarti, cioè quanti seggi andrebbero spostati per passare dal modello alla fonte.';
@@ -1742,7 +1742,7 @@ function renderValidazione() {
   if (REDAZIONE) $('exitValidation').innerHTML = 'Totali (devono fare 120): ' + parti.join(' · ');
   else {
     const pubbl = EXIT.map(e => ({ e, x: exitDi(e.k) })).filter(o => o.x);
-    $('exitValidation').textContent = pubbl.length ? 'Seggi pubblicati da ' + pubbl.map(o => o.e.n + (o.x.ora ? ' alle ' + o.x.ora : '')).join(', ') + '.' : 'Gli exit poll compaiono qui alla chiusura dei seggi, alle 21 italiane.';
+    $('exitValidation').textContent = pubbl.length ? 'Seggi pubblicati da ' + pubbl.map(o => o.e.n + (o.x.ora ? ' alle ' + o.x.ora : '')).join(', ') + '.' : 'Gli exit poll compaiono qui alla chiusura delle urne, alle 21 italiane.';
   }
   const st = S.stime;
   const n = EXIT.filter(e => st.exit && st.exit[e.k] && sum(st.exit[e.k].seggi) > 0).length;
@@ -2128,7 +2128,7 @@ function renderMappa() {
   } else if (S.mapMode === 'sposta') {
     const es = (dq, c) => '<svg width="44" height="34" viewBox="0 0 44 34">' + freccia(dq > 0 ? 6 : 38, 32, dq * 0.6).replace('class="N"', 'stroke="#5b93ff"').replace('class="O"', 'stroke="#ff6f8a"') + '</svg>';
     lg = '<h4>Spostamento rispetto al 2022</h4><div class="frecceleg"><div>' + es(0.05) + '<span>verso il blocco Netanyahu</span></div><div>' + es(-0.05) + '<span>verso opposizione e partiti arabi</span></div></div>' +
-      '<p>La freccia parte dal centro di ' + (liv === 'sd' && foc == null ? 'ogni area' : 'ogni località') + ' ed è lunga quanto la differenza nella quota del blocco Netanyahu sui voti validi, in punti, rispetto al 2022: a vista intera 10 punti sono circa ' + Math.round(FRECCIA_10PT * (($('locMap').getBoundingClientRect().height || 600) / MAPPA.H)) + ' pixel. Solo dove sono contati almeno ' + nf(FRECCIA_MIN_VOTI) + ' voti validi.</p>';
+      '<p>La freccia parte dal centro di ' + (liv === 'sd' && foc == null ? 'ogni area' : 'ogni località') + ' ed è lunga quanto la differenza nella quota del blocco Netanyahu sui voti validi, in punti, rispetto al 2022: con la mappa intera 10 punti sono circa ' + Math.round(FRECCIA_10PT * (($('locMap').getBoundingClientRect().height || 600) / MAPPA.H)) + ' pixel. Solo dove sono contati almeno ' + nf(FRECCIA_MIN_VOTI) + ' voti validi.</p>';
   } else {
     const p = infoLista(S.mapLista);
     lg = '<h4>' + esc(p.n) + '</h4><div class="ramp" style="background:linear-gradient(90deg,' + COL_BASE + ',' + p.c + ')"></div><div class="rampl"><span>0%</span><span>30%</span><span>60% e oltre</span></div><p>Quota della lista sui voti validi di ogni ' + (liv === 'sd' ? 'area' : 'località') + '.</p>';
@@ -2136,7 +2136,7 @@ function renderMappa() {
   if (bolle()) {
     /* la scala dei cerchi, a vista intera */
     const k = ($('locMap').getBoundingClientRect().height || 600) / MAPPA.H;
-    lg += '<div class="bolleg">' + [10000, 50000, 200000].map(v => { const rp = Math.max(1.5, raggioBolla(v) * k); return '<div><svg width="' + Math.ceil(rp * 2 + 2) + '" height="' + Math.ceil(rp * 2 + 2) + '"><circle cx="' + (rp + 1) + '" cy="' + (rp + 1) + '" r="' + rp.toFixed(1) + '"></circle></svg><span>' + nf(v) + '</span></div>'; }).join('') + '</div><p>Area del cerchio proporzionale ai voti validi, a vista intera.</p>';
+    lg += '<div class="bolleg">' + [10000, 50000, 200000].map(v => { const rp = Math.max(1.5, raggioBolla(v) * k); return '<div><svg width="' + Math.ceil(rp * 2 + 2) + '" height="' + Math.ceil(rp * 2 + 2) + '"><circle cx="' + (rp + 1) + '" cy="' + (rp + 1) + '" r="' + rp.toFixed(1) + '"></circle></svg><span>' + nf(v) + '</span></div>'; }).join('') + '</div><p>Area del cerchio proporzionale ai voti validi, con la mappa intera.</p>';
   }
   $('mapLegend').innerHTML = lg;
   /* una selezione dell'altro livello non vale più */
@@ -2236,11 +2236,11 @@ function renderScrutinio() {
   const R = risultato(), av = avanzamento(R);
   $('progressBar').style.width = (av.f * 100).toFixed(1) + '%';
   $('progressPct').textContent = R ? pct(av.f) : '—';
-  $('progPill').textContent = av.tipo === 'seggi' ? 'seggi elettorali' : av.tipo === 'affluenza' ? 'stima sull’affluenza 2026' : av.tipo === 'volumi' ? 'stima sui volumi 2022' : av.tipo === 'manuale' ? 'manuale' : '—';
+  $('progPill').textContent = av.tipo === 'seggi' ? 'sezioni scrutinate' : av.tipo === 'affluenza' ? 'stima sull’affluenza 2026' : av.tipo === 'volumi' ? 'stima sui volumi 2022' : av.tipo === 'manuale' ? 'manuale' : '—';
   $('progressText').textContent = !R ? 'In attesa del file della Commissione'
-    : av.tipo === 'seggi' ? nf(av.fatti) + ' seggi elettorali scrutinati su ' + nf(av.tot)
-      : av.tipo === 'affluenza' ? (av.seggi ? nf(av.seggi) + ' seggi elettorali contati, ' : '') + nf(av.vo) + ' votanti contati su circa ' + nf(VOT26) + ' attesi (' + pct(AFFLUENZA_26) + ' di ' + nf(AVENTI_26) + ' aventi diritto, doppie buste comprese)'
-      : av.tipo === 'volumi' ? (av.seggi ? nf(av.seggi) + ' seggi elettorali contati, ' : '') + nf(av.ord) + ' voti ordinari su ' + nf(VAL22_ORD) + ' nel 2022' : 'Risultato inserito a mano';
+    : av.tipo === 'seggi' ? nf(av.fatti) + ' sezioni scrutinate su ' + nf(av.tot)
+      : av.tipo === 'affluenza' ? (av.seggi ? nf(av.seggi) + ' sezioni scrutinate, ' : '') + nf(av.vo) + ' votanti contati su circa ' + nf(VOT26) + ' attesi (' + pct(AFFLUENZA_26) + ' di ' + nf(AVENTI_26) + ' aventi diritto, doppie buste comprese)'
+      : av.tipo === 'volumi' ? (av.seggi ? nf(av.seggi) + ' sezioni scrutinate, ' : '') + nf(av.ord) + ' voti ordinari su ' + nf(VAL22_ORD) + ' nel 2022' : 'Risultato inserito a mano';
   let cc = '';
   if (R && R.d) {
     const d = R.d;
@@ -2251,10 +2251,10 @@ function renderScrutinio() {
   } else cc = 'Votanti, schede nulle e valide compaiono con il primo file.';
   $('countCheck').innerHTML = cc;
   $('timeline').innerHTML = [
-    ['21:00', 'chiusura dei seggi (le 22 in Israele) ed exit poll di Kan 11, Canale 12, 13 e 14'],
+    ['21:00', 'chiusura delle urne (le 22 in Israele) ed exit poll di Kan 11, Canale 12, 13 e 14'],
     ['dalle 22', 'i primi file della Commissione: di solito località piccole, kibbutz e moshav'],
     ['notte', 'arrivano le grandi città; le reti aggiornano gli exit poll con i voti reali'],
-    ['mercoledì', 'nel 2022 i seggi ordinari erano completi verso mezzogiorno israeliano'],
+    ['mercoledì', 'nel 2022 le sezioni ordinarie erano complete verso mezzogiorno israeliano'],
     ['giovedì', 'il conteggio delle doppie buste si aggiunge al totale']
   ].map(([t, x]) => '<div><b>' + t + '</b><span>' + x + '</span></div>').join('');
 }
@@ -2419,8 +2419,8 @@ function renderManca() {
   const ord = a26 ? Math.max(0, VOT26 - R.d.vot - envM) : tot;
   grandi.sort((a, b) => b[1] - a[1]);
   const riga = (n, v, comp) => '<div class="mr"><span>' + n + '</span><span class="tk">' + ['N', 'O', 'A', 'X'].map(k => '<b style="width:' + ((comp[k] || 0) * 100).toFixed(1) + '%;background:' + BLOCCHI[k].c + '"></b>').join('') + '</span><span class="vv">' + v + '</span></div>';
-  let h = '<div><div class="big">' + nf(ord + envM) + '</div><div class="muted" style="font-size:12px">' + (a26 ? 'votanti ancora da contare, stimati sull’affluenza 2026 (' + pct(AFFLUENZA_26) + ')' : 'voti validi ancora da contare, stimati') + ': ' + nf(ord) + ' nei seggi ordinari e ' + nf(envM) + ' in doppia busta</div></div>';
-  if (tot > 0 && ord > 0) h += riga('<b>Seggi ordinari</b>', pct(ord / (a26 ? VOT26 * (1 - ENV_QUOTA22) : VAL22_ORD), 0), { N: bl.N / tot, O: bl.O / tot, A: bl.A / tot, X: bl.X / tot });
+  let h = '<div><div class="big">' + nf(ord + envM) + '</div><div class="muted" style="font-size:12px">' + (a26 ? 'votanti ancora da contare, stimati sull’affluenza 2026 (' + pct(AFFLUENZA_26) + ')' : 'voti validi ancora da contare, stimati') + ': ' + nf(ord) + ' nelle sezioni ordinarie e ' + nf(envM) + ' in doppia busta</div></div>';
+  if (tot > 0 && ord > 0) h += riga('<b>Sezioni ordinarie</b>', pct(ord / (a26 ? VOT26 * (1 - ENV_QUOTA22) : VAL22_ORD), 0), { N: bl.N / tot, O: bl.O / tot, A: bl.A / tot, X: bl.X / tot });
   grandi.slice(0, 7).forEach(([code, m, b, e]) => {
     const g = MAPPA.byId[code];
     h += riga(esc(g ? g.en : b[0]), nf(m / 1000, 0) + 'k', e);
@@ -2489,7 +2489,7 @@ function applica(P, fonte, quando) {
 async function poll(forza) {
   if (FEED.busy || PROVA) return;
   if (ED === '26' && !FORZA_FEED && Date.now() < ATTIVA_FEED) {
-    setFeed('Feed spento fino a martedì 27 ottobre alle 20 (ora italiana): si accende da solo', 'paused');
+    setFeed('Aggiornamento automatico spento fino a martedì 27 ottobre alle 20 (ora italiana): si accende da solo', 'paused');
     $('refreshBtn').disabled = true; $('pauseBtn').disabled = true;
     clearTimeout(FEED.timer);
     FEED.timer = setTimeout(() => { $('refreshBtn').disabled = false; $('pauseBtn').disabled = false; poll(true); }, Math.min(ATTIVA_FEED - Date.now() + 1000, 3600e3));
@@ -2498,7 +2498,7 @@ async function poll(forza) {
   if (FEED.pausa && !forza) return;
   FEED.busy = true; clearTimeout(FEED.timer);
   try {
-    setFeed('Interrogo la Commissione…', 'loading');
+    setFeed('Controllo i dati della Commissione…', 'loading');
     const F = await scaricaFeed('expc');
     if (!F) { setFeed('In attesa del primo file della Commissione · riprovo ogni minuto', 'paused'); return; }
     const text = F.text;
@@ -2515,14 +2515,14 @@ async function poll(forza) {
       applica(P, 'feed', quando);
       FEED.cicli++;
       const tot = S.dati.val;
-      setFeed(tot ? 'Feed live · ' + di + oraIT(quando) + ' · ' + nf(tot) + ' voti validi' : 'Feed collegato · il file della Commissione non ha ancora voti', 'ok');
+      setFeed(tot ? 'In diretta · ' + di + oraIT(quando) + ' · ' + nf(tot) + ' voti validi' : 'Collegato · il file della Commissione non ha ancora voti', 'ok');
       if (tot && FEED.cicli % POLL_EXPB_OGNI === 1) pollExpb();
     }
     avviso('');
   } catch (e) {
     const m = e.name === 'AbortError' ? 'tempo scaduto' : e.message;
-    setFeed('Feed non raggiungibile (' + m + ')', 'error');
-    if (S.dati) avviso('Il feed non risponde (' + m + '): la pagina mostra l’ultimo file ricevuto. Se il problema continua usa «Importa CSV» con il file scaricato da bechirot.gov.il, o l’inserimento manuale.');
+    setFeed('Dati della Commissione non raggiungibili (' + m + ')', 'error');
+    if (S.dati) avviso('I dati della Commissione non arrivano (' + m + '): la pagina mostra l’ultimo file ricevuto. Se il problema continua usa «Importa CSV» con il file scaricato da bechirot.gov.il, o l’inserimento manuale.');
   } finally {
     FEED.busy = false;
     if (!FEED.pausa) FEED.timer = setTimeout(poll, POLL_MS);
@@ -2805,8 +2805,8 @@ function eventi() {
   $('refreshBtn').onclick = () => { FEED.firma = null; poll(true); };
   $('pauseBtn').onclick = () => {
     FEED.pausa = !FEED.pausa;
-    $('pauseBtn').textContent = FEED.pausa ? 'Riprendi il feed' : 'Metti in pausa';
-    if (FEED.pausa) { clearTimeout(FEED.timer); setFeed('Feed in pausa', 'paused'); } else poll(true);
+    $('pauseBtn').textContent = FEED.pausa ? 'Riprendi l’aggiornamento' : 'Metti in pausa';
+    if (FEED.pausa) { clearTimeout(FEED.timer); setFeed('Aggiornamento in pausa', 'paused'); } else poll(true);
   };
   $('seatSrc').onchange = e => { S.seatSrc = e.target.value; salva(); render(); };
   $('hemicycle').onclick = e => { const c = e.target.closest('circle[data-l]'); if (!c) { filtroEmi = null; } else filtroEmi = filtroEmi && filtroEmi.t === 'l' && filtroEmi.v === c.dataset.l ? null : { t: 'l', v: c.dataset.l }; applicaFiltro(); };
@@ -2836,9 +2836,9 @@ function eventi() {
     rd.onload = () => {
       try {
         const P = leggiCSV(decodifica(rd.result));
-        if (!PROVA) { FEED.pausa = true; clearTimeout(FEED.timer); $('pauseBtn').textContent = 'Riprendi il feed'; }
+        if (!PROVA) { FEED.pausa = true; clearTimeout(FEED.timer); $('pauseBtn').textContent = 'Riprendi l’aggiornamento'; }
         applica(P, 'file', new Date(f.lastModified || Date.now()));
-        setFeed('File importato: ' + f.name + ' · feed in pausa', 'paused');
+        setFeed('File importato: ' + f.name + ' · aggiornamento in pausa', 'paused');
         avviso('');
       } catch (err) { avviso('File non riconosciuto: ' + err.message); }
       e.target.value = '';
@@ -3103,7 +3103,7 @@ window.CARD = (function () {
     const cols = s.ex.map(e => ({ n: e.n, ora: e.x.ora, seggi: e.x.seggi }));
     if (s.bo && s.R.fonte !== 'prova') cols.push({ n: 'Scrutinio', ora: pctScr(s.av.f), seggi: s.bo.seggi, reale: true });
     frame(x, { badge: 'EXIT POLL', kicker: s.ambito, title: g('t3').value, sub: 'Seggi su 120 secondo ' + (s.ex.length === EXIT.length ? 'le cinque reti' : s.ex.length === 1 ? 'l’exit poll disponibile' : 'gli exit poll disponibili') + (cols.some(c => c.reale) ? ', e il riparto sui voti contati' : ''),
-      nota: 'Gli exit poll israeliani sono pubblicati in seggi alla chiusura dei seggi, alle 21 italiane (le 22 in Israele), e aggiornati nella notte con i voti reali. Le liste sotto la soglia del 3,25% non hanno seggi.',
+      nota: 'Gli exit poll israeliani sono pubblicati in seggi alla chiusura delle urne, alle 21 italiane (le 22 in Israele), e aggiornati nella notte con i voti reali. Le liste sotto la soglia del 3,25% non hanno seggi.',
       fonte: (s.ex.map(e => e.n).join(', ') || 'Reti israeliane') + ' (' + s.data + ')', n: N.n, tot: N.tot });
     if (!cols.length) return attesa(x, 'In attesa degli exit poll', 'Alle 21 italiane, le 22 in Israele.');
     const liste = L.filter(p => cols.some(c => (c.seggi[p.l] || 0) > 0)).sort((a, b) => (cols[0].seggi[b.l] || 0) - (cols[0].seggi[a.l] || 0));
@@ -3337,7 +3337,7 @@ window.CARD = (function () {
     const cols = s.ex.map(e => ({ n: e.s === 'Kan' ? 'Kan 11' : e.n.replace('Canale ', 'Can. '), ora: e.x.ora, seggi: e.x.seggi }));
     if (s.bo && s.R.fonte !== 'prova') cols.push({ n: 'Scrutinio', ora: pctScr(s.av.f), seggi: s.bo.seggi, reale: true });
     const z = frameIG(x, { badge: 'EXIT POLL', kicker: s.ambito, title: g('t3').value, sub: 'Seggi su 120' + (cols.some(c => c.reale) ? ', e il riparto sui voti contati' : ''),
-      nota: 'Gli exit poll israeliani sono pubblicati in seggi alla chiusura dei seggi, alle 21 italiane (le 22 in Israele), e aggiornati nella notte con i voti reali.',
+      nota: 'Gli exit poll israeliani sono pubblicati in seggi alla chiusura delle urne, alle 21 italiane (le 22 in Israele), e aggiornati nella notte con i voti reali.',
       fonte: (s.ex.map(e => e.n).join(', ') || 'Reti israeliane') + ' (' + s.data + ')', n: N.n, tot: N.tot });
     if (!cols.length) return attesaIG(x, z, 'In attesa degli exit poll', 'Alle 21 italiane, le 22 in Israele.');
     const M = IG.M, Rr = IG.W - M;
