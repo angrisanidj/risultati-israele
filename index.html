@@ -141,6 +141,15 @@ select{background:var(--s2);color:var(--t1);border:1px solid var(--line-2);borde
 .magg-lab{position:relative;display:flex;justify-content:space-between;gap:16px;margin-top:9px;font-size:13px;color:var(--t2)}
 .magg-lab b{color:var(--t1);font-weight:600;font-variant-numeric:tabular-nums}
 .magg-lab .n b{font:600 22px/1 var(--sans);margin-right:6px}
+.proiez{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.proiez h3{margin:0 0 4px;font-size:15px}
+.proiezliste{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:10px;font-size:13px;font-weight:600}
+.proiezliste span{display:inline-flex;align-items:center;gap:5px}
+.proiezliste i{width:8px;height:8px;border-radius:50%}
+.proiezliste .rg,.proiezbl .rg{font-weight:500;color:var(--t3);font-size:12px}
+.proiezbl{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:13.5px;font-weight:600}
+.proiezbl span{display:inline-flex;align-items:center;gap:6px}
+.proiezbl i{width:9px;height:9px;border-radius:2px}
 .simpre{display:flex;gap:8px;flex-wrap:wrap;padding:0 18px 12px}
 .simliste{display:flex;flex-wrap:wrap;gap:8px;padding:0 18px}
 .simchip{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;color:var(--t2);font-weight:600}
@@ -2230,6 +2239,80 @@ function renderScrutinio() {
     ['giovedì', 'il conteggio delle doppie buste si aggiunge al totale']
   ].map(([t, x]) => '<div><b>' + t + '</b><span>' + x + '</span></div>').join('');
 }
+/* LA PROIEZIONE A FINE SPOGLIO, se le stime di «Cosa manca da contare» sono giuste.
+   Ai voti già contati si aggiungono, località per località, quelli che mancano:
+   - una località già in parte contata vota come la parte contata;
+   - una località ancora a zero vota come la sua area nel 2026, con i blocchi riportati alla
+     stima della località (il suo 2022 più lo spostamento dell'area): dentro ogni blocco le
+     liste si dividono come nell'area;
+   - le doppie buste votano come i voti già contati in tutto il paese.
+   I votanti diventano voti validi con il rapporto dei voti già contati. Poi soglia e
+   Bader-Ofer con gli accordi, come per lo scrutinio. */
+function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
+  const d = R.d, vr = d.vot ? R.val / d.vot : 1;
+  const sd = aggregaSD(loc);
+  const quoteDi = o => { const q = {}; for (const l in o.v) q[l] = o.v[l] / o.val; return q; };
+  const nazQ = quoteDi({ v: R.voti, val: R.val });
+  /* i voti che mancano, raccolti per area (e a parte le doppie buste): servono separati per
+     il margine d'errore, che li fa variare area per area */
+  const gruppi = new Map(), add = (g, q, v) => { const t = gruppi.get(g) || {}; for (const l in q) t[l] = (t[l] || 0) + q[l] * v; gruppi.set(g, t); };
+  for (const [code, m, b] of grandi) {
+    const a = loc.get(code), v = m * scala * vr, i = sdDi(code);
+    if (a && a.val > 0) { add(i, quoteDi(a), v); continue; }
+    const o = i != null && sd[i].val >= 2000 ? sd[i] : { v: R.voti, val: R.val };
+    const qa = quoteDi(o), bk = { N: 0, O: 0, A: 0, X: 0 };
+    for (const l in qa) bk[infoLista(l).b] += qa[l];
+    const e = stima(code, b), q = {};
+    for (const l in qa) { const k = infoLista(l).b; if (bk[k] > 0) q[l] = e[k] * qa[l] / bk[k]; }
+    add(i, q, v);
+  }
+  add('buste', nazQ, envM * vr);
+  const lettere = Object.keys(R.voti);
+  const ripartisci = varia => {
+    const voti = { ...R.voti };
+    for (const [g, t] of gruppi) {
+      const f = varia ? varia(g) : null;
+      let prima = 0, dopo = 0; const w = {};
+      for (const l in t) { prima += t[l]; w[l] = t[l] * (f ? f[l] : 1); dopo += w[l]; }
+      for (const l in w) voti[l] = (voti[l] || 0) + (dopo ? w[l] * prima / dopo : 0);
+    }
+    return voti;
+  };
+  const voti = ripartisci(null);
+  const val = Object.values(voti).reduce((x, y) => x + y, 0), bo = baderOfer(voti, accordi()), t = totBlocchi({ seggi: bo.seggi });
+
+  /* IL MARGINE D'ERRORE. Si rifà la ripartizione 400 volte con numeri casuali (sempre gli
+     stessi, così la pagina non cambia a ogni ricarica). In ogni giro ogni lista prende un
+     fattore nazionale (scarto tipico 6%) e, in ogni area, uno locale (12%); per le doppie
+     buste lo scarto è del 25%, perché votano diversamente dal resto e non le vediamo ancora.
+     Il totale di ogni area resta quello stimato: cambia solo come si divide. L'intervallo è
+     quello che contiene 8 simulazioni su 10. */
+  let seme = 20261027;
+  const caso = () => (seme = (seme * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const gauss = () => Math.sqrt(-2 * Math.log(caso() || 1e-9)) * Math.cos(2 * Math.PI * caso());
+  const SIMUL = 400, sim = { N: [], O: [], A: [] }, simL = {}; let magg = 0;
+  lettere.forEach(l => simL[l] = []);
+  for (let k = 0; k < SIMUL; k++) {
+    const fn = {}; lettere.forEach(l => fn[l] = Math.exp(0.06 * gauss()));
+    const v = ripartisci(g => { const f = {}; const s = g === 'buste' ? 0.25 : 0.12; lettere.forEach(l => f[l] = fn[l] * Math.exp(s * gauss())); return f; });
+    const sg = baderOfer(v, accordi()).seggi, tb = totBlocchi({ seggi: sg });
+    sim.N.push(tb.N); sim.O.push(tb.O); sim.A.push(tb.A); if (tb.N >= MAGG) magg++;
+    lettere.forEach(l => simL[l].push(sg[l] || 0));
+  }
+  const fra = a => { const o = a.slice().sort((x, y) => x - y); return [o[Math.floor(SIMUL * 0.1)], o[Math.ceil(SIMUL * 0.9) - 1]]; };
+  const rng = a => { const [x, y] = fra(a); return x === y ? '' : ' <span class="rg">' + x + '–' + y + '</span>'; };
+
+  const ord = Object.keys(voti).map(l => ({ l, p: infoLista(l), q: voti[l] / val, s: bo.seggi[l] || 0 })).sort((x, y) => y.q - x.q);
+  const filo = ord.filter(x => x.q >= 0.025 && x.q < 0.045);
+  let h = '<div class="proiez"><h3>Come potrebbe finire</h3>';
+  h += '<div class="muted" style="font-size:12px;margin-bottom:6px">Se le stime qui sopra sono giuste: voti contati più quelli che mancano, ripartiti con Bader-Ofer. Fra parentesi il margine: l’intervallo che contiene 8 simulazioni su 10.</div>';
+  h += barraMaggioranza(t);
+  h += '<div class="proiezbl">' + [['N', 'Blocco Netanyahu'], ['O', 'Opposizione'], ['A', 'Partiti arabi']].map(([b, n]) => '<span><i style="background:' + BLOCCHI[b].c + '"></i>' + n + ' <b>' + t[b] + '</b>' + rng(sim[b]) + '</span>').join('') + '</div>';
+  h += '<div class="muted" style="font-size:12px;margin-top:4px">Il blocco Netanyahu arriva a 61 in ' + nf(magg / SIMUL * 100, 0) + ' simulazioni su 100.</div>';
+  h += '<div class="proiezliste">' + ord.filter(x => x.s > 0 || fra(simL[x.l])[1] > 0).map(x => '<span><i style="background:' + x.p.c + '"></i>' + esc(nomeBreve(x.p)) + ' <b>' + x.s + '</b>' + rng(simL[x.l]) + '</span>').join('') + '</div>';
+  if (filo.length) h += '<div class="muted" style="font-size:12px;margin-top:6px">Vicino alla soglia del 3,25%: ' + filo.map(x => esc(nomeBreve(x.p)) + ' ' + nf(x.q * 100, 2) + '%').join(', ') + '.</div>';
+  return h + '<div class="muted" style="font-size:11.5px;margin-top:8px">Non è un risultato: le località che mancano possono votare diversamente dalla loro area, e le doppie buste (soldati, diplomatici, malati) di solito non votano come il resto del paese. Il margine non tiene conto di un’affluenza diversa dal 77,7%.</div></div>';
+}
 function renderManca() {
   const R = risultato(), box = $('manca');
   if (!R || !R.d) { box.innerHTML = '<div class="mapempty">Si calcola con il primo file della Commissione.</div>'; return; }
@@ -2237,6 +2320,24 @@ function renderManca() {
   /* nel 2026 si contano i votanti attesi con l'affluenza di quest'anno, tolta la quota che
      vota in doppia busta; nella prova del 2022 i voti validi di allora */
   const K = AVENTI_26 / AVENTI_22 * AFFLUENZA_26 * (1 - ENV_QUOTA22);
+  /* IL COLORE DI QUELLO CHE MANCA. Per ogni area, lo spostamento dei blocchi: la loro quota
+     nei voti già contati meno la quota che le stesse località avevano nel 2022, pesata sui
+     voti di oggi. Sommato al 2022 di ogni località che manca, dà la stima di come voterà.
+     Un'area con meno di 2.000 voti contati usa lo spostamento nazionale. */
+  const vuoto = () => ({ v: 0, N: 0, O: 0, A: 0, n: 0, o: 0, a: 0 });
+  const sp = NOMI_SD.map(vuoto), naz = vuoto();
+  for (const a of loc.values()) {
+    const b = BASE22.loc[a.code]; if (!b || a.code === ENV_CODE || !a.val) continue;
+    const q = quote(a), i = sdDi(a.code);
+    [i != null ? sp[i] : null, naz].forEach(t => { if (!t) return; t.v += a.val; t.N += q.bl.N * a.val; t.O += q.bl.O * a.val; t.A += q.bl.A * a.val; t.n += b[6] / 1000 * a.val; t.o += b[7] / 1000 * a.val; t.a += b[8] / 1000 * a.val; });
+  }
+  const swing = t => ({ N: (t.N - t.n) / t.v, O: (t.O - t.o) / t.v, A: (t.A - t.a) / t.v });
+  const SWN = naz.v ? swing(naz) : { N: 0, O: 0, A: 0 }, SW = sp.map(t => t.v >= 2000 ? swing(t) : SWN);
+  const stima = (code, b) => {
+    const w = SW[sdDi(code)] || SWN;
+    const N = clamp(b[6] / 1000 + w.N, 0, 1), O = clamp(b[7] / 1000 + w.O, 0, 1), A = clamp(b[8] / 1000 + w.A, 0, 1), X = Math.max(0, 1 - N - O - A), t = N + O + A + X;
+    return { N: N / t, O: O / t, A: A / t, X: X / t };
+  };
   let tot = 0; const bl = { N: 0, O: 0, A: 0, X: 0 };
   const grandi = [];
   for (const [c, b] of Object.entries(BASE22.loc)) {
@@ -2244,9 +2345,9 @@ function renderManca() {
     const a = loc.get(code), now = a ? (a26 ? a.vot : a.val) : 0, m = Math.max(0, (a26 ? b[1] * K : b[3]) - now);
     if (!m) continue;
     tot += m;
-    const n = b[6] / 1000, o = b[7] / 1000, ar = b[8] / 1000;
-    bl.N += m * n; bl.O += m * o; bl.A += m * ar; bl.X += m * Math.max(0, 1 - n - o - ar);
-    grandi.push([code, m, b]);
+    const e = stima(code, b);
+    bl.N += m * e.N; bl.O += m * e.O; bl.A += m * e.A; bl.X += m * e.X;
+    grandi.push([code, m, b, e]);
   }
   const envM = a26 ? Math.max(0, VOT26 * ENV_QUOTA22 - (R.env ? R.env.vot : 0)) : (R.env && R.env.val > 0 ? Math.max(0, VAL22_ENV - R.env.val) : VAL22_ENV);
   $('mancaMeta').textContent = a26 ? 'sull’affluenza 2026' : 'sui volumi del 2022';
@@ -2259,12 +2360,14 @@ function renderManca() {
   const riga = (n, v, comp) => '<div class="mr"><span>' + n + '</span><span class="tk">' + ['N', 'O', 'A', 'X'].map(k => '<b style="width:' + ((comp[k] || 0) * 100).toFixed(1) + '%;background:' + BLOCCHI[k].c + '"></b>').join('') + '</span><span class="vv">' + v + '</span></div>';
   let h = '<div><div class="big">' + nf(ord + envM) + '</div><div class="muted" style="font-size:12px">' + (a26 ? 'votanti ancora da contare, stimati sull’affluenza 2026 (' + pct(AFFLUENZA_26) + ')' : 'voti validi ancora da contare, stimati') + ': ' + nf(ord) + ' nei seggi ordinari e ' + nf(envM) + ' in doppia busta</div></div>';
   if (tot > 0 && ord > 0) h += riga('<b>Seggi ordinari</b>', pct(ord / (a26 ? VOT26 * (1 - ENV_QUOTA22) : VAL22_ORD), 0), { N: bl.N / tot, O: bl.O / tot, A: bl.A / tot, X: bl.X / tot });
-  grandi.slice(0, 7).forEach(([code, m, b]) => {
+  grandi.slice(0, 7).forEach(([code, m, b, e]) => {
     const g = MAPPA.byId[code];
-    h += riga(esc(g ? g.en : b[0]), nf(m / 1000, 0) + 'k', { N: b[6] / 1000, O: b[7] / 1000, A: b[8] / 1000, X: Math.max(0, 1 - (b[6] + b[7] + b[8]) / 1000) });
+    h += riga(esc(g ? g.en : b[0]), nf(m / 1000, 0) + 'k', e);
   });
-  h += '<div class="rampl" style="gap:14px;justify-content:flex-start;flex-wrap:wrap;margin-top:4px;font-size:11px">' + ['N', 'O', 'A', 'X'].map(k => '<span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:' + BLOCCHI[k].c + ';margin-right:5px"></i>' + BLOCCHI[k].s + ' 2022</span>').join('') + '</div>';
+  h += '<div class="rampl" style="gap:14px;justify-content:flex-start;flex-wrap:wrap;margin-top:4px;font-size:11px">' + ['N', 'O', 'A', 'X'].map(k => '<span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:' + BLOCCHI[k].c + ';margin-right:5px"></i>' + BLOCCHI[k].s + '</span>').join('') + '</div>';
+  h += '<p class="muted" style="font-size:11.5px;margin:8px 0 0">I colori sono una stima: il voto 2022 di ogni località, spostato quanto si è spostata la sua area fra il 2022 e i voti 2026 già contati (blocco Netanyahu ' + (SWN.N >= 0 ? '+' : '−') + nf(Math.abs(SWN.N) * 100, 1) + ' punti a livello nazionale).</p>';
   if (a26) h += '<p class="muted" style="font-size:11.5px;margin:8px 0 0">In alcune località l’affluenza supera la media nazionale: il totale segue l’affluenza ufficiale, le località sono stimate una per una.</p>';
+  if (a26 && R.fonte !== 'manuale' && ord + envM > 0) h += proiezioneFinale(R, loc, grandi, ord / (tot || 1), envM, stima);
   box.innerHTML = h;
 }
 
