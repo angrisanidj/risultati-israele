@@ -791,7 +791,7 @@ footer a{color:var(--t2)}
       <div class="progresslabels"><span id="progressText">In attesa del file della Commissione</span><span id="progressPct" class="mono">—</span></div>
       <div id="countCheck" class="countcheck">—</div>
       <div class="timeline" id="timeline"></div>
-      <div class="nota" id="progressNote"><strong>Le doppie buste.</strong> Chi vota fuori dalla propria sezione — militari, diplomatici, personale di ospedali e carceri, persone con disabilità — vota in doppia busta. Questi voti, circa 460.000 nel 2022 e fra 600.000 e 650.000 quest’anno secondo la Commissione, si contano dopo le sezioni ordinarie e compaiono nel file come un'unica riga, «מעטפות חיצוניות». Possono spostare un seggio, soprattutto per le liste vicine alla soglia.</div>
+      <div class="nota" id="progressNote"><strong>Le doppie buste.</strong> Chi vota fuori dalla propria sezione — militari, diplomatici, personale di ospedali e carceri, persone con disabilità — vota in doppia busta. Questi voti, circa 460.000 nel 2022 e fra 430.000 e 480.000 quest’anno secondo la Commissione, si contano dopo le sezioni ordinarie e compaiono nel file come un'unica riga, «מעטפות חיצוניות». Possono spostare un seggio, soprattutto per le liste vicine alla soglia.</div>
     </article>
     <article class="card">
       <div class="cardhead"><div><h2>Cosa manca da contare</h2></div><span class="cmeta" id="mancaMeta">sui volumi del 2022</span></div>
@@ -1299,7 +1299,7 @@ function render() {
 function renderHero() {
   const R = risultato();
   /* dopo la chiusura delle urne (le 20 UTC del 27 ottobre) la frase passa al passato */
-  if (ED === '26' && Date.now() >= Date.UTC(2026, 9, 27, 20, 0)) $('heroText').textContent = $('heroText').textContent.replace('Le urne chiudono alle 22 in Israele, le 21 in Italia.', 'Le urne hanno chiuso alle 22 in Israele, le 21 in Italia: lo spoglio delle sezioni dura fino al giorno dopo, le doppie buste fino a venerdì.');
+  if (ED === '26' && Date.now() >= Date.UTC(2026, 9, 27, 20, 0)) $('heroText').textContent = $('heroText').textContent.replace('Le urne chiudono alle 22 in Israele, le 21 in Italia.', 'Le urne hanno chiuso alle 22 in Israele, le 21 in Italia: lo spoglio completo, con le doppie buste, è atteso il 29 ottobre nel pomeriggio, i risultati ufficiali il 4 novembre.');
   const lu = $('lastUpdate');
   if (PROVA) { lu.textContent = 'Prova · spoglio 2022 al ' + $('provaPct').textContent; lu.className = 'pill'; }
   else if (R && R.fonte === 'manuale') { lu.textContent = 'Risultato inserito a mano'; lu.className = 'pill danger'; }
@@ -1382,7 +1382,7 @@ function renderVerdetto() {
   if (f.k === 'scrutinio' && R.fonte !== 'manuale') {
     if (av.f < 0.5) cav = 'Scrutinio parziale: le prime località contate non rappresentano il paese';
     else if (av.f < 0.97) cav = 'Scrutinio ' + alPct(av.f) + ': mancano ancora sezioni e doppie buste';
-    else if (!(R.env && R.env.val > 0)) cav = 'Mancano ancora le doppie buste, fra 600.000 e 650.000 secondo la Commissione';
+    else if (!(R.env && R.env.val > 0)) cav = 'Mancano ancora le doppie buste, ' + BUSTE_FORCHETTA + ' secondo la Commissione';
   } else if (f.k === 'modello') {
     cav = 'Proiezione sui sondaggi fino ' + conData('al', modello().ultimo) + ', non voti contati';
     if (S.seatSrc === 'auto') det += ' Le urne chiudono alle <b>22 in Israele, le 21 in Italia</b>: da lì gli exit poll di Kan 11, Canale 12, 13 e 14 prendono il posto del modello.';
@@ -2449,7 +2449,8 @@ function renderScrutinio() {
     ['dalle 22', 'i primi file della Commissione: di solito località piccole, kibbutz e moshav'],
     ['notte', 'arrivano le grandi città; le reti aggiornano gli exit poll con i voti reali'],
     ['mercoledì', 'nel 2022 le sezioni ordinarie erano complete verso mezzogiorno israeliano'],
-    ['fino a venerdì', 'il conteggio delle doppie buste, fra 600.000 e 650.000 secondo la Commissione, si aggiunge al totale']
+    ['29 ottobre', 'nel pomeriggio lo spoglio completo, con le doppie buste: ' + BUSTE_FORCHETTA + ' secondo la Commissione'],
+    ['4 novembre', 'i risultati ufficiali']
   ].map(([t, x]) => '<div><b>' + t + '</b><span>' + x + '</span></div>').join('');
 }
 /* LA PROIEZIONE A FINE SPOGLIO, se le stime di «Cosa manca da contare» sono giuste.
@@ -2473,8 +2474,10 @@ function renderScrutinio() {
    liste nuove contano 1. Quest'anno ci sono più riservisti, di ogni orientamento: per questo
    il margine delle buste resta largo. */
 const RAPPORTO_BUSTE22 = { 'מחל': 1.00, 'רק': 0.95, 'ט': 1.43, 'ב': 1.43, 'דרך': 1.17, 'כן': 1.17, 'שס': 0.83, 'ג': 0.64, 'ל': 1.27, 'עם': 0.43, 'ודם': 0.50, 'אמת': 1.21 };
-/* la Commissione stima fra 600.000 e 650.000 doppie buste (Ynet, Times of Israel): si usa il valore di mezzo */
-const BUSTE_ATTESE_26 = 625000;
+/* Le doppie buste votate: fra 430.000 e 480.000 secondo la Commissione (28 ottobre, dopo una
+   prima stima di 600.000-650.000); si usa il valore di mezzo. Lo spoglio completo è atteso il
+   29 ottobre nel pomeriggio, i risultati ufficiali il 4 novembre. */
+const BUSTE_ATTESE_26 = 455000, BUSTE_FORCHETTA = 'fra 430.000 e 480.000';
 /* le sezioni ordinarie (קלפיות) del 2026: 12.018 secondo la Commissione */
 const SEZIONI_26 = 12018;
 const ENV_QUOTA26 = BUSTE_ATTESE_26 / VOT26;
@@ -2566,7 +2569,7 @@ function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
   h += '<div class="muted" style="font-size:12px;margin-top:4px">La proiezione fa ' + (t.N + t.O + t.A + t.X) + ' seggi' + (non120 ? '' : ', e così ogni simulazione') + '. I margini dei blocchi non si sommano: quando uno sta in alto, gli altri scendono.</div>';
   h += '<div class="proiezliste">' + ord.filter(x => x.s > 0 || fra(simL[x.l])[1] > 0).map(x => '<span><i style="background:' + x.p.c + '"></i>' + esc(nomeBreve(x.p)) + ' <b>' + x.s + '</b>' + rng(simL[x.l]) + '</span>').join('') + '</div>';
   const pt = x => (x >= 0 ? '+' : '−') + nf(Math.abs(x) * 100, 1);
-  if (envM > 0) h += '<div class="muted" style="font-size:12px;margin-top:6px">Doppie buste: ' + (envM >= BUSTE_ATTESE_26 ? 'circa ' + nf(BUSTE_ATTESE_26) + ' secondo la Commissione (che ne stima fra 600.000 e 650.000), ancora tutte da contare' : 'ne mancano circa ' + nf(envM) + ', sulle ' + nf(BUSTE_ATTESE_26) + ' stimate (la Commissione ne prevede fra 600.000 e 650.000)') + '. Nel 2022 i partiti arabi vi avevano preso meno della metà della loro quota nazionale, UTJ due terzi e Shas l’83%; più della media Sionismo religioso con Ben Gvir, i Laburisti e Yisrael Beitenu. Con gli stessi rapporti sui voti contati oggi: Netanyahu ' + nf(QB.e.N * 100, 1) + '%, opposizione ' + nf(QB.e.O * 100, 1) + '%, arabi ' + nf(QB.e.A * 100, 1) + '%.</div>';
+  if (envM > 0) h += '<div class="muted" style="font-size:12px;margin-top:6px">Doppie buste: ' + (envM >= BUSTE_ATTESE_26 ? 'circa ' + nf(BUSTE_ATTESE_26) + ' secondo la Commissione (che ne stima ' + BUSTE_FORCHETTA + '), ancora tutte da contare' : 'ne mancano circa ' + nf(envM) + ', sulle ' + nf(BUSTE_ATTESE_26) + ' stimate (la Commissione ne prevede ' + BUSTE_FORCHETTA + ')') + '. Nel 2022 i partiti arabi vi avevano preso meno della metà della loro quota nazionale, UTJ due terzi e Shas l’83%; più della media Sionismo religioso con Ben Gvir, i Laburisti e Yisrael Beitenu. Con gli stessi rapporti sui voti contati oggi: Netanyahu ' + nf(QB.e.N * 100, 1) + '%, opposizione ' + nf(QB.e.O * 100, 1) + '%, arabi ' + nf(QB.e.A * 100, 1) + '%.</div>';
   /* gli stessi numeri servono alla card 7 */
   PROIEZ = { t, rg: { N: fra(sim.N), O: fra(sim.O), A: fra(sim.A), X: fra(sim.X) }, magg: magg / SIMUL, f: avanzamento(R).f,
     liste: ord.filter(x => x.s > 0).map(x => ({ p: x.p, s: x.s, rg: fra(simL[x.l]) })), filo: filo.map(x => ({ p: x.p, q: x.q })) };
@@ -2618,7 +2621,7 @@ function renderManca() {
     const bc = R.env ? R.env.vot : 0;
     h = '<div class="mancagrid">' +
       '<div><div class="mk">Sezioni ordinarie</div><div class="big">' + (sez ? nf(mancano) : '—') + '</div><div class="muted">' + (sez ? 'da contare: ' + nf(sez) + ' contate su ' + nf(SEZIONI_26) + ' (' + pct(sez / SEZIONI_26, 1) + ')' : 'il conteggio delle sezioni arriva con il file per sezione') + '. Mancano circa ' + nf(ord) + ' votanti.</div></div>' +
-      '<div><div class="mk">Doppie buste</div><div class="big">' + nf(envM) + '</div><div class="muted">' + (bc ? 'votanti ancora da contare: ne sono contati ' + nf(bc) + ' sui circa ' + nf(BUSTE_ATTESE_26) + ' stimati' : 'votanti stimati, ancora tutti da contare: la Commissione ne prevede fra 600.000 e 650.000') + '. Si contano fino a venerdì.</div></div>' +
+      '<div><div class="mk">Doppie buste</div><div class="big">' + nf(envM) + '</div><div class="muted">' + (bc ? 'votanti ancora da contare: ne sono contati ' + nf(bc) + ' sui circa ' + nf(BUSTE_ATTESE_26) + ' stimati' : 'votanti stimati, ancora tutti da contare: la Commissione ne indica ' + BUSTE_FORCHETTA) + '. Lo spoglio completo è atteso il 29 ottobre nel pomeriggio.</div></div>' +
       '</div><div class="muted" style="font-size:12.5px;margin:2px 0 10px">In tutto circa <b>' + nf(ord + envM) + '</b> votanti ancora da contare, sull’affluenza ufficiale del ' + pct(AFFLUENZA_26) + '. Qui sotto, dove mancano più voti nelle sezioni ordinarie.</div>';
   } else h = '<div><div class="big">' + nf(ord + envM) + '</div><div class="muted" style="font-size:12px">voti validi ancora da contare, stimati: ' + nf(ord) + ' nei seggi ordinari e ' + nf(envM) + ' in doppia busta</div></div>';
   if (tot > 0 && ord > 0) h += riga('<b>Tutte le sezioni che mancano</b>', nf(ord / 1000, 0) + 'k', { N: bl.N / tot, O: bl.O / tot, A: bl.A / tot, X: bl.X / tot });
