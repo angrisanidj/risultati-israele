@@ -2250,15 +2250,21 @@ function renderManca() {
   }
   const envM = a26 ? Math.max(0, VOT26 * ENV_QUOTA22 - (R.env ? R.env.vot : 0)) : (R.env && R.env.val > 0 ? Math.max(0, VAL22_ENV - R.env.val) : VAL22_ENV);
   $('mancaMeta').textContent = a26 ? 'sull’affluenza 2026' : 'sui volumi del 2022';
+  /* Nel 2026 il totale segue l'affluenza ufficiale: votanti attesi meno votanti contati, così
+     torna con la percentuale dello scrutinio. Le località, stimate una per una, dicono solo
+     dove mancano e con che colore: dove l'affluenza supera la media non vanno sotto zero, e
+     sommate darebbero di più. */
+  const ord = a26 ? Math.max(0, VOT26 - R.d.vot - envM) : tot;
   grandi.sort((a, b) => b[1] - a[1]);
   const riga = (n, v, comp) => '<div class="mr"><span>' + n + '</span><span class="tk">' + ['N', 'O', 'A', 'X'].map(k => '<b style="width:' + ((comp[k] || 0) * 100).toFixed(1) + '%;background:' + BLOCCHI[k].c + '"></b>').join('') + '</span><span class="vv">' + v + '</span></div>';
-  let h = '<div><div class="big">' + nf(tot + envM) + '</div><div class="muted" style="font-size:12px">' + (a26 ? 'votanti ancora da contare, stimati sull’affluenza 2026 (' + pct(AFFLUENZA_26) + ')' : 'voti validi ancora da contare, stimati') + ': ' + nf(tot) + ' nei seggi ordinari e ' + nf(envM) + ' in doppia busta</div></div>';
-  if (tot > 0) h += riga('<b>Seggi ordinari</b>', pct(tot / (a26 ? VOT26 * (1 - ENV_QUOTA22) : VAL22_ORD), 0), { N: bl.N / tot, O: bl.O / tot, A: bl.A / tot, X: bl.X / tot });
+  let h = '<div><div class="big">' + nf(ord + envM) + '</div><div class="muted" style="font-size:12px">' + (a26 ? 'votanti ancora da contare, stimati sull’affluenza 2026 (' + pct(AFFLUENZA_26) + ')' : 'voti validi ancora da contare, stimati') + ': ' + nf(ord) + ' nei seggi ordinari e ' + nf(envM) + ' in doppia busta</div></div>';
+  if (tot > 0 && ord > 0) h += riga('<b>Seggi ordinari</b>', pct(ord / (a26 ? VOT26 * (1 - ENV_QUOTA22) : VAL22_ORD), 0), { N: bl.N / tot, O: bl.O / tot, A: bl.A / tot, X: bl.X / tot });
   grandi.slice(0, 7).forEach(([code, m, b]) => {
     const g = MAPPA.byId[code];
     h += riga(esc(g ? g.en : b[0]), nf(m / 1000, 0) + 'k', { N: b[6] / 1000, O: b[7] / 1000, A: b[8] / 1000, X: Math.max(0, 1 - (b[6] + b[7] + b[8]) / 1000) });
   });
   h += '<div class="rampl" style="gap:14px;justify-content:flex-start;flex-wrap:wrap;margin-top:4px;font-size:11px">' + ['N', 'O', 'A', 'X'].map(k => '<span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:' + BLOCCHI[k].c + ';margin-right:5px"></i>' + BLOCCHI[k].s + ' 2022</span>').join('') + '</div>';
+  if (a26) h += '<p class="muted" style="font-size:11.5px;margin:8px 0 0">In alcune località l’affluenza supera la media nazionale: il totale segue l’affluenza ufficiale, le località sono stimate una per una.</p>';
   box.innerHTML = h;
 }
 
