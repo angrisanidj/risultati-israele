@@ -2920,6 +2920,12 @@ window.CARD = (function () {
   }
   let FIRMA = '@putino';
 
+  /* in alto una sola striscia: il blu della bandiera che si schiarisce verso destra */
+  function striscia(x, w, h) {
+    const g = x.createLinearGradient(0, 0, w, 0);
+    g.addColorStop(0, '#0038B8'); g.addColorStop(.55, '#2F6BFF'); g.addColorStop(1, '#8DB4FF');
+    x.fillStyle = g; x.fillRect(0, 0, w, h);
+  }
   function frame(x, o) {
     const g = x.createLinearGradient(0, 0, 900, 900);
     g.addColorStop(0, '#0C1A38'); g.addColorStop(.6, '#081022'); g.addColorStop(1, '#070E1E');
@@ -2927,6 +2933,7 @@ window.CARD = (function () {
     const r = x.createRadialGradient(1300, -120, 0, 1300, -120, 1100);
     r.addColorStop(0, 'rgba(0,56,184,.42)'); r.addColorStop(.65, 'rgba(0,56,184,0)');
     x.fillStyle = r; x.fillRect(0, 0, 1600, 900);
+    striscia(x, 1600, 8);
     const bf = F(800, 17), bw = W(x, o.badge, bf, 2.4) + 40;
     fillRR(x, 62, 50, bw, 40, 8, C.white);
     T(x, o.badge, 82, 76, { font: bf, ls: 2.4, color: '#071436' });
@@ -3247,6 +3254,7 @@ window.CARD = (function () {
     const r = x.createRadialGradient(880, -120, 0, 880, -120, 900);
     r.addColorStop(0, 'rgba(0,56,184,.45)'); r.addColorStop(.65, 'rgba(0,56,184,0)');
     x.fillStyle = r; x.fillRect(0, 0, Wd, Hd);
+    striscia(x, Wd, 10);
     const bf = F(800, 19), bw = W(x, o.badge, bf, 2.4) + 44;
     fillRR(x, M, 58, bw, 46, 9, C.white);
     T(x, o.badge, M + 22, 88, { font: bf, ls: 2.4, color: '#071436' });
