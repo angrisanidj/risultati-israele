@@ -807,7 +807,7 @@ footer a{color:var(--t2)}
     </article>
     <article class="card">
       <div class="cardhead"><div><h2 id="mancaTitolo">Cosa manca da contare</h2></div><span class="cmeta" id="mancaMeta">sui volumi del 2022</span></div>
-      <p class="subcopy">Quanti votanti mancano, rispetto a quelli attesi con l’affluenza di quest’anno, e dove: le località con più voti ancora da contare. I colori sono una stima di come voteranno.</p>
+      <p class="subcopy" id="mancaSub">Quanti votanti mancano, rispetto a quelli attesi con l’affluenza di quest’anno, e dove: le località con più voti ancora da contare. I colori sono una stima di come voteranno.</p>
       <div id="manca" class="manca"></div>
       <p class="methodnote" id="mancaNote">I blocchi del 2022: Netanyahu = Likud, Sionismo religioso, Shas, UTJ; opposizione = Yesh Atid, Unità nazionale, Yisrael Beitenu, Laburisti, Meretz; arabi = Ra'am, Hadash–Ta'al, Balad.</p>
     </article>
@@ -2499,7 +2499,7 @@ function renderLista() {
 function renderScrutinio() {
   const R = risultato(), av = avanzamento(R);
   $('progressBar').style.width = (av.f * 100).toFixed(1) + '%';
-  $('progressPct').textContent = R ? pct(av.f) : '—';
+  $('progressPct').textContent = R ? pct(av.f, av.f === 1 ? 0 : 1) : '—';
   $('progPill').textContent = av.tipo === 'seggi' ? 'sezioni scrutinate' : av.tipo === 'concluso' ? 'spoglio concluso' : av.tipo === 'affluenza' ? 'stima sull’affluenza 2026' : av.tipo === 'volumi' ? 'stima sui volumi 2022' : av.tipo === 'manuale' ? 'manuale' : '—';
   $('progressText').textContent = !R ? 'In attesa del file della Commissione'
     : av.tipo === 'seggi' ? nf(av.fatti) + ' sezioni scrutinate su ' + nf(av.tot)
@@ -2725,6 +2725,7 @@ function renderManca() {
   if (a26 && SPOGLIO_CONCLUSO_26 && R.fonte !== 'manuale') {
     $('mancaTitolo').textContent = 'Lo spoglio è concluso';
     $('mancaMeta').textContent = 'Commissione, 29 ottobre';
+    $('mancaSub').classList.add('hidden'); $('mancaNote').classList.add('hidden');
     const sez = S.expb && S.expb.fatti, bc = R.env ? R.env.vot : 0, sg = baderOfer(R.voti, accordi()).seggi, t = { N: 0, O: 0, A: 0, X: 0 };
     for (const l in sg) t[infoLista(l).b] += sg[l];
     box.innerHTML = '<p class="muted" style="font-size:13.5px;margin:0 0 4px">Il 29 ottobre alle 16:55 israeliane (le 15:55 in Italia) la Commissione elettorale centrale ha annunciato la fine dello spoglio, doppie buste comprese. Sono stati contati ' + nf(R.d.vot) + ' votanti, di cui ' + nf(bc) + ' in doppia busta' +
