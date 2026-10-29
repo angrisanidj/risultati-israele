@@ -806,7 +806,7 @@ footer a{color:var(--t2)}
       <div class="nota" id="progressNote"><strong>Le doppie buste.</strong> Chi vota fuori dalla propria sezione — militari, diplomatici, personale di ospedali e carceri, persone con disabilità — vota in doppia busta. Questi voti, circa 460.000 nel 2022 e fra 430.000 e 480.000 quest’anno secondo la Commissione, si contano dopo le sezioni ordinarie e compaiono nel file come un'unica riga, «מעטפות חיצוניות». Possono spostare un seggio, soprattutto per le liste vicine alla soglia.</div>
     </article>
     <article class="card">
-      <div class="cardhead"><div><h2>Cosa manca da contare</h2></div><span class="cmeta" id="mancaMeta">sui volumi del 2022</span></div>
+      <div class="cardhead"><div><h2 id="mancaTitolo">Cosa manca da contare</h2></div><span class="cmeta" id="mancaMeta">sui volumi del 2022</span></div>
       <p class="subcopy">Quanti votanti mancano, rispetto a quelli attesi con l’affluenza di quest’anno, e dove: le località con più voti ancora da contare. I colori sono una stima di come voteranno.</p>
       <div id="manca" class="manca"></div>
       <p class="methodnote" id="mancaNote">I blocchi del 2022: Netanyahu = Likud, Sionismo religioso, Shas, UTJ; opposizione = Yesh Atid, Unità nazionale, Yisrael Beitenu, Laburisti, Meretz; arabi = Ra'am, Hadash–Ta'al, Balad.</p>
@@ -1237,6 +1237,7 @@ function avanzamento(R) {
      doppie buste erano solo stimate) e la pagina segnerebbe 100% con sezioni e buste ancora da
      contare: il totale atteso è almeno i contati più quelli che mancano, cioè gli aventi diritto
      delle sezioni non contate per l'affluenza ai seggi e le buste fino alla stima della Commissione. */
+  if (ED === '26' && SPOGLIO_CONCLUSO_26) return { f: 1, tipo: 'concluso', ord, vo: d.vot, bc: d.env ? d.env.vot : 0, seggi: seg ? seg.fatti : 0 };
   if (ED === '26') {
     const bc = d.env ? d.env.vot : 0, tur = d.bzb > 0 && d.vot > bc ? (d.vot - bc) / d.bzb : AFFLUENZA_26;
     const resto = Math.max(0, AVENTI_26 - (d.bzb || 0)) * tur + Math.max(0, BUSTE_ATTESE_26 - bc);
@@ -1321,7 +1322,7 @@ function render() {
 function renderHero() {
   const R = risultato();
   /* dopo la chiusura delle urne (le 20 UTC del 27 ottobre) la frase passa al passato */
-  if (ED === '26' && Date.now() >= Date.UTC(2026, 9, 27, 20, 0)) $('heroText').textContent = $('heroText').textContent.replace('Le urne chiudono alle 22 in Israele, le 21 in Italia.', 'Le urne hanno chiuso alle 22 in Israele, le 21 in Italia: lo spoglio completo, con le doppie buste, è atteso il 29 ottobre in serata, i risultati ufficiali il 4 novembre.');
+  if (ED === '26' && Date.now() >= Date.UTC(2026, 9, 27, 20, 0)) $('heroText').textContent = $('heroText').textContent.replace('Le urne chiudono alle 22 in Israele, le 21 in Italia.', SPOGLIO_CONCLUSO_26 ? 'Le urne hanno chiuso alle 22 in Israele, le 21 in Italia. Il 29 ottobre la Commissione ha annunciato la fine dello spoglio, doppie buste comprese: i risultati ufficiali arriveranno il 4 novembre.' : 'Le urne hanno chiuso alle 22 in Israele, le 21 in Italia: lo spoglio completo, con le doppie buste, è atteso il 29 ottobre in serata, i risultati ufficiali il 4 novembre.');
   const lu = $('lastUpdate');
   if (PROVA) { lu.textContent = 'Prova · spoglio 2022 al ' + $('provaPct').textContent; lu.className = 'pill'; }
   else if (R && R.fonte === 'manuale') { lu.textContent = 'Risultato inserito a mano'; lu.className = 'pill danger'; }
@@ -1339,6 +1340,7 @@ function renderKpi() {
     $('kVoti').textContent = nf(R.val);
     $('kVotiMeta').textContent = R.fonte === 'manuale' ? 'inseriti a mano'
       : av.tipo === 'seggi' ? nf(av.fatti) + ' sezioni su ' + nf(av.tot) + ' (' + pct(av.f) + ')'
+        : av.tipo === 'concluso' ? 'spoglio concluso secondo la Commissione, doppie buste comprese'
         : (av.seggi ? nf(av.seggi) + ' sezioni scrutinate · ' : '') + 'circa ' + pctScr(av.f) + (av.tipo === 'affluenza' ? ' dei votanti attesi, sull’affluenza 2026 (' + pct(AFFLUENZA_26) + ')' : ' dei voti ordinari, sui volumi del 2022');
     if (R.d) {
       let n = 0, tot = 0;
@@ -2498,9 +2500,10 @@ function renderScrutinio() {
   const R = risultato(), av = avanzamento(R);
   $('progressBar').style.width = (av.f * 100).toFixed(1) + '%';
   $('progressPct').textContent = R ? pct(av.f) : '—';
-  $('progPill').textContent = av.tipo === 'seggi' ? 'sezioni scrutinate' : av.tipo === 'affluenza' ? 'stima sull’affluenza 2026' : av.tipo === 'volumi' ? 'stima sui volumi 2022' : av.tipo === 'manuale' ? 'manuale' : '—';
+  $('progPill').textContent = av.tipo === 'seggi' ? 'sezioni scrutinate' : av.tipo === 'concluso' ? 'spoglio concluso' : av.tipo === 'affluenza' ? 'stima sull’affluenza 2026' : av.tipo === 'volumi' ? 'stima sui volumi 2022' : av.tipo === 'manuale' ? 'manuale' : '—';
   $('progressText').textContent = !R ? 'In attesa del file della Commissione'
     : av.tipo === 'seggi' ? nf(av.fatti) + ' sezioni scrutinate su ' + nf(av.tot)
+      : av.tipo === 'concluso' ? 'Spoglio concluso: lo ha annunciato la Commissione il 29 ottobre. ' + nf(av.vo) + ' votanti contati, di cui ' + nf(av.bc) + ' in doppia busta. I risultati ufficiali arriveranno il 4 novembre.'
       : av.tipo === 'affluenza' ? (av.seggi ? nf(av.seggi) + ' sezioni scrutinate, ' : '') + nf(av.vo) + ' votanti contati su circa ' + nf(VOT26) + ' attesi (' + pct(AFFLUENZA_26) + ' di ' + nf(AVENTI_26) + ' aventi diritto, doppie buste comprese)'
       : av.tipo === 'volumi' ? (av.seggi ? nf(av.seggi) + ' sezioni scrutinate, ' : '') + nf(av.ord) + ' voti ordinari su ' + nf(VAL22_ORD) + ' nel 2022' : 'Risultato inserito a mano';
   let cc = '';
@@ -2517,7 +2520,7 @@ function renderScrutinio() {
     ['dalle 22', 'i primi file della Commissione: di solito località piccole, kibbutz e moshav'],
     ['notte', 'arrivano le grandi città; le reti aggiornano gli exit poll con i voti reali'],
     ['mercoledì', 'nel 2022 le sezioni ordinarie erano complete verso mezzogiorno israeliano'],
-    ['29 ottobre', 'in serata lo spoglio completo, con le doppie buste: ' + BUSTE_FORCHETTA + ' secondo la Commissione'],
+    ['29 ottobre', SPOGLIO_CONCLUSO_26 ? 'la Commissione annuncia la fine dello spoglio, doppie buste comprese' : 'in serata lo spoglio completo, con le doppie buste: ' + BUSTE_FORCHETTA + ' secondo la Commissione'],
     ['4 novembre', 'i risultati ufficiali']
   ].map(([t, x]) => '<div><b>' + t + '</b><span>' + x + '</span></div>').join('');
 }
@@ -2546,6 +2549,11 @@ const RAPPORTO_BUSTE22 = { 'מחל': 1.00, 'רק': 0.95, 'ט': 1.43, 'ב': 1.43,
    prima stima di 600.000-650.000); si usa il valore di mezzo. Lo spoglio completo è atteso il
    29 ottobre in serata (la tv pubblica Kan, 29 ottobre), i risultati ufficiali il 4 novembre. */
 const BUSTE_ATTESE_26 = 455000, BUSTE_MIN_26 = 430000, BUSTE_MAX_26 = 480000, BUSTE_FORCHETTA = 'fra 430.000 e 480.000';
+/* LO SPOGLIO CONCLUSO: la Commissione lo ha annunciato il 29 ottobre alle 16:55 israeliane (le
+   15:55 in Italia), doppie buste comprese; i dati sul sito hanno continuato ad arrivare fino a
+   sera. I risultati non sono definitivi: quelli ufficiali il 4 novembre, dopo un ulteriore
+   controllo sulla regolarità del voto. Da qui la pagina segna il 100% e non stima più niente. */
+const SPOGLIO_CONCLUSO_26 = true;
 /* le sezioni ordinarie (קלפיות) del 2026: 12.018 secondo la Commissione */
 const SEZIONI_26 = 12018;
 const ENV_QUOTA26 = BUSTE_ATTESE_26 / VOT26;
@@ -2604,6 +2612,21 @@ function seggiInBilico(voti, acc, max) {
   return out.sort((x, y) => x.k - y.k);
 }
 const BILICO_MAX = 10000;
+/* la frase dei seggi in bilico: bil da seggiInBilico, t i seggi dei blocchi, coda la frase finale */
+function testoBilico(bil, t, coda) {
+  if (!bil.length) return '<div class="muted" style="font-size:12px;margin-top:6px">Nessun seggio si decide per meno di ' + nf(BILICO_MAX) + ' voti.</div>';
+  const nm = l => esc(nomeBreve(infoLista(l))), ordn = n => (n === 8 || n === 11 || (n >= 80 && n < 90) ? 'l’' : 'il ') + n + '°';
+  const effetto = c => {
+    const bd = infoLista(c.da).b, ba = infoLista(c.a).b;
+    if (bd === ba) return ', senza cambiare i blocchi';
+    if (bd === 'N' || ba === 'N') return ', e il blocco Netanyahu ' + (bd === 'N' ? 'scenderebbe a ' + (t.N - 1) : 'salirebbe a ' + (t.N + 1));
+    return ', e ' + (bd === 'O' || ba === 'O' ? 'l’opposizione ' + (bd === 'O' ? 'scenderebbe a ' + (t.O - 1) : 'salirebbe a ' + (t.O + 1)) : 'i partiti arabi ' + (bd === 'A' ? 'scenderebbero a ' + (t.A - 1) : 'salirebbero a ' + (t.A + 1)));
+  };
+  const frase = c => ordn(c.n) + ' seggio di ' + nm(c.da) + ' passerebbe a ' + nm(c.a) + ' con circa ' +
+    (c.kA != null && c.kDa != null ? nf(c.kA) + ' voti in più a ' + nm(c.a) + ' o ' + nf(c.kDa) + ' in meno a ' + nm(c.da) : c.kA != null ? nf(c.kA) + ' voti in più a ' + nm(c.a) : nf(c.kDa) + ' voti in meno a ' + nm(c.da)) + effetto(c);
+  const testo = bil.map(frase).join('; ');
+  return '<div class="bilico"><b>Seggi in bilico.</b> ' + testo.charAt(0).toUpperCase() + testo.slice(1) + '. ' + coda + '</div>';
+}
 function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
   const d = R.d, vr = d.vot ? R.val / d.vot : 1;
   const sd = aggregaSD(loc);
@@ -2684,19 +2707,7 @@ function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
   h += '<div class="proiezliste">' + ord.filter(x => x.s > 0 || fra(simL[x.l])[1] > 0).map(x => '<span><i style="background:' + x.p.c + '"></i>' + esc(nomeBreve(x.p)) + ' <b>' + x.s + '</b>' + rng(simL[x.l]) + '</span>').join('') + '</div>';
   /* i seggi in bilico: le due coppie più vicine, se si decidono per meno di BILICO_MAX voti */
   const bil = seggiInBilico(voti, accordi(), BILICO_MAX).slice(0, 2);
-  if (bil.length) {
-    const nm = l => esc(nomeBreve(infoLista(l))), ordn = n => (n === 8 || n === 11 || (n >= 80 && n < 90) ? 'l’' : 'il ') + n + '°';
-    const effetto = c => {
-      const bd = infoLista(c.da).b, ba = infoLista(c.a).b;
-      if (bd === ba) return ', senza cambiare i blocchi';
-      if (bd === 'N' || ba === 'N') return ', e il blocco Netanyahu ' + (bd === 'N' ? 'scenderebbe a ' + (t.N - 1) : 'salirebbe a ' + (t.N + 1));
-      return ', e ' + (bd === 'O' || ba === 'O' ? 'l’opposizione ' + (bd === 'O' ? 'scenderebbe a ' + (t.O - 1) : 'salirebbe a ' + (t.O + 1)) : 'i partiti arabi ' + (bd === 'A' ? 'scenderebbero a ' + (t.A - 1) : 'salirebbero a ' + (t.A + 1)));
-    };
-    const frase = c => ordn(c.n) + ' seggio di ' + nm(c.da) + ' passerebbe a ' + nm(c.a) + ' con circa ' +
-      (c.kA != null && c.kDa != null ? nf(c.kA) + ' voti in più a ' + nm(c.a) + ' o ' + nf(c.kDa) + ' in meno a ' + nm(c.da) : c.kA != null ? nf(c.kA) + ' voti in più a ' + nm(c.a) : nf(c.kDa) + ' voti in meno a ' + nm(c.da)) + effetto(c);
-    const testo = bil.map(frase).join('; ');
-    h += '<div class="bilico"><b>Seggi in bilico.</b> ' + testo.charAt(0).toUpperCase() + testo.slice(1) + '. Sono differenze più piccole dell’errore della stima.</div>';
-  } else h += '<div class="muted" style="font-size:12px;margin-top:6px">Nessun seggio si decide per meno di ' + nf(BILICO_MAX) + ' voti.</div>';
+  h += testoBilico(bil, t, 'Sono differenze più piccole dell’errore della stima.');
   const pt = x => (x >= 0 ? '+' : '−') + nf(Math.abs(x) * 100, 1);
   if (envM > 0) h += '<div class="muted" style="font-size:12px;margin-top:6px">Doppie buste: ' + (envM >= BUSTE_ATTESE_26 ? 'circa ' + nf(BUSTE_ATTESE_26) + ' secondo la Commissione (che ne stima ' + BUSTE_FORCHETTA + '), ancora tutte da contare' : 'ne mancano circa ' + nf(envM) + ', sulle ' + nf(BUSTE_ATTESE_26) + ' stimate (la Commissione ne prevede ' + BUSTE_FORCHETTA + ')') + '. ' + (QB.w ? 'Per quelle che mancano: le quote delle ' + nf(R.d.env.vot) + ' già contate, che pesano il ' + pct(QB.w, 0) + ', e per il resto i rapporti fra buste e sezioni del 2022 applicati ai voti di oggi (vedi «Le doppie buste finora»)' : 'Nel 2022 i partiti arabi vi avevano preso meno della metà della loro quota nazionale, UTJ due terzi e Shas l’83%; più della media Sionismo religioso con Ben Gvir, i Laburisti e Yisrael Beitenu. Con gli stessi rapporti sui voti contati oggi') + ': Netanyahu ' + nf(QB.e.N * 100, 1) + '%, opposizione ' + nf(QB.e.O * 100, 1) + '%, arabi ' + nf(QB.e.A * 100, 1) + '%.</div>';
   /* gli stessi numeri servono alla card 7 */
@@ -2709,6 +2720,20 @@ function renderManca() {
   const R = risultato(), box = $('manca');
   if (!R || !R.d) { box.innerHTML = '<div class="mapempty">Si calcola con il primo file della Commissione.</div>'; return; }
   const loc = R.d.loc, a26 = ED === '26';
+  /* A SPOGLIO CONCLUSO non si stima più niente: il riquadro lo dice, con i seggi in bilico sui
+     voti contati, e la proiezione sparisce (i voti contati sono già il risultato) */
+  if (a26 && SPOGLIO_CONCLUSO_26 && R.fonte !== 'manuale') {
+    $('mancaTitolo').textContent = 'Lo spoglio è concluso';
+    $('mancaMeta').textContent = 'Commissione, 29 ottobre';
+    const sez = S.expb && S.expb.fatti, bc = R.env ? R.env.vot : 0, sg = baderOfer(R.voti, accordi()).seggi, t = { N: 0, O: 0, A: 0, X: 0 };
+    for (const l in sg) t[infoLista(l).b] += sg[l];
+    box.innerHTML = '<p class="muted" style="font-size:13.5px;margin:0 0 4px">Il 29 ottobre alle 16:55 israeliane (le 15:55 in Italia) la Commissione elettorale centrale ha annunciato la fine dello spoglio, doppie buste comprese. Sono stati contati ' + nf(R.d.vot) + ' votanti, di cui ' + nf(bc) + ' in doppia busta' +
+      (sez ? ', in ' + nf(sez) + ' sezioni ordinarie' + (sez < SEZIONI_26 ? ' (le altre ' + nf(SEZIONI_26 - sez) + ' delle ' + nf(SEZIONI_26) + ' previste non hanno un risultato pubblicato)' : '') : '') +
+      '. I risultati non sono ancora definitivi: dopo un ulteriore controllo sulla regolarità del voto, quelli ufficiali arriveranno il 4 novembre.</p>' +
+      testoBilico(seggiInBilico(R.voti, accordi(), BILICO_MAX).slice(0, 2), t, 'Bastano piccole correzioni nei risultati ufficiali per spostarli.');
+    $('proiezCard').classList.add('hidden'); PROIEZ = null;
+    return;
+  }
   /* IL COLORE DI QUELLO CHE MANCA. Per ogni area, lo spostamento dei blocchi: la loro quota
      nei voti già contati meno la quota che le stesse località avevano nel 2022, pesata sui
      voti di oggi. Sommato al 2022 di ogni località che manca, dà la stima di come voterà.
@@ -3109,7 +3134,7 @@ function testoCondivisione() {
   const f = fonteAttiva();
   if (f.k === 'k22' || f.k === 'modello') return 'Israele, elezioni del 27 ottobre: lo spoglio in diretta, con i 120 seggi, gli exit poll e la mappa';
   const t = totBlocchi(f), R = risultato(), av = avanzamento(R);
-  const chi = f.k === 'scrutinio' ? (R && R.fonte !== 'manuale' ? 'scrutinio ' + alPct(av.f) : 'voti contati') : 'exit poll di ' + f.s;
+  const chi = f.k === 'scrutinio' ? (R && R.fonte !== 'manuale' ? (av.tipo === 'concluso' ? 'spoglio concluso' : 'scrutinio ' + alPct(av.f)) : 'voti contati') : 'exit poll di ' + f.s;
   return 'Israele, ' + chi + ': blocco Netanyahu a ' + t.N + ' seggi su 120 (maggioranza a 61). Lo spoglio in diretta';
 }
 function linkSocial(rete) {
