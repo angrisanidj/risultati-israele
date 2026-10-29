@@ -1684,7 +1684,7 @@ function datiConfronto() {
 }
 /* ---------- le doppie buste finora ----------
    Come votano le doppie buste già contate, lista per lista, accanto alle sezioni ordinarie e a
-   quello che la proiezione si aspettava (le quote delle sezioni ordinarie per i rapporti fra
+   quello che davano i rapporti del 2022 (le quote delle sezioni ordinarie per i rapporti fra
    buste e seggi ordinari del 2022, RAPPORTO_BUSTE22). Compare dalle prime mille buste. */
 function renderBuste() {
   const R = risultato(), card = $('busteCard');
@@ -1697,7 +1697,7 @@ function renderBuste() {
   const righe = Object.keys(R.voti).filter(l => qE[l] >= 0.005 || qO[l] >= 0.005).sort((a, b) => qE[b] - qE[a]);
   const punti = d => { const x = Math.round(d * 1000) / 10; return '<span class="dlt' + (x === 0 ? ' zero' : Math.abs(x) >= 3 ? ' forte' : '') + '">' + (x === 0 ? '=' : (x > 0 ? '+' : '−') + nf(Math.abs(x), 1)) + '</span>'; };
   const cella = q => '<td><b>' + nf(q * 100, 1) + '%</b></td>', diff = d => '<td class="diff">' + punti(d) + '</td>';
-  let h = '<thead><tr><th>Lista</th><th><span class="lungo">Doppie buste</span><span class="corto">Buste</span><small>contate finora</small></th><th><span class="lungo">Sezioni ordinarie</span><span class="corto">Sezioni</span><small>quota</small></th><th>Differenza<small>in punti</small></th><th class="m-off">Atteso nelle buste<small>dalla proiezione, e scarto</small></th></tr></thead><tbody>';
+  let h = '<thead><tr><th>Lista</th><th><span class="lungo">Doppie buste</span><span class="corto">Buste</span><small>contate finora</small></th><th><span class="lungo">Sezioni ordinarie</span><span class="corto">Sezioni</span><small>quota</small></th><th>Differenza<small>in punti</small></th><th class="m-off">Coi rapporti 2022<small>attese, e scarto</small></th></tr></thead><tbody>';
   righe.forEach(l => {
     const p = infoLista(l);
     h += '<tr><td><div class="partylabel"><i class="partydot" style="background:' + p.c + '"></i><span>' + esc(nomeBreve(p)) + '<small>' + nf(E.v[l] || 0) + ' voti</small></span></div></td>' +
@@ -1721,7 +1721,7 @@ function renderBuste() {
   $('busteNota').innerHTML = 'Nel 2022 le doppie buste diedero il ' + nf(b22[6] / 10, 1) + '% al blocco Netanyahu, il ' + nf(b22[7] / 10, 1) + '% all’opposizione e il ' + nf(b22[8] / 10, 1) + '% ai partiti arabi. ' +
     'Le buste votano diverso dalle sezioni ordinarie perché le usano soprattutto militari e forze di sicurezza, fra cui gli elettori arabi sono pochi. ' +
     'Non è detto che le urne contate finora somiglino a quelle che mancano. ' +
-    'La proiezione stima le buste che mancano con le quote delle sezioni ordinarie corrette dai rapporti fra buste e sezioni del 2022, lista per lista.';
+    'La proiezione stima le buste che mancano mescolando le quote di quelle già contate, che ora pesano il ' + pct(pesoBuste(E), 0) + ', con le quote delle sezioni ordinarie corrette dai rapporti fra buste e sezioni del 2022 (su schermo largo, l’ultima colonna). Più buste si contano, più pesano quelle contate.';
 }
 function renderConfronto() {
   const card = $('confrontoCard'), D = datiConfronto();
@@ -2534,14 +2534,27 @@ const BUSTE_ATTESE_26 = 455000, BUSTE_MIN_26 = 430000, BUSTE_MAX_26 = 480000, BU
 /* le sezioni ordinarie (קלפיות) del 2026: 12.018 secondo la Commissione */
 const SEZIONI_26 = 12018;
 const ENV_QUOTA26 = BUSTE_ATTESE_26 / VOT26;
-function quoteBuste(nazQ) {
+/* Quando le prime buste sono contate (env, la riga 9999), le quote di quelle che mancano mescolano
+   le quote delle buste contate con i rapporti del 2022: le contate pesano contate/(contate+40.000),
+   cioè la metà a 40.000 buste e l'80% a 160.000. Il 29 ottobre, con un terzo delle buste
+   contato, i rapporti del 2022 sbagliavano di 4-5 punti su Yashar, Beyachad e Sionismo
+   religioso–Zehut. Senza env, o per il confronto della sezione delle buste, solo il 2022. */
+const BUSTE_PESO_K = 40000;
+const pesoBuste = env => env && env.val > 0 ? env.val / (env.val + BUSTE_PESO_K) : 0;
+function quoteBuste(nazQ, env) {
   const q = {}; let t = 0;
   for (const l in nazQ) { q[l] = nazQ[l] * (RAPPORTO_BUSTE22[l] || 1); t += q[l]; }
+  for (const l in q) q[l] /= t || 1;
+  const w = pesoBuste(env);
+  if (w) { t = 0; for (const l in q) { q[l] = w * (env.v[l] || 0) / env.val + (1 - w) * q[l]; t += q[l]; } for (const l in q) q[l] /= t || 1; }
   const e = { N: 0, O: 0, A: 0, X: 0 };
-  for (const l in q) { q[l] /= t || 1; e[infoLista(l).b] += q[l]; }
-  return { q, e };
+  for (const l in q) e[infoLista(l).b] += q[l];
+  return { q, e, w };
 }
-const SCARTO_NAZ = 0.075, SCARTO_AREA = 0.2, SCARTO_BUSTE = 0.2;
+/* lo scarto delle buste scende da 0,2 (solo il 2022) a 0,1 man mano che pesano quelle contate:
+   le urne che mancano possono votare diverso da quelle contate, ma meno di quanto il 2026 possa
+   differire dal 2022 */
+const SCARTO_NAZ = 0.075, SCARTO_AREA = 0.2, SCARTO_BUSTE = 0.2, SCARTO_BUSTE_CONTATE = 0.1;
 let PROIEZ = null;
 function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
   const d = R.d, vr = d.vot ? R.val / d.vot : 1;
@@ -2561,7 +2574,7 @@ function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
     for (const l in qa) { const k = infoLista(l).b; if (bk[k] > 0) q[l] = e[k] * qa[l] / bk[k]; }
     add(i, q, v);
   }
-  const QB = quoteBuste(nazQ);
+  const QB = quoteBuste(nazQ, R.d.env), sB = SCARTO_BUSTE * (1 - QB.w) + SCARTO_BUSTE_CONTATE * QB.w;
   add('buste', QB.q, envM * vr);
   const lettere = Object.keys(R.voti);
   const ripartisci = varia => {
@@ -2594,7 +2607,7 @@ function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
   lettere.forEach(l => simL[l] = []);
   for (let k = 0; k < SIMUL; k++) {
     const fn = {}; lettere.forEach(l => fn[l] = Math.exp(SCARTO_NAZ * gauss()));
-    const v = ripartisci(g => { const f = {}; const s = g === 'buste' ? SCARTO_BUSTE : SCARTO_AREA; lettere.forEach(l => f[l] = fn[l] * Math.exp(s * gauss())); return f; });
+    const v = ripartisci(g => { const f = {}; const s = g === 'buste' ? sB : SCARTO_AREA; lettere.forEach(l => f[l] = fn[l] * Math.exp(s * gauss())); return f; });
     const sg = baderOfer(v, accordi()).seggi, tb = totBlocchi({ seggi: sg });
     sim.N.push(tb.N); sim.O.push(tb.O); sim.A.push(tb.A); sim.X.push(tb.X); if (tb.N >= MAGG) magg++;
     if (tb.N + tb.O + tb.A + tb.X !== SEGGI) non120++;
@@ -2622,12 +2635,12 @@ function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
   h += '<div class="muted" style="font-size:12px;margin-top:4px">La proiezione fa ' + (t.N + t.O + t.A + t.X) + ' seggi' + (non120 ? '' : ', e così ogni simulazione') + '. I margini dei blocchi non si sommano: quando uno sta in alto, gli altri scendono.</div>';
   h += '<div class="proiezliste">' + ord.filter(x => x.s > 0 || fra(simL[x.l])[1] > 0).map(x => '<span><i style="background:' + x.p.c + '"></i>' + esc(nomeBreve(x.p)) + ' <b>' + x.s + '</b>' + rng(simL[x.l]) + '</span>').join('') + '</div>';
   const pt = x => (x >= 0 ? '+' : '−') + nf(Math.abs(x) * 100, 1);
-  if (envM > 0) h += '<div class="muted" style="font-size:12px;margin-top:6px">Doppie buste: ' + (envM >= BUSTE_ATTESE_26 ? 'circa ' + nf(BUSTE_ATTESE_26) + ' secondo la Commissione (che ne stima ' + BUSTE_FORCHETTA + '), ancora tutte da contare' : 'ne mancano circa ' + nf(envM) + ', sulle ' + nf(BUSTE_ATTESE_26) + ' stimate (la Commissione ne prevede ' + BUSTE_FORCHETTA + ')') + '. Nel 2022 i partiti arabi vi avevano preso meno della metà della loro quota nazionale, UTJ due terzi e Shas l’83%; più della media Sionismo religioso con Ben Gvir, i Laburisti e Yisrael Beitenu. Con gli stessi rapporti sui voti contati oggi: Netanyahu ' + nf(QB.e.N * 100, 1) + '%, opposizione ' + nf(QB.e.O * 100, 1) + '%, arabi ' + nf(QB.e.A * 100, 1) + '%.</div>';
+  if (envM > 0) h += '<div class="muted" style="font-size:12px;margin-top:6px">Doppie buste: ' + (envM >= BUSTE_ATTESE_26 ? 'circa ' + nf(BUSTE_ATTESE_26) + ' secondo la Commissione (che ne stima ' + BUSTE_FORCHETTA + '), ancora tutte da contare' : 'ne mancano circa ' + nf(envM) + ', sulle ' + nf(BUSTE_ATTESE_26) + ' stimate (la Commissione ne prevede ' + BUSTE_FORCHETTA + ')') + '. ' + (QB.w ? 'Per quelle che mancano: le quote delle ' + nf(R.d.env.vot) + ' già contate, che pesano il ' + pct(QB.w, 0) + ', e per il resto i rapporti fra buste e sezioni del 2022 applicati ai voti di oggi (vedi «Le doppie buste finora»)' : 'Nel 2022 i partiti arabi vi avevano preso meno della metà della loro quota nazionale, UTJ due terzi e Shas l’83%; più della media Sionismo religioso con Ben Gvir, i Laburisti e Yisrael Beitenu. Con gli stessi rapporti sui voti contati oggi') + ': Netanyahu ' + nf(QB.e.N * 100, 1) + '%, opposizione ' + nf(QB.e.O * 100, 1) + '%, arabi ' + nf(QB.e.A * 100, 1) + '%.</div>';
   /* gli stessi numeri servono alla card 7 */
   PROIEZ = { t, rg: { N: fra(sim.N), O: fra(sim.O), A: fra(sim.A), X: fra(sim.X) }, magg: magg / SIMUL, f: avanzamento(R).f,
     liste: ord.filter(x => x.s > 0).map(x => ({ p: x.p, s: x.s, rg: fra(simL[x.l]) })), filo: filo.map(x => ({ p: x.p, q: x.q })) };
   if (filo.length) h += '<div class="muted" style="font-size:12px;margin-top:6px">Vicino alla soglia del 3,25%: ' + filo.map(x => esc(nomeBreve(x.p)) + ' ' + nf(x.q * 100, 2) + '%').join(', ') + '.</div>';
-  return h + '<div class="muted" style="font-size:11.5px;margin-top:8px">Non è un risultato: le località che mancano possono votare diversamente dalla loro area, e le doppie buste (soprattutto soldati) sono stimate su come hanno votato nel 2022, lista per lista. Il margine non tiene conto di un’affluenza diversa dal 77,7%.</div></div>';
+  return h + '<div class="muted" style="font-size:11.5px;margin-top:8px">Non è un risultato: le località che mancano possono votare diversamente dalla loro area, e le doppie buste (soprattutto soldati) che mancano sono stimate da quelle già contate e da come hanno votato nel 2022, lista per lista. Il margine non tiene conto di un’affluenza diversa dal 77,7%.</div></div>';
 }
 function renderManca() {
   const R = risultato(), box = $('manca');
