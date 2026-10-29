@@ -446,6 +446,7 @@ table.conf th .corto{display:none}
 .mancagrid>div{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:var(--r-s);padding:12px 14px}
 .mancagrid .mk{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3)}
 .mancagrid .muted{font-size:12.5px;line-height:1.45}
+.mancagrid .circa{font-size:.5em;font-weight:500;color:var(--t2);letter-spacing:0}
 @media(max-width:560px){.mancagrid{grid-template-columns:1fr}}
 .timeline{margin:14px 18px 0;display:grid;font-size:13px;color:var(--t2)}
 .timeline div{display:grid;grid-template-columns:90px minmax(0,1fr);gap:12px;padding:6px 0;border-top:1px solid var(--line)}
@@ -1299,7 +1300,7 @@ function render() {
 function renderHero() {
   const R = risultato();
   /* dopo la chiusura delle urne (le 20 UTC del 27 ottobre) la frase passa al passato */
-  if (ED === '26' && Date.now() >= Date.UTC(2026, 9, 27, 20, 0)) $('heroText').textContent = $('heroText').textContent.replace('Le urne chiudono alle 22 in Israele, le 21 in Italia.', 'Le urne hanno chiuso alle 22 in Israele, le 21 in Italia: lo spoglio completo, con le doppie buste, è atteso il 29 ottobre nel pomeriggio, i risultati ufficiali il 4 novembre.');
+  if (ED === '26' && Date.now() >= Date.UTC(2026, 9, 27, 20, 0)) $('heroText').textContent = $('heroText').textContent.replace('Le urne chiudono alle 22 in Israele, le 21 in Italia.', 'Le urne hanno chiuso alle 22 in Israele, le 21 in Italia: lo spoglio completo, con le doppie buste, è atteso il 29 ottobre in serata, i risultati ufficiali il 4 novembre.');
   const lu = $('lastUpdate');
   if (PROVA) { lu.textContent = 'Prova · spoglio 2022 al ' + $('provaPct').textContent; lu.className = 'pill'; }
   else if (R && R.fonte === 'manuale') { lu.textContent = 'Risultato inserito a mano'; lu.className = 'pill danger'; }
@@ -2451,7 +2452,7 @@ function renderScrutinio() {
     ['dalle 22', 'i primi file della Commissione: di solito località piccole, kibbutz e moshav'],
     ['notte', 'arrivano le grandi città; le reti aggiornano gli exit poll con i voti reali'],
     ['mercoledì', 'nel 2022 le sezioni ordinarie erano complete verso mezzogiorno israeliano'],
-    ['29 ottobre', 'nel pomeriggio lo spoglio completo, con le doppie buste: ' + BUSTE_FORCHETTA + ' secondo la Commissione'],
+    ['29 ottobre', 'in serata lo spoglio completo, con le doppie buste: ' + BUSTE_FORCHETTA + ' secondo la Commissione'],
     ['4 novembre', 'i risultati ufficiali']
   ].map(([t, x]) => '<div><b>' + t + '</b><span>' + x + '</span></div>').join('');
 }
@@ -2478,7 +2479,7 @@ function renderScrutinio() {
 const RAPPORTO_BUSTE22 = { 'מחל': 1.00, 'רק': 0.95, 'ט': 1.43, 'ב': 1.43, 'דרך': 1.17, 'כן': 1.17, 'שס': 0.83, 'ג': 0.64, 'ל': 1.27, 'עם': 0.43, 'ודם': 0.50, 'אמת': 1.21 };
 /* Le doppie buste votate: fra 430.000 e 480.000 secondo la Commissione (28 ottobre, dopo una
    prima stima di 600.000-650.000); si usa il valore di mezzo. Lo spoglio completo è atteso il
-   29 ottobre nel pomeriggio, i risultati ufficiali il 4 novembre. */
+   29 ottobre in serata (la tv pubblica Kan, 29 ottobre), i risultati ufficiali il 4 novembre. */
 const BUSTE_ATTESE_26 = 455000, BUSTE_MIN_26 = 430000, BUSTE_MAX_26 = 480000, BUSTE_FORCHETTA = 'fra 430.000 e 480.000';
 /* le sezioni ordinarie (קלפיות) del 2026: 12.018 secondo la Commissione */
 const SEZIONI_26 = 12018;
@@ -2642,9 +2643,11 @@ function renderManca() {
     if (sez && !quasi) stime.push(perSez);
     const un = quasi ? 1000 : 10000, lo = Math.round(Math.min(...stime) / un) * un, hi = Math.round(Math.max(...stime) / un) * un;
     const quanti = !mancano && sez ? 'Non mancano più votanti.' : lo === hi ? 'Mancano circa ' + nf(lo) + ' votanti.' : 'Mancano fra ' + nf(lo) + ' e ' + nf(hi) + ' votanti circa.';
+    /* le doppie buste che mancano: il totale non è nei file, solo la stima della Commissione */
+    const bLo = Math.max(0, Math.round((BUSTE_MIN_26 - bc) / 10000) * 10000), bHi = Math.max(0, Math.round((BUSTE_MAX_26 - bc) / 10000) * 10000);
     h = '<div class="mancagrid">' +
       '<div><div class="mk">Sezioni ordinarie</div><div class="big">' + (sez ? nf(mancano) : '—') + '</div><div class="muted">' + (sez ? 'da contare: ' + nf(sez) + ' contate su ' + nf(SEZIONI_26) + ' (' + pct(sez / SEZIONI_26, 1) + ')' : 'il conteggio delle sezioni arriva con il file per sezione') + '. ' + quanti + '</div></div>' +
-      '<div><div class="mk">Doppie buste</div><div class="big">' + nf(envM) + '</div><div class="muted">' + (bc ? 'votanti ancora da contare: ne sono contati ' + nf(bc) + ' sui circa ' + nf(BUSTE_ATTESE_26) + ' stimati' : 'votanti stimati, ancora tutti da contare: la Commissione ne indica ' + BUSTE_FORCHETTA) + '. Lo spoglio completo è atteso il 29 ottobre nel pomeriggio.</div></div>' +
+      '<div><div class="mk">Doppie buste</div><div class="big"><span class="circa">circa </span>' + nf(Math.round(envM / 10000) * 10000) + '</div><div class="muted">' + (bc ? 'votanti ancora da contare, fra ' + nf(bLo) + ' e ' + nf(bHi) + ': ne sono contati ' + nf(bc) + ' su ' + nf(BUSTE_MIN_26) + '–' + nf(BUSTE_MAX_26) + ' stimati dalla Commissione' : 'votanti stimati, ancora tutti da contare: la Commissione ne indica ' + BUSTE_FORCHETTA) + '. Il totale non si sa finché non sono contate tutte: lo spoglio dovrebbe finire il 29 ottobre in serata.</div></div>' +
       '</div><div class="muted" style="font-size:12.5px;margin:2px 0 10px">In tutto circa <b>' + nf(Math.round((ord + envM) / 1000) * 1000) + '</b> votanti ancora da contare' + (quasi ? ': nelle sezioni ordinarie dagli aventi diritto che mancano, nelle doppie buste dalla stima della Commissione' : ', sull’affluenza ufficiale del ' + pct(AFFLUENZA_26)) + '. Qui sotto, dove mancano più voti nelle sezioni ordinarie.</div>';
   } else h = '<div><div class="big">' + nf(ord + envM) + '</div><div class="muted" style="font-size:12px">voti validi ancora da contare, stimati: ' + nf(ord) + ' nei seggi ordinari e ' + nf(envM) + ' in doppia busta</div></div>';
   if (tot > 0 && ord > 0) h += riga('<b>Tutte le sezioni che mancano</b>', kf(ord), { N: bl.N / tot, O: bl.O / tot, A: bl.A / tot, X: bl.X / tot });
