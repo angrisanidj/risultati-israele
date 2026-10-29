@@ -2734,7 +2734,7 @@ function renderManca() {
     const sez = S.expb && S.expb.fatti, bc = R.env ? R.env.vot : 0, sg = baderOfer(R.voti, accordi()).seggi, t = { N: 0, O: 0, A: 0, X: 0 };
     for (const l in sg) t[infoLista(l).b] += sg[l];
     box.innerHTML = '<p class="muted" style="font-size:13.5px;margin:0 0 4px">Il 29 ottobre alle 16:55 israeliane (le 15:55 in Italia) la Commissione elettorale centrale ha annunciato la fine dello spoglio, doppie buste comprese. Sono stati contati ' + nf(R.d.vot) + ' votanti, di cui ' + nf(bc) + ' in doppia busta' +
-      (sez ? ', in ' + nf(sez) + ' sezioni ordinarie' + (sez < SEZIONI_26 ? ' (le altre ' + nf(SEZIONI_26 - sez) + ' delle ' + nf(SEZIONI_26) + ' previste non hanno un risultato pubblicato)' : '') : '') +
+      (sez ? ', in ' + (sez >= SEZIONI_26 ? 'tutte le ' : '') + nf(sez) + ' sezioni ordinarie' + (sez < SEZIONI_26 ? ' (le altre ' + nf(SEZIONI_26 - sez) + ' delle ' + nf(SEZIONI_26) + ' previste non hanno un risultato pubblicato)' : '') : '') +
       '. I risultati non sono ancora definitivi: dopo un ulteriore controllo sulla regolarità del voto, quelli ufficiali arriveranno il 4 novembre.</p>' +
       testoBilico(seggiInBilico(R.voti, accordi(), BILICO_MAX).slice(0, 2), t, 'Bastano piccole correzioni nei risultati ufficiali per spostarli.');
     $('proiezCard').classList.add('hidden'); PROIEZ = null;
