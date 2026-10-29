@@ -1123,7 +1123,7 @@ function aggrega(P) {
   return {
     tipo: P.tipo, partiti: P.partiti, loc, voti, val, vot, inv, bzb, bzbF, votF,
     env: loc.get(ENV_CODE) || null,
-    seggi: P.tipo === 'expb' ? { tot: seggiTot, fatti: seggiFatti } : null
+    seggi: P.tipo === 'expb' ? { tot: seggiTot, fatti: seggiFatti, vot: vot - (loc.has(ENV_CODE) ? loc.get(ENV_CODE).vot : 0) } : null
   };
 }
 
@@ -2621,12 +2621,18 @@ function renderManca() {
   if (a26) {
     const sez = S.expb && S.expb.fatti ? S.expb.fatti : (avanzamento(R).seggi || 0), mancano = Math.max(0, SEZIONI_26 - sez);
     const bc = R.env ? R.env.vot : 0;
-    /* I votanti delle sezioni ordinarie che mancano, come forchetta: dall'affluenza con le doppie
-       buste agli estremi della stima della Commissione, e dalle sezioni mancanti per la media di
-       quelle contate. Arrotondata alle decine di migliaia più vicine. */
-    const stime = [BUSTE_MAX_26, BUSTE_MIN_26].map(b => Math.max(0, VOT26 - R.d.vot - Math.max(0, b - bc)));
-    if (sez) stime.push(mancano * R.d.vot / sez);
-    const lo = Math.round(Math.min(...stime) / 10000) * 10000, hi = Math.round(Math.max(...stime) / 10000) * 10000;
+    /* I votanti delle sezioni ordinarie che mancano, come forchetta. Finché mancano molte sezioni:
+       dall'affluenza con le doppie buste agli estremi della stima della Commissione, e dalle
+       sezioni mancanti per la media di quelle contate, alle decine di migliaia. Dal 97% delle
+       sezioni contate l'affluenza porta con sé tutta l'incertezza delle doppie buste: vale solo la
+       media per sezione, più o meno il 15% perché le sezioni non sono tutte grandi uguali, alle
+       migliaia. La media viene dal file per sezione, che può essere più recente di quello per
+       località: votanti e sezioni contate devono venire dallo stesso file. */
+    const votSez = S.expb && S.expb.fatti && S.expb.vot ? S.expb.vot : R.d.vot - bc;
+    const perSez = sez ? mancano * votSez / sez : 0, quasi = sez / SEZIONI_26 >= 0.97;
+    const stime = quasi ? [perSez * 0.85, perSez * 1.15] : [BUSTE_MAX_26, BUSTE_MIN_26].map(b => Math.max(0, VOT26 - R.d.vot - Math.max(0, b - bc)));
+    if (sez && !quasi) stime.push(perSez);
+    const un = quasi ? 1000 : 10000, lo = Math.round(Math.min(...stime) / un) * un, hi = Math.round(Math.max(...stime) / un) * un;
     const quanti = !mancano && sez ? 'Non mancano più votanti.' : lo === hi ? 'Mancano circa ' + nf(lo) + ' votanti.' : 'Mancano fra ' + nf(lo) + ' e ' + nf(hi) + ' votanti circa.';
     h = '<div class="mancagrid">' +
       '<div><div class="mk">Sezioni ordinarie</div><div class="big">' + (sez ? nf(mancano) : '—') + '</div><div class="muted">' + (sez ? 'da contare: ' + nf(sez) + ' contate su ' + nf(SEZIONI_26) + ' (' + pct(sez / SEZIONI_26, 1) + ')' : 'il conteggio delle sezioni arriva con il file per sezione') + '. ' + quanti + '</div></div>' +
