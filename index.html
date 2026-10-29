@@ -1012,8 +1012,9 @@ function nf(v, d = 0) {
   return Number(v).toLocaleString('it-IT', { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: 'always' });
 }
 const pct = (v, d = 1) => v == null || !isFinite(v) ? '—' : nf(v * 100, d) + '%';
-/* la percentuale di scrutinio: un decimale sotto il 10%, così all'inizio non resta a 0% */
-const pctScr = f => pct(f, f < 0.1 ? 1 : 0);
+/* la percentuale di scrutinio: un decimale sotto il 10%, così all'inizio non resta a 0%, e sopra
+   il 99,5%, così a fine spoglio non segna 100% finché manca qualcosa */
+const pctScr = f => f >= 0.995 && f < 1 ? pct(Math.min(f, 0.999), 1) : pct(f, f < 0.1 ? 1 : 0);
 /* «allo 0,1%», «all’8%», «all’11%», «al 25%» */
 const alPct = f => { const t = pctScr(f); return (/^0/.test(t) ? 'allo ' : /^(1[,%]|11[,%]|8)/.test(t) ? 'all’' : 'al ') + t; };
 function hex2rgb(h) { h = h.replace('#', ''); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); }
@@ -2761,11 +2762,14 @@ function renderManca() {
     const un = quasi ? 1000 : 10000, lo = Math.round(Math.min(...stime) / un) * un, hi = Math.round(Math.max(...stime) / un) * un;
     const quanti = !mancano && sez ? 'Non mancano più votanti.' : lo === hi ? 'Mancano circa ' + nf(lo) + ' votanti.' : 'Mancano fra ' + nf(lo) + ' e ' + nf(hi) + ' votanti circa.';
     /* le doppie buste che mancano: il totale non è nei file, solo la stima della Commissione */
-    const bLo = Math.max(0, Math.round((BUSTE_MIN_26 - bc) / 10000) * 10000), bHi = Math.max(0, Math.round((BUSTE_MAX_26 - bc) / 10000) * 10000);
+    const bLo = Math.max(0, Math.floor((BUSTE_MIN_26 - bc) / 10000) * 10000), bHi = Math.max(0, Math.round((BUSTE_MAX_26 - bc) / 10000) * 10000);
+    /* quando le buste contate arrivano vicino alla stima più bassa della Commissione, possono
+       anche essere finite: non si dà più un numero di mezzo ma solo il massimo */
+    const forseFine = bc > 0 && bLo === 0;
     h = '<div class="mancagrid">' +
       '<div><div class="mk">Sezioni ordinarie</div><div class="big">' + (sez ? nf(mancano) : '—') + '</div><div class="muted">' + (sez ? 'da contare: ' + nf(sez) + ' contate su ' + nf(SEZIONI_26) + ' (' + pct(sez / SEZIONI_26, 1) + ')' : 'il conteggio delle sezioni arriva con il file per sezione') + '. ' + quanti + '</div></div>' +
-      '<div><div class="mk">Doppie buste</div><div class="big"><span class="circa">circa </span>' + nf(Math.round(envM / 10000) * 10000) + '</div><div class="muted">' + (bc ? 'votanti ancora da contare, fra ' + nf(bLo) + ' e ' + nf(bHi) + ': ne sono contati ' + nf(bc) + ' su ' + nf(BUSTE_MIN_26) + '–' + nf(BUSTE_MAX_26) + ' stimati dalla Commissione' : 'votanti stimati, ancora tutti da contare: la Commissione ne indica ' + BUSTE_FORCHETTA) + '. Il totale non si sa finché non sono contate tutte: lo spoglio dovrebbe finire il 29 ottobre in serata.</div></div>' +
-      '</div><div class="muted" style="font-size:12.5px;margin:2px 0 10px">In tutto circa <b>' + nf(Math.round((ord + envM) / 1000) * 1000) + '</b> votanti ancora da contare' + (quasi ? ': nelle sezioni ordinarie dagli aventi diritto che mancano, nelle doppie buste dalla stima della Commissione' : ', sull’affluenza ufficiale del ' + pct(AFFLUENZA_26)) + '. Qui sotto, dove mancano più voti nelle sezioni ordinarie.</div>';
+      '<div><div class="mk">Doppie buste</div><div class="big"><span class="circa">' + (forseFine ? 'fino a ' : 'circa ') + '</span>' + nf(forseFine ? bHi : Math.round(envM / 10000) * 10000) + '</div><div class="muted">' + (forseFine ? 'votanti ancora da contare, forse nessuno: ne sono contati ' + nf(bc) + ', poco meno dei ' + nf(BUSTE_MIN_26) + '–' + nf(BUSTE_MAX_26) + ' stimati dalla Commissione, e le doppie buste potrebbero essere già finite. Lo dirà la Commissione quando chiude lo spoglio.' : (bc ? 'votanti ancora da contare, fra ' + nf(bLo) + ' e ' + nf(bHi) + ': ne sono contati ' + nf(bc) + ' su ' + nf(BUSTE_MIN_26) + '–' + nf(BUSTE_MAX_26) + ' stimati dalla Commissione' : 'votanti stimati, ancora tutti da contare: la Commissione ne indica ' + BUSTE_FORCHETTA) + '. Il totale non si sa finché non sono contate tutte: lo spoglio dovrebbe finire il 29 ottobre in serata.') + '</div></div>' +
+      '</div><div class="muted" style="font-size:12.5px;margin:2px 0 10px">In tutto ' + (forseFine ? 'fra <b>' + nf(lo) + '</b> e <b>' + nf(hi + bHi) + '</b>' : 'circa <b>' + nf(Math.round((ord + envM) / 1000) * 1000) + '</b>') + ' votanti ancora da contare' + (forseFine ? ': nelle sezioni ordinarie dagli aventi diritto che mancano, nelle doppie buste da nessuna fino al massimo stimato dalla Commissione' : quasi ? ': nelle sezioni ordinarie dagli aventi diritto che mancano, nelle doppie buste dalla stima della Commissione' : ', sull’affluenza ufficiale del ' + pct(AFFLUENZA_26)) + '. Qui sotto, dove mancano più voti nelle sezioni ordinarie.</div>';
   } else h = '<div><div class="big">' + nf(ord + envM) + '</div><div class="muted" style="font-size:12px">voti validi ancora da contare, stimati: ' + nf(ord) + ' nei seggi ordinari e ' + nf(envM) + ' in doppia busta</div></div>';
   if (tot > 0 && ord > 0) h += riga('<b>Tutte le sezioni che mancano</b>', kf(ord), { N: bl.N / tot, O: bl.O / tot, A: bl.A / tot, X: bl.X / tot });
   if (ord > 0) grandi.slice(0, 7).forEach(([code, m, b, e]) => {
