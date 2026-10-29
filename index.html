@@ -2582,9 +2582,6 @@ function renderManca() {
   const R = risultato(), box = $('manca');
   if (!R || !R.d) { box.innerHTML = '<div class="mapempty">Si calcola con il primo file della Commissione.</div>'; return; }
   const loc = R.d.loc, a26 = ED === '26';
-  /* nel 2026 si contano i votanti attesi con l'affluenza di quest'anno, tolta la quota che
-     vota in doppia busta; nella prova del 2022 i voti validi di allora */
-  const K = AVENTI_26 / AVENTI_22 * AFFLUENZA_26 * (1 - ENV_QUOTA26);
   /* IL COLORE DI QUELLO CHE MANCA. Per ogni area, lo spostamento dei blocchi: la loro quota
      nei voti già contati meno la quota che le stesse località avevano nel 2022, pesata sui
      voti di oggi. Sommato al 2022 di ogni località che manca, dà la stima di come voterà.
@@ -2595,11 +2592,21 @@ function renderManca() {
     const N = clamp(b[6] / 1000 + w.N, 0, 1), O = clamp(b[7] / 1000 + w.O, 0, 1), A = clamp(b[8] / 1000 + w.A, 0, 1), X = Math.max(0, 1 - N - O - A), t = N + O + A + X;
     return { N: N / t, O: O / t, A: A / t, X: X / t };
   };
+  /* DOVE MANCANO. Nel 2026, per ogni località: gli aventi diritto attesi (quelli del 2022,
+     cresciuti come il totale nazionale) meno quelli delle sezioni già contate, per l'affluenza
+     della località (o, se non ha ancora sezioni contate, quella nazionale ai seggi). Non i votanti
+     attesi con l'affluenza nazionale meno i votanti contati: dove si vota meno della media
+     (Tel Aviv, Haifa) sembrerebbero mancare decine di migliaia di voti anche a spoglio finito.
+     Il file non dice quali sezioni mancano: le località sono una stima, riportata al totale. */
+  const bc = R.env ? R.env.vot : 0, G26 = AVENTI_26 / AVENTI_22;
+  const turOrd = R.d.bzb > 0 && R.d.vot > bc ? (R.d.vot - bc) / R.d.bzb : AFFLUENZA_26 * (1 - ENV_QUOTA26);
   let tot = 0; const bl = { N: 0, O: 0, A: 0, X: 0 };
   const grandi = [];
   for (const [c, b] of Object.entries(BASE22.loc)) {
     const code = Number(c); if (code === ENV_CODE) continue;
-    const a = loc.get(code), now = a ? (a26 ? a.vot : a.val) : 0, m = Math.max(0, (a26 ? b[1] * K : b[3]) - now);
+    const a = loc.get(code);
+    const m = a26 ? Math.max(0, b[1] * G26 - (a ? a.bzb : 0)) * (a && a.bzb > 0 && a.vot > 0 ? a.vot / a.bzb : turOrd)
+      : Math.max(0, b[3] - (a ? a.val : 0));
     if (!m) continue;
     tot += m;
     const e = stima(code, b);
@@ -2607,12 +2614,15 @@ function renderManca() {
     grandi.push([code, m, b, e]);
   }
   const envM = a26 ? Math.max(0, BUSTE_ATTESE_26 - (R.env ? R.env.vot : 0)) : (R.env && R.env.val > 0 ? Math.max(0, VAL22_ENV - R.env.val) : VAL22_ENV);
-  $('mancaMeta').textContent = a26 ? 'sull’affluenza 2026' : 'sui volumi del 2022';
-  /* Nel 2026 il totale segue l'affluenza ufficiale: votanti attesi meno votanti contati, così
-     torna con la percentuale dello scrutinio. Le località, stimate una per una, dicono solo
-     dove mancano e con che colore: dove l'affluenza supera la media non vanno sotto zero, e
-     sommate darebbero di più. */
-  const ord = a26 ? Math.max(0, VOT26 - R.d.vot - envM) : tot;
+  /* QUANTI MANCANO nelle sezioni ordinarie, nel 2026. Finché si conta il grosso: i votanti attesi
+     con l'affluenza ufficiale, meno quelli contati e le doppie buste stimate, così torna con la
+     percentuale dello scrutinio. Dal 97% degli aventi diritto nelle sezioni contate: gli aventi
+     diritto che mancano (il totale ufficiale meno quelli delle sezioni contate) per l'affluenza
+     ai seggi; l'affluenza ufficiale porterebbe con sé tutta l'incertezza delle doppie buste. */
+  const quasi = a26 && R.d.bzb / AVENTI_26 >= 0.97;
+  const ord = !a26 ? tot : quasi ? Math.max(0, AVENTI_26 - R.d.bzb) * turOrd : Math.max(0, VOT26 - R.d.vot - envM);
+  $('mancaMeta').textContent = !a26 ? 'sui volumi del 2022' : quasi ? 'sugli aventi diritto' : 'sull’affluenza 2026';
+  const scala = ord / (tot || 1), kf = v => nf(v / 1000, v < 9950 ? 1 : 0) + 'k';
   grandi.sort((a, b) => b[1] - a[1]);
   const riga = (n, v, comp) => '<div class="mr"><span>' + n + '</span><span class="tk">' + ['N', 'O', 'A', 'X'].map(k => '<b style="width:' + ((comp[k] || 0) * 100).toFixed(1) + '%;background:' + BLOCCHI[k].c + '"></b>').join('') + '</span><span class="vv">' + v + '</span></div>';
   /* in testa due riquadri: le sezioni ordinarie (quante contate su quante, dal file per sezione)
@@ -2620,37 +2630,35 @@ function renderManca() {
   let h;
   if (a26) {
     const sez = S.expb && S.expb.fatti ? S.expb.fatti : (avanzamento(R).seggi || 0), mancano = Math.max(0, SEZIONI_26 - sez);
-    const bc = R.env ? R.env.vot : 0;
-    /* I votanti delle sezioni ordinarie che mancano, come forchetta. Finché mancano molte sezioni:
+    /* I votanti delle sezioni ordinarie che mancano, come forchetta. Finché si conta il grosso:
        dall'affluenza con le doppie buste agli estremi della stima della Commissione, e dalle
-       sezioni mancanti per la media di quelle contate, alle decine di migliaia. Dal 97% delle
-       sezioni contate l'affluenza porta con sé tutta l'incertezza delle doppie buste: vale solo la
-       media per sezione, più o meno il 15% perché le sezioni non sono tutte grandi uguali, alle
-       migliaia. La media viene dal file per sezione, che può essere più recente di quello per
-       località: votanti e sezioni contate devono venire dallo stesso file. */
+       sezioni mancanti per la media di quelle contate (dal file per sezione, votanti e sezioni
+       dallo stesso file), alle decine di migliaia. Verso la fine: gli aventi diritto che mancano
+       per l'affluenza ai seggi, più o meno il 15% perché nelle sezioni che mancano si può votare
+       più o meno della media, alle migliaia. */
     const votSez = S.expb && S.expb.fatti && S.expb.vot ? S.expb.vot : R.d.vot - bc;
-    const perSez = sez ? mancano * votSez / sez : 0, quasi = sez / SEZIONI_26 >= 0.97;
-    const stime = quasi ? [perSez * 0.85, perSez * 1.15] : [BUSTE_MAX_26, BUSTE_MIN_26].map(b => Math.max(0, VOT26 - R.d.vot - Math.max(0, b - bc)));
+    const perSez = sez ? mancano * votSez / sez : 0;
+    const stime = quasi ? [ord * 0.85, ord * 1.15] : [BUSTE_MAX_26, BUSTE_MIN_26].map(b => Math.max(0, VOT26 - R.d.vot - Math.max(0, b - bc)));
     if (sez && !quasi) stime.push(perSez);
     const un = quasi ? 1000 : 10000, lo = Math.round(Math.min(...stime) / un) * un, hi = Math.round(Math.max(...stime) / un) * un;
     const quanti = !mancano && sez ? 'Non mancano più votanti.' : lo === hi ? 'Mancano circa ' + nf(lo) + ' votanti.' : 'Mancano fra ' + nf(lo) + ' e ' + nf(hi) + ' votanti circa.';
     h = '<div class="mancagrid">' +
       '<div><div class="mk">Sezioni ordinarie</div><div class="big">' + (sez ? nf(mancano) : '—') + '</div><div class="muted">' + (sez ? 'da contare: ' + nf(sez) + ' contate su ' + nf(SEZIONI_26) + ' (' + pct(sez / SEZIONI_26, 1) + ')' : 'il conteggio delle sezioni arriva con il file per sezione') + '. ' + quanti + '</div></div>' +
       '<div><div class="mk">Doppie buste</div><div class="big">' + nf(envM) + '</div><div class="muted">' + (bc ? 'votanti ancora da contare: ne sono contati ' + nf(bc) + ' sui circa ' + nf(BUSTE_ATTESE_26) + ' stimati' : 'votanti stimati, ancora tutti da contare: la Commissione ne indica ' + BUSTE_FORCHETTA) + '. Lo spoglio completo è atteso il 29 ottobre nel pomeriggio.</div></div>' +
-      '</div><div class="muted" style="font-size:12.5px;margin:2px 0 10px">In tutto circa <b>' + nf(ord + envM) + '</b> votanti ancora da contare, sull’affluenza ufficiale del ' + pct(AFFLUENZA_26) + '. Qui sotto, dove mancano più voti nelle sezioni ordinarie.</div>';
+      '</div><div class="muted" style="font-size:12.5px;margin:2px 0 10px">In tutto circa <b>' + nf(Math.round((ord + envM) / 1000) * 1000) + '</b> votanti ancora da contare' + (quasi ? ': nelle sezioni ordinarie dagli aventi diritto che mancano, nelle doppie buste dalla stima della Commissione' : ', sull’affluenza ufficiale del ' + pct(AFFLUENZA_26)) + '. Qui sotto, dove mancano più voti nelle sezioni ordinarie.</div>';
   } else h = '<div><div class="big">' + nf(ord + envM) + '</div><div class="muted" style="font-size:12px">voti validi ancora da contare, stimati: ' + nf(ord) + ' nei seggi ordinari e ' + nf(envM) + ' in doppia busta</div></div>';
-  if (tot > 0 && ord > 0) h += riga('<b>Tutte le sezioni che mancano</b>', nf(ord / 1000, 0) + 'k', { N: bl.N / tot, O: bl.O / tot, A: bl.A / tot, X: bl.X / tot });
-  grandi.slice(0, 7).forEach(([code, m, b, e]) => {
+  if (tot > 0 && ord > 0) h += riga('<b>Tutte le sezioni che mancano</b>', kf(ord), { N: bl.N / tot, O: bl.O / tot, A: bl.A / tot, X: bl.X / tot });
+  if (ord > 0) grandi.slice(0, 7).forEach(([code, m, b, e]) => {
     const g = MAPPA.byId[code];
-    h += riga(esc(g ? g.en : b[0]), nf(m / 1000, 0) + 'k', e);
+    h += riga(esc(g ? g.en : b[0]), kf(m * scala), e);
   });
   h += '<div class="rampl" style="gap:14px;justify-content:flex-start;flex-wrap:wrap;margin-top:4px;font-size:11px">' + ['N', 'O', 'A', 'X'].map(k => '<span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:' + BLOCCHI[k].c + ';margin-right:5px"></i>' + BLOCCHI[k].s + '</span>').join('') + '</div>';
   h += '<p class="muted" style="font-size:11.5px;margin:8px 0 0">I colori sono una stima: il voto 2022 di ogni località, spostato quanto si è spostata la sua area fra il 2022 e i voti 2026 già contati (blocco Netanyahu ' + (SWN.N >= 0 ? '+' : '−') + nf(Math.abs(SWN.N) * 100, 1) + ' punti a livello nazionale).</p>';
-  if (a26) h += '<p class="muted" style="font-size:11.5px;margin:8px 0 0">In alcune località l’affluenza supera la media nazionale: il totale segue l’affluenza ufficiale, le località sono stimate una per una.</p>';
+  if (a26) h += '<p class="muted" style="font-size:11.5px;margin:8px 0 0">Il file della Commissione non dice quali sezioni mancano. Per ogni località: gli aventi diritto attesi meno quelli delle sezioni già contate, con l’affluenza della località, riportati al totale. Le località sono quindi indicative' + (quasi ? ', tanto più a fine spoglio, quando mancano poche sezioni' : '') + '.</p>';
   const pro = a26 && R.fonte !== 'manuale' && ord + envM > 0;
   $('proiezCard').classList.toggle('hidden', !pro);
   if (!pro) PROIEZ = null;
-  if (pro) { $('proiezBody').innerHTML = proiezioneFinale(R, loc, grandi, ord / (tot || 1), envM, stima); $('proiezMeta').textContent = 'scrutinio ' + alPct(avanzamento(R).f); }
+  if (pro) { $('proiezBody').innerHTML = proiezioneFinale(R, loc, grandi, scala, envM, stima); $('proiezMeta').textContent = 'scrutinio ' + alPct(avanzamento(R).f); }
   h += pro ? '<p class="muted" style="font-size:11.5px;margin:8px 0 0">La proiezione a fine spoglio costruita su queste stime è in alto, in «Come potrebbe finire».</p>' : '';
   box.innerHTML = h;
 }
