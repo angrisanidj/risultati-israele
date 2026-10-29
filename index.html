@@ -144,6 +144,8 @@ select{background:var(--s2);color:var(--t1);border:1px solid var(--line-2);borde
 .proiezbody{padding:6px 18px 16px}
 .proiezliste{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:10px;font-size:13px;font-weight:600}
 .proiezliste span{display:inline-flex;align-items:center;gap:5px}
+.bilico{margin-top:10px;padding:8px 12px;border-left:3px solid var(--amber);background:rgba(242,193,78,.06);border-radius:0 6px 6px 0;font-size:13px;line-height:1.5;color:var(--t2)}
+.bilico b{color:var(--t1)}
 .proiezliste i{width:8px;height:8px;border-radius:50%}
 .proiezliste .rg,.proiezbl .rg{font-weight:500;color:var(--t3);font-size:12px}
 .proiezbl{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:13.5px;font-weight:600}
@@ -2560,6 +2562,39 @@ function quoteBuste(nazQ, env) {
    differire dal 2022 */
 const SCARTO_NAZ = 0.075, SCARTO_AREA = 0.2, SCARTO_BUSTE = 0.2, SCARTO_BUSTE_CONTATE = 0.1;
 let PROIEZ = null;
+/* I SEGGI IN BILICO nella proiezione centrale: per ogni lista, quanti voti in meno le farebbero
+   perdere un seggio e quanti in più gliene farebbero prendere uno (ricerca binaria al centinaio,
+   fino a max voti), e a chi andrebbe o da chi verrebbe quel seggio. Si raggruppa per seggio
+   perso: per ognuno, chi lo prenderebbe e quanti voti servono, in meno a chi lo ha o in più a chi
+   lo prenderebbe. Se una lista guadagnando voti fa scattare il seggio a un'altra (per un accordo
+   di eccedenza), quella leva si lascia fuori. */
+function seggiInBilico(voti, acc, max) {
+  const base = baderOfer(voti, acc).seggi, tot = Object.values(voti).reduce((a, b) => a + b, 0);
+  const prova = (l, d) => { const v = { ...voti }; v[l] = Math.max(0, v[l] + d); return baderOfer(v, acc).seggi; };
+  const cerca = (l, sg) => {
+    if ((prova(l, sg * max)[l] || 0) === (base[l] || 0)) return null;
+    let lo = 0, hi = max;
+    while (hi - lo > 100) { const m = (lo + hi) / 2; if ((prova(l, sg * m)[l] || 0) !== (base[l] || 0)) hi = m; else lo = m; }
+    return Math.ceil(hi / 100) * 100;
+  };
+  const sale = sg => Object.keys(sg).find(k => (sg[k] || 0) > (base[k] || 0)), scende = sg => Object.keys(base).find(k => (sg[k] || 0) < (base[k] || 0));
+  const ev = [];
+  for (const l in voti) {
+    if (!((base[l] || 0) > 0 || voti[l] / tot > 0.025)) continue;
+    const kp = (base[l] || 0) > 0 ? cerca(l, -1) : null;
+    if (kp) { const a = sale(prova(l, -kp)); if (a) ev.push({ da: l, a, k: kp, leva: 'da' }); }
+    const kg = cerca(l, 1);
+    if (kg) { const sg = prova(l, kg), da = scende(sg); if (da && sale(sg) === l) ev.push({ da, a: l, k: kg, leva: 'a' }); }
+  }
+  const out = [];
+  new Set(ev.map(e => e.da)).forEach(da => {
+    const e = ev.filter(x => x.da === da).sort((x, y) => x.k - y.k), a = e[0].a;
+    const kDa = e.find(x => x.leva === 'da' && x.a === a), kA = e.find(x => x.leva === 'a' && x.a === a);
+    out.push({ da, a, n: base[da], kDa: kDa ? kDa.k : null, kA: kA ? kA.k : null, k: e[0].k });
+  });
+  return out.sort((x, y) => x.k - y.k);
+}
+const BILICO_MAX = 10000;
 function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
   const d = R.d, vr = d.vot ? R.val / d.vot : 1;
   const sd = aggregaSD(loc);
@@ -2638,11 +2673,26 @@ function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
   h += '<div style="font-size:14px;margin-top:10px">Il blocco Netanyahu arriva a 61 in <b>' + nf(magg / SIMUL * 100, 0) + ' simulazioni su 100</b>.</div>';
   h += '<div class="muted" style="font-size:12px;margin-top:4px">La proiezione fa ' + (t.N + t.O + t.A + t.X) + ' seggi' + (non120 ? '' : ', e così ogni simulazione') + '. I margini dei blocchi non si sommano: quando uno sta in alto, gli altri scendono.</div>';
   h += '<div class="proiezliste">' + ord.filter(x => x.s > 0 || fra(simL[x.l])[1] > 0).map(x => '<span><i style="background:' + x.p.c + '"></i>' + esc(nomeBreve(x.p)) + ' <b>' + x.s + '</b>' + rng(simL[x.l]) + '</span>').join('') + '</div>';
+  /* i seggi in bilico: le due coppie più vicine, se si decidono per meno di BILICO_MAX voti */
+  const bil = seggiInBilico(voti, accordi(), BILICO_MAX).slice(0, 2);
+  if (bil.length) {
+    const nm = l => esc(nomeBreve(infoLista(l))), ordn = n => (n === 8 || n === 11 || (n >= 80 && n < 90) ? 'l’' : 'il ') + n + '°';
+    const effetto = c => {
+      const bd = infoLista(c.da).b, ba = infoLista(c.a).b;
+      if (bd === ba) return ', senza cambiare i blocchi';
+      if (bd === 'N' || ba === 'N') return ', e il blocco Netanyahu ' + (bd === 'N' ? 'scenderebbe a ' + (t.N - 1) : 'salirebbe a ' + (t.N + 1));
+      return ', e ' + (bd === 'O' || ba === 'O' ? 'l’opposizione ' + (bd === 'O' ? 'scenderebbe a ' + (t.O - 1) : 'salirebbe a ' + (t.O + 1)) : 'i partiti arabi ' + (bd === 'A' ? 'scenderebbero a ' + (t.A - 1) : 'salirebbero a ' + (t.A + 1)));
+    };
+    const frase = c => ordn(c.n) + ' seggio di ' + nm(c.da) + ' passerebbe a ' + nm(c.a) + ' con circa ' +
+      (c.kA != null && c.kDa != null ? nf(c.kA) + ' voti in più a ' + nm(c.a) + ' o ' + nf(c.kDa) + ' in meno a ' + nm(c.da) : c.kA != null ? nf(c.kA) + ' voti in più a ' + nm(c.a) : nf(c.kDa) + ' voti in meno a ' + nm(c.da)) + effetto(c);
+    const testo = bil.map(frase).join('; ');
+    h += '<div class="bilico"><b>Seggi in bilico.</b> ' + testo.charAt(0).toUpperCase() + testo.slice(1) + '. Sono differenze più piccole dell’errore della stima.</div>';
+  } else h += '<div class="muted" style="font-size:12px;margin-top:6px">Nessun seggio si decide per meno di ' + nf(BILICO_MAX) + ' voti.</div>';
   const pt = x => (x >= 0 ? '+' : '−') + nf(Math.abs(x) * 100, 1);
   if (envM > 0) h += '<div class="muted" style="font-size:12px;margin-top:6px">Doppie buste: ' + (envM >= BUSTE_ATTESE_26 ? 'circa ' + nf(BUSTE_ATTESE_26) + ' secondo la Commissione (che ne stima ' + BUSTE_FORCHETTA + '), ancora tutte da contare' : 'ne mancano circa ' + nf(envM) + ', sulle ' + nf(BUSTE_ATTESE_26) + ' stimate (la Commissione ne prevede ' + BUSTE_FORCHETTA + ')') + '. ' + (QB.w ? 'Per quelle che mancano: le quote delle ' + nf(R.d.env.vot) + ' già contate, che pesano il ' + pct(QB.w, 0) + ', e per il resto i rapporti fra buste e sezioni del 2022 applicati ai voti di oggi (vedi «Le doppie buste finora»)' : 'Nel 2022 i partiti arabi vi avevano preso meno della metà della loro quota nazionale, UTJ due terzi e Shas l’83%; più della media Sionismo religioso con Ben Gvir, i Laburisti e Yisrael Beitenu. Con gli stessi rapporti sui voti contati oggi') + ': Netanyahu ' + nf(QB.e.N * 100, 1) + '%, opposizione ' + nf(QB.e.O * 100, 1) + '%, arabi ' + nf(QB.e.A * 100, 1) + '%.</div>';
   /* gli stessi numeri servono alla card 7 */
   PROIEZ = { t, rg: { N: fra(sim.N), O: fra(sim.O), A: fra(sim.A), X: fra(sim.X) }, magg: magg / SIMUL, f: avanzamento(R).f,
-    liste: ord.filter(x => x.s > 0).map(x => ({ p: x.p, s: x.s, rg: fra(simL[x.l]) })), filo: filo.map(x => ({ p: x.p, q: x.q })) };
+    liste: ord.filter(x => x.s > 0).map(x => ({ p: x.p, s: x.s, rg: fra(simL[x.l]) })), filo: filo.map(x => ({ p: x.p, q: x.q })), bilico: bil };
   if (filo.length) h += '<div class="muted" style="font-size:12px;margin-top:6px">Vicino alla soglia del 3,25%: ' + filo.map(x => esc(nomeBreve(x.p)) + ' ' + nf(x.q * 100, 2) + '%').join(', ') + '.</div>';
   return h + '<div class="muted" style="font-size:11.5px;margin-top:8px">Non è un risultato: le località che mancano possono votare diversamente dalla loro area, e le doppie buste (soprattutto soldati) che mancano sono stimate da quelle già contate e da come hanno votato nel 2022, lista per lista. Il margine non tiene conto di un’affluenza diversa dal 77,7%.</div></div>';
 }
