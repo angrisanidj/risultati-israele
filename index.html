@@ -1233,7 +1233,15 @@ function avanzamento(R) {
      il 100%): l'avanzamento si stima sull'affluenza. Nella prova del 2022 vale se il file le ha
      tutte. */
   if (seg && seg.tot >= SEGGI_MIN_ELENCO && ED !== '26') return { f: seg.fatti / seg.tot, tipo: 'seggi', fatti: seg.fatti, tot: seg.tot, ord };
-  if (ED === '26') return { f: clamp(d.vot / VOT26, 0, 1), tipo: 'affluenza', ord, vo: d.vot, seggi: seg ? seg.fatti : 0 };
+  /* A fine spoglio i votanti contati possono superare quelli attesi con l'affluenza ufficiale (le
+     doppie buste erano solo stimate) e la pagina segnerebbe 100% con sezioni e buste ancora da
+     contare: il totale atteso è almeno i contati più quelli che mancano, cioè gli aventi diritto
+     delle sezioni non contate per l'affluenza ai seggi e le buste fino alla stima della Commissione. */
+  if (ED === '26') {
+    const bc = d.env ? d.env.vot : 0, tur = d.bzb > 0 && d.vot > bc ? (d.vot - bc) / d.bzb : AFFLUENZA_26;
+    const resto = Math.max(0, AVENTI_26 - (d.bzb || 0)) * tur + Math.max(0, BUSTE_ATTESE_26 - bc);
+    return { f: clamp(d.vot / Math.max(VOT26, d.vot + resto), 0, 1), tipo: 'affluenza', ord, vo: d.vot, seggi: seg ? seg.fatti : 0 };
+  }
   return { f: clamp(ord / VAL22_ORD, 0, 1), tipo: 'volumi', ord, seggi: seg ? seg.fatti : 0 };
 }
 /* L'ORA DEGLI EXIT POLL si scrive com'è nei grafici delle reti, cioè in ora israeliana
@@ -2768,7 +2776,7 @@ function renderManca() {
     const forseFine = bc > 0 && bLo === 0;
     h = '<div class="mancagrid">' +
       '<div><div class="mk">Sezioni ordinarie</div><div class="big">' + (sez ? nf(mancano) : '—') + '</div><div class="muted">' + (sez ? 'da contare: ' + nf(sez) + ' contate su ' + nf(SEZIONI_26) + ' (' + pct(sez / SEZIONI_26, 1) + ')' : 'il conteggio delle sezioni arriva con il file per sezione') + '. ' + quanti + '</div></div>' +
-      '<div><div class="mk">Doppie buste</div><div class="big"><span class="circa">' + (forseFine ? 'fino a ' : 'circa ') + '</span>' + nf(forseFine ? bHi : Math.round(envM / 10000) * 10000) + '</div><div class="muted">' + (forseFine ? 'votanti ancora da contare, forse nessuno: ne sono contati ' + nf(bc) + ', poco meno dei ' + nf(BUSTE_MIN_26) + '–' + nf(BUSTE_MAX_26) + ' stimati dalla Commissione, e le doppie buste potrebbero essere già finite. Lo dirà la Commissione quando chiude lo spoglio.' : (bc ? 'votanti ancora da contare, fra ' + nf(bLo) + ' e ' + nf(bHi) + ': ne sono contati ' + nf(bc) + ' su ' + nf(BUSTE_MIN_26) + '–' + nf(BUSTE_MAX_26) + ' stimati dalla Commissione' : 'votanti stimati, ancora tutti da contare: la Commissione ne indica ' + BUSTE_FORCHETTA) + '. Il totale non si sa finché non sono contate tutte: lo spoglio dovrebbe finire il 29 ottobre in serata.') + '</div></div>' +
+      '<div><div class="mk">Doppie buste</div><div class="big"><span class="circa">' + (forseFine ? 'fino a ' : 'circa ') + '</span>' + nf(forseFine ? bHi : Math.round(envM / 10000) * 10000) + '</div><div class="muted">' + (forseFine ? 'votanti ancora da contare, forse nessuno: ne sono contati ' + nf(bc) + ', ' + (bc < BUSTE_MIN_26 ? 'poco meno dei ' : 'già dentro i ') + nf(BUSTE_MIN_26) + '–' + nf(BUSTE_MAX_26) + ' stimati dalla Commissione, e le doppie buste potrebbero essere già finite. Lo dirà la Commissione quando chiude lo spoglio.' : (bc ? 'votanti ancora da contare, fra ' + nf(bLo) + ' e ' + nf(bHi) + ': ne sono contati ' + nf(bc) + ' su ' + nf(BUSTE_MIN_26) + '–' + nf(BUSTE_MAX_26) + ' stimati dalla Commissione' : 'votanti stimati, ancora tutti da contare: la Commissione ne indica ' + BUSTE_FORCHETTA) + '. Il totale non si sa finché non sono contate tutte: lo spoglio dovrebbe finire il 29 ottobre in serata.') + '</div></div>' +
       '</div><div class="muted" style="font-size:12.5px;margin:2px 0 10px">In tutto ' + (forseFine ? 'fra <b>' + nf(lo) + '</b> e <b>' + nf(hi + bHi) + '</b>' : 'circa <b>' + nf(Math.round((ord + envM) / 1000) * 1000) + '</b>') + ' votanti ancora da contare' + (forseFine ? ': nelle sezioni ordinarie dagli aventi diritto che mancano, nelle doppie buste da nessuna fino al massimo stimato dalla Commissione' : quasi ? ': nelle sezioni ordinarie dagli aventi diritto che mancano, nelle doppie buste dalla stima della Commissione' : ', sull’affluenza ufficiale del ' + pct(AFFLUENZA_26)) + '. Qui sotto, dove mancano più voti nelle sezioni ordinarie.</div>';
   } else h = '<div><div class="big">' + nf(ord + envM) + '</div><div class="muted" style="font-size:12px">voti validi ancora da contare, stimati: ' + nf(ord) + ' nei seggi ordinari e ' + nf(envM) + ' in doppia busta</div></div>';
   if (tot > 0 && ord > 0) h += riga('<b>Tutte le sezioni che mancano</b>', kf(ord), { N: bl.N / tot, O: bl.O / tot, A: bl.A / tot, X: bl.X / tot });
