@@ -1347,8 +1347,13 @@ function renderKpi() {
       for (const a of R.d.loc.values()) { if (a.code === ENV_CODE) continue; tot++; if (a.val > 0) n++; }
       const den = tot >= 1000 ? tot : Object.keys(BASE22.loc).length - 1;
       $('kLoc').textContent = nf(n) + ' / ' + nf(den);
+      /* L'AFFLUENZA. Durante lo spoglio, quella delle sezioni ordinarie contate (senza doppie buste,
+         che non hanno aventi diritto propri): si confronta con il 63,8% delle sezioni ordinarie del
+         2022, non con il 70,6% che comprende le buste. A spoglio concluso, quella vera: tutti i
+         votanti, buste comprese, sugli aventi diritto, contro il 70,6% del 2022. */
       const aff = R.d.bzbF > 0 ? R.d.votF / R.d.bzbF : null;
-      $('kLocMeta').textContent = aff ? 'affluenza ' + pct(aff) + ' dove si è votato (2022: 70,6%)' : 'località con almeno un voto valido';
+      $('kLocMeta').textContent = av.tipo === 'concluso' ? 'affluenza ' + pct(R.d.vot / AVENTI_26) + ', doppie buste comprese (2022: 70,6%)'
+        : aff ? 'affluenza ' + pct(aff) + ' nelle sezioni contate, senza doppie buste (2022: 63,8%)' : 'località con almeno un voto valido';
     }
   }
   const f = fonteAttiva();
