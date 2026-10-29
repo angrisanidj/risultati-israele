@@ -4126,7 +4126,7 @@ window.CARD = (function () {
     if (s.bu) {
       const D = s.bu, q = b => nf(D.bE[b] * 100, 1) + '%', d = b => D.bE[b] - D.bO[b];
       const su = D.liste.filter(l => D.qE[l] - D.qO[l] >= 0.01).sort((a, b) => (D.qE[b] - D.qO[b]) - (D.qE[a] - D.qO[a])).slice(0, 2);
-      p.c17 = 'Israele, le doppie buste contate finora: ' + nf(D.E.vot) + ' voti, circa ' + pct(D.quota, 0) + ' di quelle stimate. Il blocco Netanyahu vi raccoglie ' + artP(q('N')) + q('N') + ', ' + p1(d('N')) + ' punti ' + (d('N') >= 0 ? 'in più' : 'in meno') + ' che nelle sezioni ordinarie; l’opposizione ' + artP(q('O')) + q('O') + ' (' + punti(d('O')) + ') e i partiti arabi ' + artP(q('A')) + q('A') + ' (' + punti(d('A')) + ').' +
+      p.c17 = 'Israele, le doppie buste contate finora (' + nf(D.E.vot) + ', circa il ' + pct(D.quota, 0) + '): il blocco Netanyahu vi raccoglie ' + artP(q('N')) + q('N') + ', ' + p1(d('N')) + ' punti ' + (d('N') >= 0 ? 'in più' : 'in meno') + ' che nelle sezioni ordinarie; l’opposizione ' + artP(q('O')) + q('O') + ' (' + punti(d('O')) + '), i partiti arabi ' + artP(q('A')) + q('A') + ' (' + punti(d('A')) + ').' +
         (su.length ? ' Crescono di più ' + elenco(su.map(l => conArt(nomeBreve(infoLista(l))) + ' (' + punti(D.qE[l] - D.qO[l]) + ')')) + '.' : '');
     }
     Object.keys(p).forEach(k => p[k] = String(p[k]).replace(/\s+/g, ' ').trim());
