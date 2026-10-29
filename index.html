@@ -337,6 +337,7 @@ table.conf tr.rbl td:first-child i{display:inline-block;width:8px;height:8px;bor
 table.conf td.attesa{color:var(--t3);font-size:12px;white-space:normal}
 table.conf .partylabel{display:flex;align-items:center;gap:7px}
 table.conf .partydot{flex:0 0 8px}
+#busteTable td.diff .dlt{display:inline;margin:0;font-size:13px}
 table.conf th .corto{display:none}
 .solo-tel{display:none}
 .bl{font-size:11.5px;font-weight:500;color:var(--t3);white-space:nowrap;margin-left:4px}
@@ -640,6 +641,13 @@ footer a{color:var(--t2)}
   <section class="card hidden" id="proiezCard" style="margin-bottom:14px">
     <div class="cardhead"><div><h2>Come potrebbe finire</h2></div><span class="cmeta" id="proiezMeta">proiezione</span></div>
     <div id="proiezBody" class="proiezbody"></div>
+  </section>
+
+  <section class="card hidden" id="busteCard" style="margin-bottom:14px">
+    <div class="cardhead"><div><h2>Le doppie buste finora</h2></div><span class="cmeta" id="busteMeta">—</span></div>
+    <p class="subcopy" id="busteSub"></p>
+    <div class="tablewrap"><table id="busteTable" class="conf"></table></div>
+    <p class="methodnote" id="busteNota"></p>
   </section>
   <div id="alert" class="alert hidden"></div>
 
@@ -1105,9 +1113,10 @@ function leggiCSV(text) {
 /* Somma per località (serve per expb) e totali nazionali */
 function aggrega(P) {
   const loc = new Map();
-  let seggiTot = 0, seggiFatti = 0;
+  let seggiTot = 0, seggiFatti = 0, urneBuste = 0;
   for (const r of P.righe) {
     if (P.tipo === 'expb' && r.code !== ENV_CODE) { seggiTot++; if (r.vot > 0 || r.val > 0) seggiFatti++; }
+    if (P.tipo === 'expb' && r.code === ENV_CODE && r.vot > 0) urneBuste++;
     let a = loc.get(r.code);
     if (!a) { a = { code: r.code, nome: r.nome, bzb: 0, bzbF: 0, vot: 0, inv: 0, val: 0, v: {} }; loc.set(r.code, a); }
     a.bzb += r.bzb; a.vot += r.vot; a.inv += r.inv; a.val += r.val;
@@ -1124,7 +1133,7 @@ function aggrega(P) {
   return {
     tipo: P.tipo, partiti: P.partiti, loc, voti, val, vot, inv, bzb, bzbF, votF,
     env: loc.get(ENV_CODE) || null,
-    seggi: P.tipo === 'expb' ? { tot: seggiTot, fatti: seggiFatti, vot: vot - (loc.has(ENV_CODE) ? loc.get(ENV_CODE).vot : 0) } : null
+    seggi: P.tipo === 'expb' ? { tot: seggiTot, fatti: seggiFatti, urneBuste, vot: vot - (loc.has(ENV_CODE) ? loc.get(ENV_CODE).vot : 0) } : null
   };
 }
 
@@ -1293,7 +1302,7 @@ function infoPer(f, l) { return f.k === 'k22' ? (L25MAP[l] || { l, n: l, c: '#5f
    ===================================================================== */
 function render() {
   renderHero(); renderKpi(); renderVerdetto(); renderTabella(); renderEmiciclo();
-  renderBarre(); renderValidazione(); renderMappa(); renderScrutinio(); renderManca(); renderConfronto(); renderSimulatore(); renderFlussi();
+  renderBarre(); renderValidazione(); renderMappa(); renderScrutinio(); renderManca(); renderBuste(); renderConfronto(); renderSimulatore(); renderFlussi();
   if (window.CARD) window.CARD.segnaSporco();
 }
 
@@ -1672,6 +1681,47 @@ function datiConfronto() {
   /* seggi spostati: metà della somma degli scarti assoluti */
   const spost = col.map(c => [...new Set([...Object.keys(M.seggi), ...Object.keys(c.seggi)])].reduce((a, l) => a + Math.abs((+c.seggi[l] || 0) - (M.seggi[l] || 0)), 0) / 2);
   return { M, R, av, conScr, attesaScr: !conScr && ED === '26', col, righe, tm, tc, spost };
+}
+/* ---------- le doppie buste finora ----------
+   Come votano le doppie buste già contate, lista per lista, accanto alle sezioni ordinarie e a
+   quello che la proiezione si aspettava (le quote delle sezioni ordinarie per i rapporti fra
+   buste e seggi ordinari del 2022, RAPPORTO_BUSTE22). Compare dalle prime mille buste. */
+function renderBuste() {
+  const R = risultato(), card = $('busteCard');
+  const E = R && R.d && R.fonte !== 'manuale' && ED === '26' ? R.d.env : null;
+  card.classList.toggle('hidden', !(E && E.val >= 1000));
+  if (!(E && E.val >= 1000)) return;
+  const ov = R.val - E.val, qE = {}, qO = {};
+  for (const l in R.voti) { qE[l] = (E.v[l] || 0) / E.val; qO[l] = (R.voti[l] - (E.v[l] || 0)) / (ov || 1); }
+  const att = quoteBuste(qO).q;
+  const righe = Object.keys(R.voti).filter(l => qE[l] >= 0.005 || qO[l] >= 0.005).sort((a, b) => qE[b] - qE[a]);
+  const punti = d => { const x = Math.round(d * 1000) / 10; return '<span class="dlt' + (x === 0 ? ' zero' : Math.abs(x) >= 3 ? ' forte' : '') + '">' + (x === 0 ? '=' : (x > 0 ? '+' : '−') + nf(Math.abs(x), 1)) + '</span>'; };
+  const cella = q => '<td><b>' + nf(q * 100, 1) + '%</b></td>', diff = d => '<td class="diff">' + punti(d) + '</td>';
+  let h = '<thead><tr><th>Lista</th><th><span class="lungo">Doppie buste</span><span class="corto">Buste</span><small>contate finora</small></th><th><span class="lungo">Sezioni ordinarie</span><span class="corto">Sezioni</span><small>quota</small></th><th>Differenza<small>in punti</small></th><th class="m-off">Atteso nelle buste<small>dalla proiezione, e scarto</small></th></tr></thead><tbody>';
+  righe.forEach(l => {
+    const p = infoLista(l);
+    h += '<tr><td><div class="partylabel"><i class="partydot" style="background:' + p.c + '"></i><span>' + esc(nomeBreve(p)) + '<small>' + nf(E.v[l] || 0) + ' voti</small></span></div></td>' +
+      cella(qE[l]) + cella(qO[l]) + diff(qE[l] - qO[l]) + '<td class="m-off"><b>' + nf(att[l] * 100, 1) + '%</b>' + punti(qE[l] - att[l]) + '</td></tr>';
+  });
+  const bl = q => { const t = { N: 0, O: 0, A: 0, X: 0 }; for (const l in q) t[infoLista(l).b] += q[l]; return t; };
+  const bE = bl(qE), bO = bl(qO), bA = bl(att);
+  h += '<tr class="rsez"><td colspan="5">Blocchi</td></tr>';
+  ['N', 'O', 'A', 'X'].filter(b => bE[b] >= 0.005 || bO[b] >= 0.005).forEach(b => {
+    h += '<tr class="rbl"><td><i style="background:' + BLOCCHI[b].c + '"></i>' + esc(BLOCCHI[b].n) + '</td>' + cella(bE[b]) + cella(bO[b]) + diff(bE[b] - bO[b]) +
+      '<td class="m-off"><b>' + nf(bA[b] * 100, 1) + '%</b>' + punti(bE[b] - bA[b]) + '</td></tr>';
+  });
+  $('busteTable').innerHTML = h + '</tbody>';
+  const urne = S.expb && S.expb.urneBuste, quota = E.vot / BUSTE_ATTESE_26;
+  $('busteMeta').textContent = nf(E.vot) + ' votanti · circa ' + pct(quota, 0);
+  const segno = d => (d >= 0 ? '+' : '−') + nf(Math.abs(d) * 100, 1) + ' punti';
+  $('busteSub').innerHTML = 'Contati finora ' + (urne ? nf(urne) + ' urne, ' : '') + nf(E.vot) + ' votanti in doppia busta: circa ' + pct(quota, 0) + ' delle ' + nf(BUSTE_MIN_26) + '–' + nf(BUSTE_MAX_26) + ' stimate dalla Commissione. ' +
+    'Rispetto alle sezioni ordinarie il blocco Netanyahu fa <b>' + segno(bE.N - bO.N) + '</b>, l’opposizione <b>' + segno(bE.O - bO.O) + '</b>, i partiti arabi <b>' + segno(bE.A - bO.A) + '</b>. ' +
+    'La differenza è la quota nelle buste meno quella nelle sezioni ordinarie.';
+  const b22 = BASE22.loc[ENV_CODE];
+  $('busteNota').innerHTML = 'Nel 2022 le doppie buste diedero il ' + nf(b22[6] / 10, 1) + '% al blocco Netanyahu, il ' + nf(b22[7] / 10, 1) + '% all’opposizione e il ' + nf(b22[8] / 10, 1) + '% ai partiti arabi. ' +
+    'Le buste votano diverso dalle sezioni ordinarie perché le usano soprattutto militari e forze di sicurezza, fra cui gli elettori arabi sono pochi. ' +
+    'Non è detto che le urne contate finora somiglino a quelle che mancano. ' +
+    'La proiezione stima le buste che mancano con le quote delle sezioni ordinarie corrette dai rapporti fra buste e sezioni del 2022, lista per lista.';
 }
 function renderConfronto() {
   const card = $('confrontoCard'), D = datiConfronto();
