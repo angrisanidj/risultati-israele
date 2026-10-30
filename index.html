@@ -670,13 +670,13 @@ footer a{color:var(--t2)}
         <button id="manualToggle" class="sm solo-red">Inserimento manuale</button>
       </div>
     </div>
-    <p class="subcopy" id="tableSub">I seggi della colonna «Scrutinio» sono ricalcolati sui voti contati finora: soglia del 3,25% dei voti validi, poi Bader-Ofer con gli accordi di eccedenza. Gli exit poll sono pubblicati direttamente in seggi. Sotto il nome di ogni lista c’è il suo blocco.</p>
+    <p class="subcopy" id="tableSub">I seggi della colonna «Scrutinio» sono ricalcolati sui voti contati: soglia del 3,25% dei voti validi, poi Bader-Ofer con gli accordi di eccedenza. Gli exit poll sono pubblicati direttamente in seggi. Sotto il nome di ogni lista c’è il suo blocco.</p>
     <div class="tablewrap"><table id="natTable"></table></div>
     <p class="methodnote" id="accordiNote"></p>
   </section>
 
   <section class="card hidden" id="busteCard" style="margin-bottom:14px">
-    <div class="cardhead"><div><h2>Le doppie buste finora</h2></div><span class="cmeta" id="busteMeta">—</span></div>
+    <div class="cardhead"><div><h2>Le doppie buste</h2></div><span class="cmeta" id="busteMeta">—</span></div>
     <p class="subcopy" id="busteSub"></p>
     <div class="tablewrap"><table id="busteTable" class="conf"></table></div>
     <p class="methodnote" id="busteNota"></p>
@@ -705,7 +705,7 @@ footer a{color:var(--t2)}
 
     <article class="card">
       <div class="cardhead"><div><h2>Exit poll</h2></div><span class="cmeta">seggi su 120</span></div>
-      <p class="subcopy" id="exitSub">Kan 11, Canale 12, Canale 13, Canale 14 e i24 (con Direct Polls) pubblicano gli exit poll in seggi alla chiusura delle urne, alle 21 italiane, e li aggiornano nella notte con i voti reali.</p>
+      <p class="subcopy" id="exitSub">Kan 11, Canale 12, Canale 13, Canale 14 e i24 (con Direct Polls) hanno pubblicato gli exit poll in seggi alla chiusura delle urne, alle 21 italiane, e li hanno aggiornati nella notte con i voti reali.</p>
       <div class="feedprog solo-red" id="boxWiki"><div><b>Exit poll da Wikipedia</b><span id="statoWiki">legge la tabella dei sondaggi e precompila le caselle, da verificare con la diretta</span></div><button id="cercaWiki" class="sm">Cerca su Wikipedia</button></div>
       <div class="feedprog solo-red" id="boxStime"><div><b>Stime pubblicate nel repository</b><span id="statoStime">lettura di stime.json…</span></div><button id="copyStime" class="sm">Copia per stime.json</button></div>
       <div class="exit-wrap">
@@ -819,7 +819,7 @@ footer a{color:var(--t2)}
       <div class="progresslabels"><span id="progressText">In attesa del file della Commissione</span><span id="progressPct" class="mono">—</span></div>
       <div id="countCheck" class="countcheck">—</div>
       <div class="timeline" id="timeline"></div>
-      <div class="nota" id="progressNote"><strong>Le doppie buste.</strong> Chi vota fuori dalla propria sezione — militari, diplomatici, personale di ospedali e carceri, persone con disabilità — vota in doppia busta. Questi voti, circa 460.000 nel 2022 e fra 430.000 e 480.000 quest’anno secondo la Commissione, si contano dopo le sezioni ordinarie e compaiono nel file come un'unica riga, «מעטפות חיצוניות». Possono spostare un seggio, soprattutto per le liste vicine alla soglia.</div>
+      <div class="nota" id="progressNote"><strong>Le doppie buste.</strong> Chi vota fuori dalla propria sezione — militari, diplomatici, personale di ospedali e carceri, persone con disabilità — vota in doppia busta. Questi voti, circa 460.000 nel 2022 e circa 452.000 quest’anno, si contano dopo le sezioni ordinarie e compaiono nel file come un’unica riga, «מעטפות חיצוניות». Possono spostare un seggio, soprattutto per le liste vicine alla soglia.</div>
     </article>
     <article class="card">
       <div class="cardhead"><div><h2 id="mancaTitolo">Cosa manca da contare</h2></div><span class="cmeta" id="mancaMeta">sui volumi del 2022</span></div>
@@ -1512,9 +1512,9 @@ function renderTabella() {
   }));
   /* nota sugli accordi */
   const acc = accordi().map(([a, b]) => nomeBreve(infoLista(a)) + '–' + nomeBreve(infoLista(b))).join(', ');
-  let nota = 'Accordi di eccedenza considerati: ' + acc + '. ' + (ED === '26' ? 'Il termine per depositarli è il 16 ottobre; l’elenco si aggiorna da stime.json. ' : '');
+  let nota = 'Accordi di eccedenza considerati: ' + acc + '. ' + (ED === '26' ? 'Il termine per depositarli era il 16 ottobre. ' : '');
   if (bo) {
-    nota += 'Soglia al momento: ' + nf(Math.ceil(bo.min)) + ' voti. ';
+    nota += (SPOGLIO_CONCLUSO_26 && ED === '26' ? 'Soglia: ' : 'Soglia al momento: ') + nf(Math.ceil(bo.min)) + ' voti. ';
     if (bo.scartati.length) nota += 'Non applicati perché una lista è sotto soglia: ' + bo.scartati.map(([a, b]) => nomeBreve(infoLista(a)) + '–' + nomeBreve(infoLista(b))).join(', ') + '. ';
   }
   nota += 'Con l’asterisco i riferimenti del 2022 che non corrispondono a una lista identica (passa il mouse per il dettaglio).';
@@ -1650,13 +1650,13 @@ const VETI = [
   ['מחל', 'רק', 'Bennett e Lapid escludono un governo Netanyahu'],
   ['מחל', 'אמת', 'Golan esclude Netanyahu'],
   ['מחל', 'ל', 'Lieberman esclude Netanyahu dal 2019'],
-  ['מחל', 'עם', 'Il Likud esclude Ra’am al governo'],
+  ['מחל', 'עם', 'Il Likud esclude Ra’am dal governo'],
   ['ל', 'שס', 'Lieberman esclude Shas dal governo'],
-  ['ל', 'ג', 'Lieberman esclude il Giudaismo Unito Torah dal governo'],
+  ['ל', 'ג', 'Lieberman esclude il Giudaismo unito nella Torah dal governo'],
   ['אמת', 'ב', 'I Democratici: incompatibilità dichiarata con Ben Gvir'],
   ['אמת', 'ט', 'I Democratici: incompatibilità dichiarata con Smotrich'],
-  ['דרך', 'ב', 'Eisenkot esclude Ben Gvir al governo'],
-  ['רק', 'ב', 'Bennett esclude Ben Gvir al governo'],
+  ['דרך', 'ב', 'Eisenkot esclude Ben Gvir dal governo'],
+  ['רק', 'ב', 'Bennett esclude Ben Gvir dal governo'],
   ['עם', 'ב', 'Ben Gvir e Abbas si escludono a vicenda'],
   ['עם', 'ט', 'Smotrich e Abbas si escludono a vicenda'],
   ['ודם', 'ב', 'La Lista unita e Ben Gvir: incompatibilità dichiarata'],
@@ -1722,7 +1722,7 @@ function renderSimulatore() {
       vis.map((x, i) => '<div class="strada' + (x.veti.length ? '' : ' ok') + '" data-s="' + i + '"><div class="sm">' + x.mem.map(l => '<span><i style="background:' + info(l).c + '"></i>' + esc(nomeBreve(info(l))) + ' ' + f.seggi[l] + '</span>').join('') + '</div><div class="st">' + x.tot + '</div>' +
         '<div class="sv' + (x.veti.length ? ' ko' : '') + '">' + (x.veti.length ? 'Veti: ' + x.veti.map(esc).join('; ') : 'Nessun veto dichiarato') + '</div></div>').join('');
   $('simStrade').onclick = e => { const b = e.target.closest('[data-s]'); if (!b) return; SIM.sel = new Set(vis[+b.dataset.s].mem); renderSimulatore(); $('simCard').scrollIntoView({ block: 'start', behavior: 'smooth' }); };
-  $('simNota').textContent = 'Seggi: ' + nomeFonte(f, true) + (f.k === 'scrutinio' ? ', ricalcolati con Bader-Ofer sui voti contati finora: possono ancora cambiare.' : f.k === 'k22' ? ', la Knesset uscente.' : '.') + ' I veti sono le dichiarazioni dei leader raccolte dal modello previsionale prima del voto: dopo il voto possono cambiare.';
+  $('simNota').textContent = 'Seggi: ' + nomeFonte(f, true) + (f.k === 'scrutinio' ? (SPOGLIO_CONCLUSO_26 && ED === '26' ? ', ricalcolati con Bader-Ofer sui voti contati: i risultati ufficiali arriveranno il 4 novembre.' : ', ricalcolati con Bader-Ofer sui voti contati finora: possono ancora cambiare.') : f.k === 'k22' ? ', la Knesset uscente.' : '.') + ' I veti sono le dichiarazioni dei leader raccolte dal modello previsionale prima del voto: dopo il voto possono cambiare.';
   sl.onchange = e => { SIM.src = e.target.value; renderSimulatore(); };
 }
 
@@ -1765,10 +1765,10 @@ function renderBuste() {
   const card = $('busteCard'), D = datiBuste(risultato());
   card.classList.toggle('hidden', !D);
   if (!D) return;
-  const { E, qE, qO, att, liste: righe, bE, bO, bA, urne, quota } = D;
+  const { E, qE, qO, att, liste: righe, bE, bO, bA, urne, quota } = D, fine = SPOGLIO_CONCLUSO_26;
   const punti = d => { const x = Math.round(d * 1000) / 10; return '<span class="dlt' + (x === 0 ? ' zero' : Math.abs(x) >= 3 ? ' forte' : '') + '">' + (x === 0 ? '=' : (x > 0 ? '+' : '−') + nf(Math.abs(x), 1)) + '</span>'; };
   const cella = q => '<td><b>' + nf(q * 100, 1) + '%</b></td>', diff = d => '<td class="diff">' + punti(d) + '</td>';
-  let h = '<thead><tr><th>Lista</th><th><span class="lungo">Doppie buste</span><span class="corto">Buste</span><small>contate finora</small></th><th><span class="lungo">Sezioni ordinarie</span><span class="corto">Sezioni</span><small>quota</small></th><th>Differenza<small>in punti</small></th><th class="m-off">Coi rapporti 2022<small>attese, e scarto</small></th></tr></thead><tbody>';
+  let h = '<thead><tr><th>Lista</th><th><span class="lungo">Doppie buste</span><span class="corto">Buste</span><small>' + (fine ? 'contate' : 'contate finora') + '</small></th><th><span class="lungo">Sezioni ordinarie</span><span class="corto">Sezioni</span><small>quota</small></th><th>Differenza<small>in punti</small></th><th class="m-off">Coi rapporti 2022<small>attese, e scarto</small></th></tr></thead><tbody>';
   righe.forEach(l => {
     const p = infoLista(l);
     h += '<tr><td><div class="partylabel"><i class="partydot" style="background:' + p.c + '"></i><span>' + esc(nomeBreve(p)) + '<small>' + nf(E.v[l] || 0) + ' voti</small></span></div></td>' +
@@ -1780,16 +1780,19 @@ function renderBuste() {
       '<td class="m-off"><b>' + nf(bA[b] * 100, 1) + '%</b>' + punti(bE[b] - bA[b]) + '</td></tr>';
   });
   $('busteTable').innerHTML = h + '</tbody>';
-  $('busteMeta').textContent = nf(E.vot) + ' votanti · circa ' + pct(quota, 0);
+  $('busteMeta').textContent = nf(E.vot) + ' votanti' + (fine ? '' : ' · circa ' + pct(quota, 0));
   const segno = d => (d >= 0 ? '+' : '−') + nf(Math.abs(d) * 100, 1) + ' punti';
-  $('busteSub').innerHTML = 'Contati finora ' + (urne ? nf(urne) + ' urne, ' : '') + nf(E.vot) + ' votanti in doppia busta: circa ' + pct(quota, 0) + ' delle ' + nf(BUSTE_MIN_26) + '–' + nf(BUSTE_MAX_26) + ' stimate dalla Commissione. ' +
+  const dentro = E.vot >= BUSTE_MIN_26 && E.vot <= BUSTE_MAX_26;
+  $('busteSub').innerHTML = (fine ? 'Contate ' + (urne ? nf(urne) + ' urne, ' : '') + nf(E.vot) + ' votanti in doppia busta, ' + (dentro ? 'dentro la forchetta di ' : 'contro i ') + nf(BUSTE_MIN_26) + '–' + nf(BUSTE_MAX_26) + (dentro ? ' stimata' : ' stimati') + ' dalla Commissione. '
+    : 'Contate finora ' + (urne ? nf(urne) + ' urne, ' : '') + nf(E.vot) + ' votanti in doppia busta: circa ' + pct(quota, 0) + ' delle ' + nf(BUSTE_MIN_26) + '–' + nf(BUSTE_MAX_26) + ' stimate dalla Commissione. ') +
     'Rispetto alle sezioni ordinarie il blocco Netanyahu fa <b>' + segno(bE.N - bO.N) + '</b>, l’opposizione <b>' + segno(bE.O - bO.O) + '</b>, i partiti arabi <b>' + segno(bE.A - bO.A) + '</b>. ' +
     'La differenza è la quota nelle buste meno quella nelle sezioni ordinarie.';
   const b22 = BASE22.loc[ENV_CODE];
   $('busteNota').innerHTML = 'Nel 2022 le doppie buste diedero il ' + nf(b22[6] / 10, 1) + '% al blocco Netanyahu, il ' + nf(b22[7] / 10, 1) + '% all’opposizione e il ' + nf(b22[8] / 10, 1) + '% ai partiti arabi. ' +
     'Le buste votano diverso dalle sezioni ordinarie perché le usano soprattutto militari e forze di sicurezza, fra cui gli elettori arabi sono pochi. ' +
+    (fine ? 'Su schermo largo, l’ultima colonna mostra le quote che ci si aspettava applicando ai voti di oggi i rapporti fra buste e sezioni del 2022, e lo scarto: le liste nuove o cambiate li hanno smentiti di parecchi punti.' :
     'Non è detto che le urne contate finora somiglino a quelle che mancano. ' +
-    'La proiezione stima le buste che mancano mescolando le quote di quelle già contate, che ora pesano il ' + pct(pesoBuste(E), 0) + ', con le quote delle sezioni ordinarie corrette dai rapporti fra buste e sezioni del 2022 (su schermo largo, l’ultima colonna). Più buste si contano, più pesano quelle contate.';
+    'La proiezione stima le buste che mancano mescolando le quote di quelle già contate, che ora pesano il ' + pct(pesoBuste(E), 0) + ', con le quote delle sezioni ordinarie corrette dai rapporti fra buste e sezioni del 2022 (su schermo largo, l’ultima colonna). Più buste si contano, più pesano quelle contate.');
 }
 function renderConfronto() {
   const card = $('confrontoCard'), D = datiConfronto();
@@ -1833,7 +1836,7 @@ function renderConfronto() {
   else if (!conScr) sub += 'Gli scarti accanto ai seggi sono la differenza rispetto al modello. Lo scrutinio entra quando è contata metà dei voti' + (R && R.fonte !== 'manuale' ? ': ora siamo ' + alPct(av.f) + '.' : '.');
   else sub += 'Gli scarti accanto ai seggi sono la differenza dal modello; sotto i seggi dello scrutinio, la quota di voto e lo scarto in punti dalla quota stimata.';
   const nascoste = col.filter(c => !tenute.has(c.k)).map(c => c.n);
-  if (nascoste.length) sub += '<span class="solo-tel"> Sul telefono non ci stanno ' + esc(nascoste.join(' e ')) + ': si vedono dal computer o girando il telefono.</span>';
+  if (nascoste.length) sub += '<span class="solo-tel"> Sul telefono non ci stanno ' + esc(nascoste.length > 1 ? nascoste.slice(0, -1).join(', ') + ' e ' + nascoste[nascoste.length - 1] : nascoste[0]) + ': si vedono dal computer o girando il telefono.</span>';
   $('confrontoSub').innerHTML = sub;
   $('confrontoNote').textContent = (conScr ? 'Lo scrutinio è entrato nel confronto quando è stata contata metà dei voti; prima, le prime località contate non rappresentavano il paese. '
     : 'Lo scrutinio entra nel confronto quando è contata metà dei voti: nel 2022 è successo verso le 7 del mattino israeliano (le 6 in Italia), nove ore dopo la chiusura; prima, le prime località contate non rappresentano il paese. ') +
@@ -2560,7 +2563,7 @@ function renderMappa() {
       '</div><p>Ogni ' + (liv === 'sd' ? 'area' : 'località') + ' ha il colore del blocco con più voti, più pieno quanto più è forte: dal 35% all’80% dei voti validi.</p>';
   } else if (S.mapMode === 'sposta') {
     const SN = spostamenti(loc).naz, aree = liv === 'sd' && foc == null;
-    lg = '<h4>Spostamento rispetto al 2022</h4>' + (SN ? '<div class="spotot">Nel complesso, sulle località già contate: blocco Netanyahu <b>' + punti(SN.N) + '</b> punti, opposizione <b>' + punti(SN.O) + '</b>, partiti arabi <b>' + punti(SN.A) + '</b>.</div>' : '') +
+    lg = '<h4>Spostamento rispetto al 2022</h4>' + (SN ? '<div class="spotot">Nel complesso' + (SPOGLIO_CONCLUSO_26 ? '' : ', sulle località già contate') + ': blocco Netanyahu <b>' + punti(SN.N) + '</b> punti, opposizione <b>' + punti(SN.O) + '</b>, partiti arabi <b>' + punti(SN.A) + '</b>.</div>' : '') +
       '<div class="ramp" style="background:linear-gradient(90deg,' + colSpost(-SPOSTA_SCALA) + ',' + colSpost(0) + ',' + colSpost(SPOSTA_SCALA) + ')"></div><div class="rampl"><span>−10 punti o più</span><span>0</span><span>+10 o più</span></div>' +
       '<p>Il colore dice quanto è cambiata la quota del blocco Netanyahu rispetto a come avevano votato ' + (aree ? 'le stesse località di ogni area' : 'le stesse località') + ' nel 2022: rosso dove perde, blu dove guadagna, più pieno quanto più si sposta. Il numero, in punti, è nell’elenco a sinistra.' +
       (bolle() ? ' La grandezza della bolla è il numero di voti validi.' : '') + ' In grigio scuro dove sono contati meno di ' + nf(SPOSTA_MIN_VOTI) + ' voti validi.</p>';
@@ -2594,7 +2597,7 @@ function renderDettaglio() {
   if (typeof id === 'string') {
     const i = Number(id.slice(2)), o = aggregaSD(loc)[i], b = BASE22_SD[i], q = quote(o);
     let h = '<div class="dh"><h3>' + esc(NOMI_SD[i]) + '</h3><span class="muted" style="font-size:12px">' + (i === SD_GS ? 'insediamenti' : 'sottodistretto') + '</span></div>';
-    h += '<div class="dm">' + nf(o.n) + ' località, ' + nf(o.fatte) + ' con voti · ' + nf(o.val) + ' voti validi' + (quotaContata(o.vot, o.val, b.bzb, b.val) != null ? ' · ' + pct(Math.min(quotaContata(o.vot, o.val, b.bzb, b.val), 1), 0) + TESTO_QUOTA : '') + '</div>';
+    h += '<div class="dm">' + nf(o.n) + ' località, ' + nf(o.fatte) + ' con voti · ' + nf(o.val) + ' voti validi' + (quotaContata(o.vot, o.val, b.bzb, b.val) != null && !SPOGLIO_CONCLUSO_26 ? ' · ' + pct(Math.min(quotaContata(o.vot, o.val, b.bzb, b.val), 1), 0) + TESTO_QUOTA : '') + '</div>';
     if (q) {
       h += righeListeDett(q);
       h += '<div class="cmp">Blocco Netanyahu <b>' + pct(q.bl.N) + '</b> (2022: <b>' + pct(b.N) + '</b>) · opposizione <b>' + pct(q.bl.O) + '</b> (' + pct(b.O) + ') · arabi <b>' + pct(q.bl.A) + '</b> (' + pct(b.A) + ')</div>';
@@ -2609,7 +2612,7 @@ function renderDettaglio() {
   if (!q) h += '<div class="dm">Nessun voto ancora contato.' + (b ? ' Nel 2022: ' + nf(b.val) + ' voti validi.' : '') + '</div>';
   else {
     const fr = b ? quotaContata(a.vot, a.val, b.bzb, b.val) : null;
-    h += '<div class="dm">' + nf(a.val) + ' voti validi' + (fr != null ? ' · ' + pct(Math.min(fr, 1), 0) + TESTO_QUOTA : '') + (a.bzb && a.vot ? ' · affluenza ' + pct(a.vot / a.bzb) : '') + '</div>';
+    h += '<div class="dm">' + nf(a.val) + ' voti validi' + (fr != null && !SPOGLIO_CONCLUSO_26 ? ' · ' + pct(Math.min(fr, 1), 0) + TESTO_QUOTA : '') + (a.bzb && a.vot ? ' · affluenza ' + pct(a.vot / a.bzb) : '') + '</div>';
     h += righeListeDett(q);
     if (b) {
       const lead22 = L25MAP[b.lead] ? L25MAP[b.lead].n : b.lead;
@@ -2632,7 +2635,7 @@ function rigaLista(key, nome, q, fr, sel, muta) {
   if (sw != null) return '<div class="lanrow' + (sel ? ' sel' : '') + '" data-id="' + key + '"><span class="ln"><i style="background:' + (sw >= 0 ? BLOCCHI.N.c : BLOCCHI.O.c) + '"></i>' + esc(nome) + '</span>' +
     '<span class="lp"><span class="' + (sw >= 0 ? 'spN' : 'spO') + '">Netanyahu ' + punti(sw) + '</span></span><span class="lc" data-tip="Punti rispetto al 2022" data-tv="sulle stesse località">pt</span></div>';
   return '<div class="lanrow' + (q ? '' : ' mute') + (sel ? ' sel' : '') + '" data-id="' + key + '"><span class="ln"><i style="background:' + (p ? p.c : COL_VUOTO) + '"></i>' + esc(nome) + '</span>' +
-    '<span class="lp">' + (q ? esc(nomeBreve(p)) + ' ' + nf(q.arr[0].q * 100, 0) + '%' : '—') + '</span><span class="lc"' + tipAttr('Quanto è contato', ED === '26' ? 'votanti contati su quelli attesi con l’affluenza 2026' : 'voti contati rispetto al 2022') + '>' + (q && fr != null ? pct(Math.min(fr, 1), 0) : '') + '</span></div>';
+    '<span class="lp">' + (q ? esc(nomeBreve(p)) + ' ' + nf(q.arr[0].q * 100, 0) + '%' : '—') + '</span><span class="lc"' + tipAttr('Quanto è contato', ED === '26' ? 'votanti contati su quelli attesi con l’affluenza 2026' : 'voti contati rispetto al 2022') + '>' + (q && fr != null && !SPOGLIO_CONCLUSO_26 ? pct(Math.min(fr, 1), 0) : '') + '</span></div>';
 }
 function renderLista() {
   const R = risultato(), loc = R && R.loc ? R.loc : new Map();
@@ -2690,7 +2693,7 @@ function renderScrutinio() {
   if (R && R.d) {
     const d = R.d;
     cc = '<b>Votanti</b> ' + nf(d.vot) + ' · <b>nulle</b> ' + nf(d.inv) + ' · <b>valide</b> ' + nf(d.val) + (d.env && d.env.val ? ' · di cui <b>doppie buste</b> ' + nf(d.env.val) : '') +
-      '<br><b>File</b> ' + (S.fonteDati === 'feed' ? 'expc.csv via proxy' : S.fonteDati === 'file' ? 'importato a mano (' + d.tipo + ')' : 'prova 2022') + ' · ' + nf(d.loc.size) + ' righe' + (S.expb ? ' · expb.csv letto alle ' + oraIT(S.expb.quando) : '');
+      '<br><b>File</b> ' + (S.fonteDati === 'feed' ? 'expc.csv della Commissione' : S.fonteDati === 'file' ? 'importato a mano (' + d.tipo + ')' : 'prova 2022') + ' · ' + nf(d.loc.size) + ' righe' + (S.expb ? ' · expb.csv letto alle ' + oraIT(S.expb.quando) : '');
     const ctrl = d.val + d.inv - d.vot;
     if (Math.abs(ctrl) > (S.fonteDati === 'prova' ? 50 : 0)) cc += '<br><span class="minus">Controllo: votanti diversi da valide + nulle di ' + nf(ctrl) + '</span>';
   } else cc = 'Votanti, schede nulle e valide compaiono con il primo file.';
@@ -3554,7 +3557,7 @@ window.CARD = (function () {
   /* ---------- CARD 1 — il voto ---------- */
   function card1(x, s, N) {
     frame(x, { badge: s.R && s.R.fonte === 'prova' ? 'PROVA 2022' : 'SCRUTINIO', kicker: s.ambito, title: g('t1').value, sub: s.R ? scr(s) + ' · ' + nf(s.R.val) + ' voti validi · seggi con il metodo Bader-Ofer' : '',
-      nota: 'La soglia di sbarramento è il 3,25% dei voti validi. I seggi sono ricalcolati sui voti contati finora, con gli accordi di eccedenza fra liste, e possono cambiare fino alla fine dello scrutinio e al conteggio delle doppie buste.',
+      nota: 'La soglia di sbarramento è il 3,25% dei voti validi. ' + (SPOGLIO_CONCLUSO_26 ? 'I seggi sono calcolati sui voti contati a spoglio concluso, con gli accordi di eccedenza fra liste; i risultati ufficiali arrivano il 4 novembre.' : 'I seggi sono ricalcolati sui voti contati finora, con gli accordi di eccedenza fra liste, e possono cambiare fino alla fine dello scrutinio e al conteggio delle doppie buste.'),
       fonte: fonteCEC(s), n: N.n, tot: N.tot });
     if (!s.R) return attesa(x, 'In attesa dei voti contati');
     const R = ordinaVoti(s).filter(r => r.q >= 0.008).slice(0, 10);
@@ -3880,8 +3883,8 @@ window.CARD = (function () {
   /* ---------- CARD 17 — le doppie buste finora ----------
      A sinistra i tre blocchi, a destra le liste: barra piena per le buste contate, barra sottile
      per le sezioni ordinarie, e la differenza in punti. */
-  const NOTA17 = 'Chi vota fuori dalla propria sezione (militari, diplomatici, personale di ospedali e carceri) vota in doppia busta. Quote sui voti validi; la differenza è in punti rispetto alle sezioni ordinarie. Le urne che mancano possono votare diverso da quelle contate.';
-  const subBu = D => 'Contate finora ' + nf(D.E.vot) + ' doppie buste, circa ' + pct(D.quota, 0) + ' di quelle stimate dalla Commissione';
+  const NOTA17 = 'Chi vota fuori dalla propria sezione (militari, diplomatici, personale di ospedali e carceri) vota in doppia busta. Quote sui voti validi; la differenza è in punti rispetto alle sezioni ordinarie. ' + (SPOGLIO_CONCLUSO_26 ? '' : 'Le urne che mancano possono votare diverso da quelle contate.');
+  const subBu = D => SPOGLIO_CONCLUSO_26 ? 'Contate ' + nf(D.E.vot) + ' doppie buste, a spoglio concluso' : 'Contate finora ' + nf(D.E.vot) + ' doppie buste, circa ' + pct(D.quota, 0) + ' di quelle stimate dalla Commissione';
   const pdiff = d => (Math.round(d * 1000) === 0 ? '=' : punti(d));
   const colDiff = d => Math.abs(d) >= 0.03 ? C.amber : C.t2;
   /* un blocco: nome, quota nelle buste, barre e confronto con le sezioni */
@@ -4303,7 +4306,7 @@ window.CARD = (function () {
     { id: 'c14', tid: 't_spostaLoc', nome: 'Card 14 — Lo spostamento per località', file: 'israele_14_spostamento_localita.png', fn: CV.spostaLoc.fn, fig: CV.spostaLoc.fig, ok: s => !!(s.spo && s.spo.naz) },
     { id: 'c15', tid: 't_bolleSposta', nome: 'Card 15 — Bolle, spostamento', file: 'israele_15_bolle_spostamento.png', fn: CV.bolleSposta.fn, fig: CV.bolleSposta.fig, ok: s => !!(s.spo && s.spo.naz) },
     { id: 'c16', tid: 't16', nome: 'Card 16 — Da dove vengono i voti', file: 'israele_16_flussi.png', fn: card16, fig: ig16, ok: s => !!s.fl },
-    { id: 'c17', tid: 't17', nome: 'Card 17 — Le doppie buste finora', file: 'israele_17_doppie_buste.png', fn: card17, fig: ig17, ok: s => !!s.bu },
+    { id: 'c17', tid: 't17', nome: 'Card 17 — Le doppie buste', file: 'israele_17_doppie_buste.png', fn: card17, fig: ig17, ok: s => !!s.bu },
     { id: 'c18', tid: 't18', nome: 'Card 18 — I flussi fra i partiti', file: 'israele_18_flussi_partiti.png', fn: card18, fig: ig18, ok: s => !!s.flp }
   ];
 
@@ -4339,7 +4342,7 @@ window.CARD = (function () {
     if (s.fl) { const F = s.fl.F, j = FL_CAT.indexOf('S'), k = FL_CAT.indexOf('A'), t_ = F[j].reduce((a, b) => a + b, 0); t.t16 = 'Da dove vengono i voti: su 100 astenuti del 2022, ' + nf(F[j][k] / t_ * 100, 0) + ' hanno votato i partiti arabi'; }
     else t.t16 = 'Da dove vengono i voti';
     if (s.bu) { const q = nf(s.bu.bE.N * 100, 1) + '%', d = s.bu.bE.N - s.bu.bO.N; t.t17 = 'Le doppie buste: blocco Netanyahu ' + alP(q) + q + ', ' + p1(d) + ' punti ' + (d >= 0 ? 'sopra' : 'sotto') + ' le sezioni ordinarie'; }
-    else t.t17 = 'Le doppie buste finora';
+    else t.t17 = 'Le doppie buste';
     const om = s.flp ? origini(s.flp).filter(o => o.src[0].q < .6) : [];
     t.t18 = om.length ? 'I flussi fra i partiti: su 100 elettori ' + diLista(om[0].c.n) + ', ' + dueOrigini(om[0]) : 'I flussi fra i partiti';
     t.t_spostaLoc = s.spo && s.spo.naz ? 'Lo spostamento località per località: il blocco Netanyahu ' + punti(s.spo.naz.N) + ' punti' : 'Lo spostamento località per località';
@@ -4408,20 +4411,20 @@ window.CARD = (function () {
       const arabi = (A >= 0) === (O >= 0) ? ' e i partiti arabi ' + p1(A) : ', mentre i partiti arabi ne ' + (A >= 0 ? 'guadagnano ' : 'perdono ') + p1(A);
       const giu = a.filter(o => o.t.N < 0).slice(0, 2), su = a.filter(o => o.t.N > 0).reverse().slice(0, 2);
       const lista = (arr, prima) => elenco(arr.map((o, i) => (i && /^a /.test(inArea(NOMI_SD[o.i])) ? NOMI_SD[o.i] : inArea(NOMI_SD[o.i])) + ' (' + punti(o.t.N) + (i === 0 && prima ? ' punti' : '') + ')'));
-      p.c8 = 'Israele, come cambia il voto rispetto al 2022 nelle località già scrutinate: il blocco Netanyahu ' + vN + p1(N) + ' punti percentuali, l’opposizione ' + vO + p1(O) + arabi + '.' +
+      p.c8 = 'Israele, come cambia il voto rispetto al 2022' + (SPOGLIO_CONCLUSO_26 ? '' : ' nelle località già scrutinate') + ': il blocco Netanyahu ' + vN + p1(N) + ' punti percentuali, l’opposizione ' + vO + p1(O) + arabi + '.' +
         (giu.length ? ' I cali maggiori per il blocco Netanyahu si registrano ' + lista(giu, true) : '') + (su.length ? (giu.length ? '; cresce invece ' : ' Il blocco Netanyahu cresce ') + lista(su, !giu.length) : '') + (giu.length || su.length ? '.' : '');
     }
     if (s.R && s.R.loc) {
       const qn = quote({ v: s.R.voti, val: s.R.val }), q = k => nf(qn.bl[k] * 100, 1) + '%';
       p.c9 = 'Israele, la mappa del voto località per località: il colore indica la lista più votata in ciascuna. ' + sc + '.';
-      p.c10 = 'Israele, il consenso dei tre blocchi area per area. Nei voti finora scrutinati, il blocco Netanyahu raccoglie ' + artP(q('N')) + q('N') + ', l’opposizione ' + artP(q('O')) + q('O') + ' e i partiti arabi ' + artP(q('A')) + q('A') + '. ' + sc + '.';
-      p.c11 = 'Israele, il consenso dei tre blocchi località per località. Sul totale dei voti finora scrutinati, il blocco Netanyahu è ' + alP(q('N')) + q('N') + ', l’opposizione ' + alP(q('O')) + q('O') + ' e i partiti arabi ' + alP(q('A')) + q('A') + '. ' + sc + '.';
+      p.c10 = 'Israele, il consenso dei tre blocchi area per area. ' + (SPOGLIO_CONCLUSO_26 ? 'Sul totale dei voti' : 'Nei voti finora scrutinati') + ', il blocco Netanyahu raccoglie ' + artP(q('N')) + q('N') + ', l’opposizione ' + artP(q('O')) + q('O') + ' e i partiti arabi ' + artP(q('A')) + q('A') + '. ' + sc + '.';
+      p.c11 = 'Israele, il consenso dei tre blocchi località per località. Sul totale dei voti' + (SPOGLIO_CONCLUSO_26 ? '' : ' finora scrutinati') + ', il blocco Netanyahu è ' + alP(q('N')) + q('N') + ', l’opposizione ' + alP(q('O')) + q('O') + ' e i partiti arabi ' + alP(q('A')) + q('A') + '. ' + sc + '.';
       p.c12 = 'Israele, dove si concentrano i voti: ogni bolla rappresenta una località. La dimensione è proporzionale al numero di voti validi; il colore indica la lista più votata. ' + sc + '.';
       p.c13 = 'Israele, la distribuzione territoriale del voto ai tre blocchi: ogni bolla rappresenta una località. La dimensione è proporzionale al numero di voti validi; il colore indica il blocco più votato. ' + sc + '.';
       if (s.spo && s.spo.naz) {
         const N = s.spo.naz.N;
-        p.c14 = 'Israele, come cambia il consenso al blocco Netanyahu rispetto al 2022, località per località. Nel complesso delle località già scrutinate, ' + (N < 0 ? 'il calo' : 'la crescita') + ' è di ' + p1(N) + ' punti percentuali. ' + sc + '.';
-        p.c15 = 'Israele, dove il blocco Netanyahu guadagna e perde voti rispetto al 2022. Ogni bolla rappresenta una località e la dimensione è proporzionale al numero di voti. Il rosso indica un calo, il blu una crescita. Nelle località già scrutinate, il saldo complessivo è di ' + punti(N) + ' punti percentuali. ' + sc + '.';
+        p.c14 = 'Israele, come cambia il consenso al blocco Netanyahu rispetto al 2022, località per località. Nel complesso' + (SPOGLIO_CONCLUSO_26 ? '' : ' delle località già scrutinate') + ', ' + (N < 0 ? 'il calo' : 'la crescita') + ' è di ' + p1(N) + ' punti percentuali. ' + sc + '.';
+        p.c15 = 'Israele, dove il blocco Netanyahu guadagna e perde voti rispetto al 2022. Ogni bolla rappresenta una località e la dimensione è proporzionale al numero di voti. Il rosso indica un calo, il blu una crescita. ' + (SPOGLIO_CONCLUSO_26 ? 'Nel complesso' : 'Nelle località già scrutinate') + ', il saldo complessivo è di ' + punti(N) + ' punti percentuali. ' + sc + '.';
       }
     }
     if (s.fl) {
@@ -4437,7 +4440,7 @@ window.CARD = (function () {
     if (s.bu) {
       const D = s.bu, q = b => nf(D.bE[b] * 100, 1) + '%', d = b => D.bE[b] - D.bO[b];
       const su = D.liste.filter(l => D.qE[l] - D.qO[l] >= 0.01).sort((a, b) => (D.qE[b] - D.qO[b]) - (D.qE[a] - D.qO[a])).slice(0, 2);
-      p.c17 = 'Israele, le doppie buste contate finora (' + nf(D.E.vot) + ', circa il ' + pct(D.quota, 0) + '): il blocco Netanyahu vi raccoglie ' + artP(q('N')) + q('N') + ', ' + p1(d('N')) + ' punti ' + (d('N') >= 0 ? 'in più' : 'in meno') + ' che nelle sezioni ordinarie; l’opposizione ' + artP(q('O')) + q('O') + ' (' + punti(d('O')) + '), i partiti arabi ' + artP(q('A')) + q('A') + ' (' + punti(d('A')) + ').' +
+      p.c17 = 'Israele, le doppie buste' + (SPOGLIO_CONCLUSO_26 ? ' (' + nf(D.E.vot) + ')' : ' contate finora (' + nf(D.E.vot) + ', circa il ' + pct(D.quota, 0) + ')') + ': il blocco Netanyahu vi raccoglie ' + artP(q('N')) + q('N') + ', ' + p1(d('N')) + ' punti ' + (d('N') >= 0 ? 'in più' : 'in meno') + ' che nelle sezioni ordinarie; l’opposizione ' + artP(q('O')) + q('O') + ' (' + punti(d('O')) + '), i partiti arabi ' + artP(q('A')) + q('A') + ' (' + punti(d('A')) + ').' +
         (su.length ? ' Crescono di più ' + elenco(su.map(l => conArt(nomeBreve(infoLista(l))) + ' (' + punti(D.qE[l] - D.qO[l]) + ')')) + '.' : '');
     }
     Object.keys(p).forEach(k => p[k] = String(p[k]).replace(/\s+/g, ' ').trim());
