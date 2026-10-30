@@ -5,23 +5,23 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#050b18">
-<title>Israele 2026 — Lo spoglio in diretta</title>
-<meta name="description" content="Elezioni della 26ª Knesset, 27 ottobre 2026: voti, seggi con il metodo Bader-Ofer, exit poll e mappa delle località in diretta dai dati della Commissione elettorale centrale.">
+<title>Israele 2026 — I risultati</title>
+<meta name="description" content="Elezioni della 26ª Knesset, 27 ottobre 2026: voti, seggi con il metodo Bader-Ofer, exit poll e mappa delle località dai dati della Commissione elettorale centrale.">
 <link rel="canonical" href="https://angrisanidj.github.io/risultati-israele/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="it_IT">
 <meta property="og:url" content="https://angrisanidj.github.io/risultati-israele/">
-<meta property="og:title" content="Israele 2026 — Lo spoglio in diretta">
+<meta property="og:title" content="Israele 2026 — I risultati">
 <meta property="og:description" content="Elezioni della 26ª Knesset, 27 ottobre: i voti dalla Commissione elettorale centrale, i 120 seggi con il metodo Bader-Ofer, gli exit poll e la mappa.">
-<meta property="og:image" content="https://angrisanidj.github.io/risultati-israele/condivisione.jpg">
+<meta property="og:image" content="https://angrisanidj.github.io/risultati-israele/condivisione.jpg?v=2">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Israele 2026, lo spoglio in diretta: emiciclo della Knesset con la maggioranza a 61 seggi">
+<meta property="og:image:alt" content="Israele 2026, i risultati: emiciclo della Knesset con la maggioranza a 61 seggi">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:creator" content="@putino">
-<meta name="twitter:title" content="Israele 2026 — Lo spoglio in diretta">
+<meta name="twitter:title" content="Israele 2026 — I risultati">
 <meta name="twitter:description" content="Voti, i 120 seggi con il metodo Bader-Ofer, gli exit poll e la mappa delle località.">
-<meta name="twitter:image" content="https://angrisanidj.github.io/risultati-israele/condivisione.jpg">
+<meta name="twitter:image" content="https://angrisanidj.github.io/risultati-israele/condivisione.jpg?v=2">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 16'%3E%3Crect width='22' height='16' fill='%23fff'/%3E%3Crect y='1.6' width='22' height='2.4' fill='%230038b8'/%3E%3Crect y='12' width='22' height='2.4' fill='%230038b8'/%3E%3Cpath d='M11 4.9l2.75 4.75h-5.5zM11 11.1l-2.75-4.75h5.5z' fill='none' stroke='%230038b8' stroke-width='.75'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -615,7 +615,7 @@ footer a{color:var(--t2)}
     <div class="hero-main">
       <div class="eyebrow" id="heroEyebrow">Elezioni della 26ª Knesset, martedì 27 ottobre 2026</div>
       <h1 id="heroTitle">Israele 2026</h1>
-      <p id="heroText">Lo spoglio in diretta dai file della Commissione elettorale centrale: i 120 seggi ripartiti con il metodo Bader-Ofer e gli accordi di eccedenza, gli exit poll delle reti, la mappa delle località. Le urne chiudono alle 22 in Israele, le 21 in Italia.</p>
+      <p id="heroText">I risultati dai file della Commissione elettorale centrale: i 120 seggi ripartiti con il metodo Bader-Ofer e gli accordi di eccedenza, gli exit poll delle reti, la mappa delle località. Le urne chiudono alle 22 in Israele, le 21 in Italia.</p>
     </div>
     <div class="hero-side">
       <div class="metaline">
@@ -879,7 +879,7 @@ footer a{color:var(--t2)}
 <script>
 'use strict';
 /* =====================================================================
-   ISRAELE 2026 — spoglio in diretta della 26ª Knesset
+   ISRAELE 2026 — i risultati della 26ª Knesset
    Pagina statica (GitHub Pages) che legge il CSV per località della
    Commissione elettorale centrale attraverso un proxy Vercel.
    Parametri dell'indirizzo:
@@ -3323,10 +3323,10 @@ async function cercaWiki() {
 const URL_PAGINA = 'https://angrisanidj.github.io/risultati-israele/';
 function testoCondivisione() {
   const f = fonteAttiva();
-  if (f.k === 'k22' || f.k === 'modello') return 'Israele, elezioni del 27 ottobre: lo spoglio in diretta, con i 120 seggi, gli exit poll e la mappa';
+  if (f.k === 'k22' || f.k === 'modello') return 'Israele, elezioni del 27 ottobre: i risultati, con i 120 seggi, gli exit poll e la mappa';
   const t = totBlocchi(f), R = risultato(), av = avanzamento(R);
   const chi = f.k === 'scrutinio' ? (R && R.fonte !== 'manuale' ? (av.tipo === 'concluso' ? 'spoglio concluso' : 'scrutinio ' + alPct(av.f)) : 'voti contati') : 'exit poll di ' + f.s;
-  return 'Israele, ' + chi + ': blocco Netanyahu a ' + t.N + ' seggi su 120 (maggioranza a 61). Lo spoglio in diretta';
+  return 'Israele, ' + chi + ': blocco Netanyahu a ' + t.N + ' seggi su 120 (maggioranza a 61). Tutti i risultati';
 }
 function linkSocial(rete) {
   const u = encodeURIComponent(URL_PAGINA), t = testoCondivisione(), tu = encodeURIComponent(t + ' ' + URL_PAGINA), te = encodeURIComponent(t);
@@ -3356,7 +3356,7 @@ function eventiSocial() {
   if (MENU_CONDIVISIONE) $('sLink').setAttribute('aria-label', 'Condividi il link');
   $('sLink').onclick = () => {
     if (!MENU_CONDIVISIONE) { copiaLink(); return; }
-    navigator.share({ title: 'Israele 2026 — Lo spoglio in diretta', text: testoCondivisione(), url: URL_PAGINA })
+    navigator.share({ title: 'Israele 2026 — I risultati', text: testoCondivisione(), url: URL_PAGINA })
       .catch(e => { if (!e || e.name !== 'AbortError') copiaLink(); });
   };
 }
