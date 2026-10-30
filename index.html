@@ -3013,7 +3013,9 @@ function renderManca() {
    6 · IL FEED
    ===================================================================== */
 const FEED = { timer: null, pausa: false, firma: null, busy: false, cicli: 0 };
-function setFeed(msg, stato) { $('feedStatus').textContent = msg; $('feedDot').className = 'dot ' + (stato || ''); }
+/* a spoglio concluso «In diretta» non ha più senso: i lettori non vedono più lo stato del feed,
+   che resta alla redazione */
+function setFeed(msg, stato) { $('feedStatus').textContent = msg; $('feedDot').className = 'dot ' + (stato || ''); $('feedStatus').parentNode.classList.toggle('solo-red', ED === '26' && SPOGLIO_CONCLUSO_26); }
 function avviso(msg) { const a = $('alert'); a.textContent = msg || ''; a.classList.toggle('hidden', !msg); }
 async function conTimeout(url, opt, ms) {
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
