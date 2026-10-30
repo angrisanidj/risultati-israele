@@ -169,7 +169,22 @@ select{background:var(--s2);color:var(--t1);border:1px solid var(--line-2);borde
 .flussi{padding:4px 18px 0}
 #flussiScope button:disabled{opacity:.4}
 @media(max-width:560px){#flussiScope,#flussiTipo{display:flex;width:100%}#flussiScope button,#flussiTipo button{flex:1 1 0;min-width:0;padding:8px 4px;font-size:12px;white-space:normal;line-height:1.2}#flussiCard .cardhead>div:last-child{width:100%;justify-content:flex-start!important}}
-.flussi svg{display:block;width:100%;max-width:860px;height:auto;margin:0 auto}
+.flussi svg{display:block;width:100%;max-width:860px;height:auto;margin:0 auto;-webkit-tap-highlight-color:transparent}
+/* il diagramma interattivo: passando su una lista (o toccandola) restano accesi solo i suoi flussi */
+.flussi path{transition:fill-opacity .15s}
+.flussi svg.foc path{fill-opacity:.1}
+.flussi svg.foc path.on{fill-opacity:.78}
+.flussi svg:not(.foc) path:hover{fill-opacity:.72}
+.flussi .nodo{cursor:pointer}
+.flussi svg.foc .nodo:not(.on){opacity:.45}
+/* il tooltip della pagina, al posto di quello del browser */
+.tip{position:fixed;z-index:200;left:0;top:0;pointer-events:none;background:var(--s3);border:1px solid var(--line-2);border-radius:9px;padding:8px 12px;font-size:12.5px;line-height:1.4;color:var(--t1);box-shadow:0 10px 28px rgba(0,0,0,.5);max-width:270px;opacity:0;transform:translateY(4px);transition:opacity .12s,transform .12s}
+.tip.on{opacity:1;transform:none}
+.tip b{display:flex;align-items:center;gap:7px;font-weight:600}
+.tip b i{width:10px;height:10px;border-radius:3px;flex:none}
+.tip span{display:block;color:var(--t2);margin-top:2px}
+.tip span+span{margin-top:1px}
+[data-tip]{cursor:default}
 .flussi text{font:600 15px var(--sans);fill:var(--t1)}
 .flussi text.v,.flussi tspan.v{fill:var(--t2);font-weight:500}
 .flussitesto{max-width:860px;margin:14px auto 0;padding:0 18px;box-sizing:content-box}
@@ -784,7 +799,7 @@ footer a{color:var(--t2)}
         <span class="cmeta" id="flussiMeta">stima</span>
       </div>
     </div>
-    <p class="subcopy">Come si sono spostati gli elettori fra il 2022 e il 2026: a sinistra come avevano votato allora, a destra come hanno votato oggi. Sono stime, non conteggi: nessuno sa come ha votato il singolo elettore.</p>
+    <p class="subcopy">Come si sono spostati gli elettori fra il 2022 e il 2026: a sinistra come avevano votato allora, a destra come hanno votato oggi. Passate su una lista, o toccatela, per vedere solo i suoi flussi. Sono stime, non conteggi: nessuno sa come ha votato il singolo elettore.</p>
     <div class="flussi" id="flussiGraf"></div>
     <div class="flussitesto" id="flussiTesto"></div>
     <p class="methodnote" id="flussiNota"></p>
@@ -1007,6 +1022,35 @@ const BLOC22 = { 'מחל': 'N', 'ט': 'N', 'שס': 'N', 'ג': 'N', 'פה': 'O', 
 /* ---------- utilità ---------- */
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+/* IL TOOLTIP. Gli elementi con data-tip (il titolo), data-tv (il valore; più righe separate da
+   «|») e data-tc (il colore del quadratino) lo mostrano al passaggio del mouse e, sul telefono,
+   al tocco; si chiude toccando altrove o scorrendo la pagina. Prende il posto del title del
+   browser, che è piccolo e arriva in ritardo. */
+const tipAttr = (t, v, c) => ' data-tip="' + esc(t) + '"' + (v != null && v !== '' ? ' data-tv="' + esc(v) + '"' : '') + (c ? ' data-tc="' + esc(c) + '"' : '');
+const TIP = document.createElement('div');
+TIP.className = 'tip'; TIP.setAttribute('role', 'tooltip'); document.body.appendChild(TIP);
+let tipEl = null;
+function mostraTip(el, x, y) {
+  if (el !== tipEl) {
+    tipEl = el;
+    const d = el.dataset;
+    TIP.innerHTML = '<b>' + (d.tc ? '<i style="background:' + esc(d.tc) + '"></i>' : '') + esc(d.tip) + '</b>' + (d.tv ? d.tv.split('|').map(v => '<span>' + esc(v) + '</span>').join('') : '');
+  }
+  const w = TIP.offsetWidth, h = TIP.offsetHeight;
+  let l = x + 14, t = y + 18;
+  if (l + w > innerWidth - 8) l = x - w - 14;
+  if (l < 8) l = 8;
+  if (t + h > innerHeight - 8) t = y - h - 14;
+  TIP.style.transform = '';
+  TIP.style.left = l + 'px'; TIP.style.top = Math.max(8, t) + 'px';
+  TIP.classList.add('on');
+}
+function nascondiTip() { tipEl = null; TIP.classList.remove('on'); }
+const tipDi = e => e.target && e.target.closest ? e.target.closest('[data-tip]') : null;
+document.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; const el = tipDi(e); if (el) mostraTip(el, e.clientX, e.clientY); else if (tipEl) nascondiTip(); });
+document.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') return; const el = tipDi(e); if (el) mostraTip(el, e.clientX, e.clientY); else nascondiTip(); });
+document.addEventListener('pointerleave', nascondiTip);
+addEventListener('scroll', () => { if (tipEl) nascondiTip(); }, { passive: true });
 const sum = o => Object.values(o || {}).reduce((a, b) => a + (Number(b) || 0), 0);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function nf(v, d = 0) {
@@ -1385,8 +1429,8 @@ function barraMaggioranza(t) {
   const resto = Math.max(0, SEGGI - t.N - t.X - t.O - t.A);
   const altri = [['O', 'opposizione'], ['A', 'arabi'], ['X', 'altri']].filter(([b]) => t[b]).map(([b, n]) => n + ' <b>' + t[b] + '</b>').join(', ');
   return '<div class="magg" role="img" aria-label="' + esc('Blocco Netanyahu ' + t.N + ' seggi su 120, maggioranza a 61') + '"><div class="magg-bar">' +
-    seg.map(([b, v]) => '<span style="width:' + (v / SEGGI * 100).toFixed(3) + '%;background:' + BLOCCHI[b].c + '" title="' + esc(BLOCCHI[b].n + ': ' + v) + '"></span>').join('') +
-    (resto ? '<span style="width:' + (resto / SEGGI * 100).toFixed(3) + '%" title="non assegnati"></span>' : '') +
+    seg.map(([b, v]) => '<span style="width:' + (v / SEGGI * 100).toFixed(3) + '%;background:' + BLOCCHI[b].c + '"' + tipAttr(BLOCCHI[b].n, v === 1 ? '1 seggio' : v + ' seggi', BLOCCHI[b].c) + '></span>').join('') +
+    (resto ? '<span style="width:' + (resto / SEGGI * 100).toFixed(3) + '%"' + tipAttr('Non assegnati', resto === 1 ? '1 seggio' : resto + ' seggi') + '></span>' : '') +
     '<i class="magg-61" style="left:' + (MAGG / SEGGI * 100).toFixed(3) + '%"></i></div>' +
     '<div class="magg-lab"><span class="n"><b>' + t.N + '</b>blocco Netanyahu</span><span class="m61" style="left:' + (MAGG / SEGGI * 100).toFixed(3) + '%">61</span><span>' + altri + '</span></div></div>';
 }
@@ -1443,7 +1487,7 @@ function renderTabella() {
     const p = r.p, q = R ? r.v / R.val : null, sotto = R && q < SOGLIA;
     const s = bo ? bo.seggi[r.l] || 0 : null;
     const ref = p.r22 ? (p.r22.p != null ? nf(p.r22.p, 2) + '% · ' + p.r22.s : '—') : (ED === '25' && BASE22.naz[r.l] ? nf(BASE22.naz[r.l] / sum(BASE22.naz) * 100, 2) + '% · ' + (SEGGI22[r.l] || 0) : '—');
-    const refT = p.r22 && p.r22.nota ? ' title="' + esc(p.r22.nota) + '"' : '';
+    const refT = p.r22 && p.r22.nota ? tipAttr('Nel 2022', p.r22.nota) : '';
     h += '<tr class="' + (sotto ? 'sotto' : '') + '"><td><div class="partylabel"><i class="partydot" style="background:' + p.c + '"></i><span>' + esc(p.n) + ' <span class="lett he">' + esc(r.l) + '</span></span><span class="bl ' + p.b + '">' + BLOCCHI[p.b].s + '</span></div>' +
       (p.ld ? '<span class="pname">' + esc(p.ld) + '</span>' : '') + '</td>' +
       '<td>' + (R ? nf(r.v) : '—') + '</td><td>' + (R ? pct(q, 2) : '—') + '</td>' +
@@ -1659,7 +1703,7 @@ function renderSimulatore() {
   $('simListe').innerHTML = liste.map(l => { const p = info(l); return '<button class="simchip" data-l="' + esc(l) + '" aria-pressed="' + SIM.sel.has(l) + '"><i style="background:' + p.c + '"></i>' + esc(nomeBreve(p)) + ' <b>' + f.seggi[l] + '</b></button>'; }).join('');
   $('simListe').onclick = e => { const b = e.target.closest('[data-l]'); if (!b) return; const l = b.dataset.l; SIM.sel.has(l) ? SIM.sel.delete(l) : SIM.sel.add(l); renderSimulatore(); };
   const scelte = liste.filter(l => SIM.sel.has(l)), tot = scelte.reduce((a, l) => a + f.seggi[l], 0);
-  const seg = scelte.map(l => '<span style="width:' + (f.seggi[l] / SEGGI * 100).toFixed(3) + '%;background:' + info(l).c + '" title="' + esc(nomeBreve(info(l)) + ': ' + f.seggi[l]) + '"></span>').join('');
+  const seg = scelte.map(l => '<span style="width:' + (f.seggi[l] / SEGGI * 100).toFixed(3) + '%;background:' + info(l).c + '"' + tipAttr(nomeBreve(info(l)), f.seggi[l] === 1 ? '1 seggio' : f.seggi[l] + ' seggi', info(l).c) + '></span>').join('');
   const esito = !scelte.length ? '<span>Nessuna lista scelta</span>' : tot >= MAGG ? '<span class="ok">maggioranza' + (tot > MAGG ? ', ' + (tot - MAGG) + ' oltre la soglia' : ' esatta') + '</span>' : '<span class="ko">ne mancano ' + (MAGG - tot) + ' per la maggioranza</span>';
   $('simBarra').innerHTML = '<div class="magg"><div class="magg-bar">' + seg + '<i class="magg-61" style="left:' + (MAGG / SEGGI * 100).toFixed(3) + '%"></i></div></div>' +
     '<div class="simtot"><b>' + tot + '</b>seggi · ' + esito + '</div>';
@@ -2041,7 +2085,7 @@ function geomFlussi(fl, W, H, colX) {
   const offL = L.map(n => n.y), offR = R.map(n => n.y), nastri = [];
   SX.forEach((a, j) => DX.forEach((b, k) => {
     const v = F[j][k], h = v * sc;
-    if (v / tot >= .003) nastri.push({ j: a.k, k: b.k, cj: a.c, nj: a.n, nk: b.n, y0: offL[j], y1: offR[k], h, q: v / tot });
+    if (v / tot >= .003) nastri.push({ j: a.k, k: b.k, ij: j, ik: k, cj: a.c, nj: a.n, nk: b.n, y0: offL[j], y1: offR[k], h, q: v / tot, qj: v / (sin[j] || 1), qk: v / (des[k] || 1) });
     offL[j] += h; offR[k] += h;
   }));
   return { L, R, nastri, tot };
@@ -2070,7 +2114,7 @@ function righeFlussi(fl, dove) {
   return '<h4>Cento elettori di ciascun gruppo del 2022: come hanno votato nel 2026' + (dove || '') + '</h4>' + FL_CAT.map((c, j) => {
     const t = F[j].reduce((a, b) => a + b, 0); if (!t || t / tot < .015) return '';   /* i gruppi minuscoli danno stime senza senso */
     const dest = FL_CAT.map((k, i) => ({ k, q: F[j][i] / t })).filter(d => d.q >= .005).sort((a, b) => (b.k === c) - (a.k === c) || b.q - a.q);
-    const barra = dest.map(d => '<span style="width:' + (d.q * 100).toFixed(2) + '%;background:' + FL_COL[d.k] + '" title="' + esc(FL_DEST[d.k] + ': ' + nf(d.q * 100, 0) + ' su 100') + '">' + (d.q >= .07 ? nf(d.q * 100, 0) : '') + '</span>').join('');
+    const barra = dest.map(d => '<span style="width:' + (d.q * 100).toFixed(2) + '%;background:' + FL_COL[d.k] + '"' + tipAttr(FL_NOMI[d.k] + ' nel 2026', nf(d.q * 100, 0) + ' elettori su 100', FL_COL[d.k]) + '>' + (d.q >= .07 ? nf(d.q * 100, 0) : '') + '</span>').join('');
     const testo = dest.filter(d => d.q >= .03).map(d => '<b>' + nf(d.q * 100, 0) + '</b> ' + (d.k === c ? FL_STESSO[c] : FL_DEST[d.k])).join(' · ');
     return '<div class="fr"><div class="fn"><i style="background:' + FL_COL[c] + '"></i><div>' + (c === 'S' ? 'Non votanti' : FL_NOMI[c]) + '<small>' + nf(t / tot * 100, 1) + '% degli aventi diritto</small></div></div>' +
       '<div class="fb">' + barra + '</div><div class="fd">' + testo + '</div></div>';
@@ -2091,7 +2135,7 @@ function origini(fl) {
 function righePartiti(fl, dove) {
   return '<h4>Cento elettori di ciascun partito del 2026: come avevano votato nel 2022' + (dove || '') + '</h4>' + origini(fl).filter(o => o.t >= .008).map(o => {
     const src = o.src.filter(x => x.q >= .005);
-    const barra = src.map(x => '<span style="width:' + (x.q * 100).toFixed(2) + '%;background:' + x.d.c + '" title="' + esc(x.d.n + ': ' + nf(x.q * 100, 0) + ' su 100') + '">' + (x.q >= .07 ? nf(x.q * 100, 0) : '') + '</span>').join('');
+    const barra = src.map(x => '<span style="width:' + (x.q * 100).toFixed(2) + '%;background:' + x.d.c + '"' + tipAttr(x.d.n + ' nel 2022', nf(x.q * 100, 0) + ' elettori su 100', x.d.c) + '>' + (x.q >= .07 ? nf(x.q * 100, 0) : '') + '</span>').join('');
     const testo = src.filter(x => x.q >= .03).map(x => '<b>' + nf(x.q * 100, 0) + '</b> ' + daDove(x.d)).join(' · ');
     return '<div class="fr"><div class="fn"><i style="background:' + o.c.c + '"></i><div>' + esc(o.c.n) + '<small>' + nf(o.t * 100, 1) + '% degli aventi diritto</small></div></div>' +
       '<div class="fb">' + barra + '</div><div class="fd">' + testo + '</div></div>';
@@ -2131,9 +2175,19 @@ function renderFlussi() {
   const W = mob ? 540 : 900, H = par ? (mob ? 1000 : 700) : (mob ? 560 : 370), nw = mob ? 14 : 16, LB = mob ? (par ? 172 : 156) : 210, g = geomFlussi(fl, W, H, [LB, W - LB - nw]);
   const nome = d => mob ? d.s : d.n;
   if (par) { const fs = mob ? 20 : 15; distanzia(g.L, fs * 1.2, H); distanzia(g.R, fs * 1.2, H); }
-  const nastro = n => { const x0 = LB + nw, x1 = W - LB - nw, m = (x0 + x1) / 2; return '<path d="M' + x0 + ',' + n.y0.toFixed(1) + 'C' + m + ',' + n.y0.toFixed(1) + ' ' + m + ',' + n.y1.toFixed(1) + ' ' + x1 + ',' + n.y1.toFixed(1) + 'L' + x1 + ',' + (n.y1 + n.h).toFixed(1) + 'C' + m + ',' + (n.y1 + n.h).toFixed(1) + ' ' + m + ',' + (n.y0 + n.h).toFixed(1) + ' ' + x0 + ',' + (n.y0 + n.h).toFixed(1) + 'Z" fill="' + n.cj + '" fill-opacity=".42"><title>' + esc(n.nj + ' 2022 → ' + n.nk + ' 2026: ' + nf(n.q * 100, 1) + '% degli elettori') + '</title></path>'; };
-  const nodo = (n, sx) => {
-    const tx = sx ? n.x - 8 : n.x + nw + 8, an = sx ? 'end' : 'start', r_ = '<rect x="' + n.x + '" y="' + n.y.toFixed(1) + '" width="' + nw + '" height="' + Math.max(1, n.h).toFixed(1) + '" fill="' + n.d.c + '" rx="2"></rect>';
+  /* i testi del tooltip: per un nastro, quanti elettori e che parte sono dei due gruppi; per un
+     nodo, dove vanno (2022) o da dove vengono (2026) i suoi elettori */
+  const chi22 = (k, n) => k === 'S' ? 'dei non votanti del 2022' : k === 'X' ? 'delle altre liste del 2022' : 'di chi votava ' + n;
+  const chi26 = (k, n) => k === 'S' ? 'dei non votanti di oggi' : k === 'X' ? 'delle altre liste di oggi' : 'degli elettori di ' + n + ' oggi';
+  const tipNastro = n => tipAttr(n.nj + ' → ' + n.nk, nf(n.q * 100, 1) + '% degli aventi diritto|' + nf(n.qj * 100, 0) + ' su 100 ' + chi22(n.j, n.nj) + '|' + nf(n.qk * 100, 0) + ' su 100 ' + chi26(n.k, n.nk), n.cj);
+  const tipNodo = (n, sx) => {
+    const mie = g.nastri.filter(x => (sx ? x.ij : x.ik) === (sx ? g.L : g.R).indexOf(n)).sort((a, b) => (sx ? b.qj - a.qj : b.qk - a.qk)).filter(x => (sx ? x.qj : x.qk) >= .03).slice(0, 4);
+    return tipAttr(n.d.n + (sx ? ', 2022' : ', 2026'), nf(n.q * 100, 1) + '% degli aventi diritto|' + (sx ? 'Nel 2026: ' : 'Nel 2022: ') + mie.map(x => (sx ? x.nk : x.nj) + ' ' + nf((sx ? x.qj : x.qk) * 100, 0)).join(' · '), n.d.c);
+  };
+  const nastro = n => { const x0 = LB + nw, x1 = W - LB - nw, m = (x0 + x1) / 2; return '<path data-j="' + n.ij + '" data-k="' + n.ik + '" d="M' + x0 + ',' + n.y0.toFixed(1) + 'C' + m + ',' + n.y0.toFixed(1) + ' ' + m + ',' + n.y1.toFixed(1) + ' ' + x1 + ',' + n.y1.toFixed(1) + 'L' + x1 + ',' + (n.y1 + n.h).toFixed(1) + 'C' + m + ',' + (n.y1 + n.h).toFixed(1) + ' ' + m + ',' + (n.y0 + n.h).toFixed(1) + ' ' + x0 + ',' + (n.y0 + n.h).toFixed(1) + 'Z" fill="' + n.cj + '" fill-opacity=".42"' + tipNastro(n) + '></path>'; };
+  const nodo = (n, sx) => '<g class="nodo" data-lato="' + (sx ? 'j' : 'k') + '" data-i="' + (sx ? g.L : g.R).indexOf(n) + '"' + tipNodo(n, sx) + '>' + nodoSvg(n, sx) + '</g>';
+  const nodoSvg = (n, sx) => {
+    const tx = sx ? n.x - 8 : n.x + nw + 8, an = sx ? 'end' : 'start', r_ = '<rect x="' + n.x + '" y="' + n.y.toFixed(1) + '" width="' + nw + '" height="' + Math.max(1, n.h).toFixed(1) + '" fill="' + n.d.c + '" rx="2"></rect><rect x="' + (n.x - 6) + '" y="' + (n.y - 2).toFixed(1) + '" width="' + (nw + 12) + '" height="' + (Math.max(1, n.h) + 4).toFixed(1) + '" fill="transparent"></rect>';
     /* i nodi bassi hanno nome e percentuale su una riga, se no si accavallano con i vicini */
     const fs = mob ? 20 : 15;
     if (par) return r_ + (n.ly == null ? '' : '<text class="lab" x="' + tx + '" y="' + (n.ly + fs * .35).toFixed(1) + '" text-anchor="' + an + '">' + esc(nome(n.d)) + ' <tspan class="v">' + nf(n.q * 100, 1) + '%</tspan></text>');
@@ -2144,6 +2198,18 @@ function renderFlussi() {
   $('flussiGraf').innerHTML = '<svg viewBox="0 -40 ' + W + ' ' + (H + 46) + '" role="img" aria-label="' + (par ? 'Flussi di voto fra i partiti' : 'Flussi di voto fra i blocchi') + ' dal 2022 al 2026">' +
     '<text x="' + (LB + nw / 2) + '" y="-18" text-anchor="middle" class="v">2022</text><text x="' + (W - LB - nw / 2) + '" y="-18" text-anchor="middle" class="v">2026</text>' +
     g.nastri.map(nastro).join('') + g.L.map(n => nodo(n, true)).join('') + g.R.map(n => nodo(n, false)).join('') + '</svg>';
+  /* passando su un nodo restano accesi i suoi nastri; toccandolo (o cliccandolo) si fissa, e un
+     altro tocco sullo stesso nodo o fuori dai nodi lo libera */
+  const svg = $('flussiGraf').querySelector('svg');
+  const accendi = gn => {
+    svg.classList.toggle('foc', !!gn);
+    svg.querySelectorAll('.nodo').forEach(x => x.classList.toggle('on', x === gn));
+    svg.querySelectorAll('path').forEach(p_ => p_.classList.toggle('on', !!gn && p_.dataset[gn.dataset.lato] === gn.dataset.i));
+  };
+  let fisso = null;
+  svg.addEventListener('pointerover', e => { const gn = e.target.closest('.nodo'); if (gn && !fisso && e.pointerType === 'mouse') accendi(gn); });
+  svg.addEventListener('pointerout', e => { const gn = e.target.closest('.nodo'); if (gn && !fisso && !(e.relatedTarget && gn.contains(e.relatedTarget))) accendi(null); });
+  svg.addEventListener('click', e => { const gn = e.target.closest('.nodo'); fisso = gn && gn !== fisso ? gn : null; accendi(fisso || (gn && e.pointerType === 'mouse' ? gn : null)); });
   $('flussiGraf').querySelectorAll('text.lab').forEach(t => {
     let fs_ = parseFloat(getComputedStyle(t).fontSize) || 15;
     for (let i = 0; i < 14; i++) { const b = t.getBBox(); if (!b.width || (b.x >= 1 && b.x + b.width <= W - 1)) break; fs_ *= .93; t.style.fontSize = fs_.toFixed(1) + 'px'; }
@@ -2564,9 +2630,9 @@ function rigaLista(key, nome, q, fr, sel, muta) {
     else { const b = BASE22.loc[key]; if (b) sw = q.bl.N - b[6] / 1000; }
   }
   if (sw != null) return '<div class="lanrow' + (sel ? ' sel' : '') + '" data-id="' + key + '"><span class="ln"><i style="background:' + (sw >= 0 ? BLOCCHI.N.c : BLOCCHI.O.c) + '"></i>' + esc(nome) + '</span>' +
-    '<span class="lp"><span class="' + (sw >= 0 ? 'spN' : 'spO') + '">Netanyahu ' + punti(sw) + '</span></span><span class="lc" title="punti rispetto al 2022, sulle stesse località">pt</span></div>';
+    '<span class="lp"><span class="' + (sw >= 0 ? 'spN' : 'spO') + '">Netanyahu ' + punti(sw) + '</span></span><span class="lc" data-tip="Punti rispetto al 2022" data-tv="sulle stesse località">pt</span></div>';
   return '<div class="lanrow' + (q ? '' : ' mute') + (sel ? ' sel' : '') + '" data-id="' + key + '"><span class="ln"><i style="background:' + (p ? p.c : COL_VUOTO) + '"></i>' + esc(nome) + '</span>' +
-    '<span class="lp">' + (q ? esc(nomeBreve(p)) + ' ' + nf(q.arr[0].q * 100, 0) + '%' : '—') + '</span><span class="lc" title="' + (ED === '26' ? 'votanti contati su quelli attesi con l’affluenza 2026' : 'voti contati rispetto al 2022') + '">' + (q && fr != null ? pct(Math.min(fr, 1), 0) : '') + '</span></div>';
+    '<span class="lp">' + (q ? esc(nomeBreve(p)) + ' ' + nf(q.arr[0].q * 100, 0) + '%' : '—') + '</span><span class="lc"' + tipAttr('Quanto è contato', ED === '26' ? 'votanti contati su quelli attesi con l’affluenza 2026' : 'voti contati rispetto al 2022') + '>' + (q && fr != null ? pct(Math.min(fr, 1), 0) : '') + '</span></div>';
 }
 function renderLista() {
   const R = risultato(), loc = R && R.loc ? R.loc : new Map();
@@ -2726,20 +2792,28 @@ function seggiInBilico(voti, acc, max) {
   return out.sort((x, y) => x.k - y.k);
 }
 const BILICO_MAX = 10000;
-/* la frase dei seggi in bilico: bil da seggiInBilico, t i seggi dei blocchi, coda la frase finale */
-function testoBilico(bil, t, coda) {
-  if (!bil.length) return '<div class="muted" style="font-size:12px;margin-top:6px">Nessun seggio si decide per meno di ' + nf(BILICO_MAX) + ' voti.</div>';
+/* la frase dei seggi in bilico: bil da seggiInBilico, t i seggi dei blocchi, coda la frase finale;
+   passato a spoglio concluso («sarebbe passato», «sarebbe sceso») */
+const ART_LISTE = { 'Likud': ['del', 'al'], 'Lista unita': ['della', 'alla'], 'Democratici': ['dei', 'ai'], 'Riservisti': ['dei', 'ai'] };
+const diL = n => ART_LISTE[n] ? ART_LISTE[n][0] + ' ' + n : 'di ' + n, aL = n => ART_LISTE[n] ? ART_LISTE[n][1] + ' ' + n : 'a ' + n;
+function testoBilico(bil, t, coda, passato) {
+  if (!bil.length) return '<div class="muted" style="font-size:12px;margin-top:6px">Nessun seggio ' + (passato ? 'si è deciso' : 'si decide') + ' per meno di ' + nf(BILICO_MAX) + ' voti.</div>';
   const nm = l => esc(nomeBreve(infoLista(l))), ordn = n => (n === 8 || n === 11 || (n >= 80 && n < 90) ? 'l’' : 'il ') + n + '°';
+  const giu = (pl, f) => passato ? (pl ? 'sarebbero scesi' : f ? 'sarebbe scesa' : 'sarebbe sceso') : pl ? 'scenderebbero' : 'scenderebbe';
+  const su = (pl, f) => passato ? (pl ? 'sarebbero saliti' : f ? 'sarebbe salita' : 'sarebbe salito') : pl ? 'salirebbero' : 'salirebbe';
   const effetto = c => {
     const bd = infoLista(c.da).b, ba = infoLista(c.a).b;
     if (bd === ba) return ', senza cambiare i blocchi';
-    if (bd === 'N' || ba === 'N') return ', e il blocco Netanyahu ' + (bd === 'N' ? 'scenderebbe a ' + (t.N - 1) : 'salirebbe a ' + (t.N + 1));
-    return ', e ' + (bd === 'O' || ba === 'O' ? 'l’opposizione ' + (bd === 'O' ? 'scenderebbe a ' + (t.O - 1) : 'salirebbe a ' + (t.O + 1)) : 'i partiti arabi ' + (bd === 'A' ? 'scenderebbero a ' + (t.A - 1) : 'salirebbero a ' + (t.A + 1)));
+    if (bd === 'N' || ba === 'N') return ', e il blocco Netanyahu ' + (bd === 'N' ? giu() + ' a ' + (t.N - 1) : su() + ' a ' + (t.N + 1));
+    return ', e ' + (bd === 'O' || ba === 'O' ? 'l’opposizione ' + (bd === 'O' ? giu(0, 1) + ' a ' + (t.O - 1) : su(0, 1) + ' a ' + (t.O + 1)) : 'i partiti arabi ' + (bd === 'A' ? giu(1) + ' a ' + (t.A - 1) : su(1) + ' a ' + (t.A + 1)));
   };
-  const frase = c => ordn(c.n) + ' seggio di ' + nm(c.da) + ' passerebbe a ' + nm(c.a) + ' con circa ' +
-    (c.kA != null && c.kDa != null ? nf(c.kA) + ' voti in più a ' + nm(c.a) + ' o ' + nf(c.kDa) + ' in meno a ' + nm(c.da) : c.kA != null ? nf(c.kA) + ' voti in più a ' + nm(c.a) : nf(c.kDa) + ' voti in meno a ' + nm(c.da)) + effetto(c);
+  const frase = c => {
+    const da = nm(c.da), a = nm(c.a);
+    return ordn(c.n) + ' seggio ' + diL(da) + (passato ? ' sarebbe passato ' : ' passerebbe ') + aL(a) + ' con circa ' +
+      (c.kA != null && c.kDa != null ? nf(c.kA) + ' voti in più ' + aL(a) + ' o ' + nf(c.kDa) + ' in meno ' + aL(da) : c.kA != null ? nf(c.kA) + ' voti in più ' + aL(a) : nf(c.kDa) + ' voti in meno ' + aL(da)) + effetto(c);
+  };
   const testo = bil.map(frase).join('; ');
-  return '<div class="bilico"><b>Seggi in bilico.</b> ' + testo.charAt(0).toUpperCase() + testo.slice(1) + '. ' + coda + '</div>';
+  return '<div class="bilico"><b>' + (passato ? 'Seggi decisi per pochi voti.' : 'Seggi in bilico.') + '</b> ' + testo.charAt(0).toUpperCase() + testo.slice(1) + '. ' + coda + '</div>';
 }
 function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
   const d = R.d, vr = d.vot ? R.val / d.vot : 1;
@@ -2813,7 +2887,7 @@ function proiezioneFinale(R, loc, grandi, scala, envM, stima) {
   h += '<div class="pgraf">' + righe.map(([b, n]) => {
     const [lo, hi] = fra(sim[b]);
     return '<div class="pr"><div class="pn"><i style="background:' + BLOCCHI[b].c + '"></i>' + n + '</div><div class="pt"><div class="pb" style="width:' + x(t[b]) + ';background:' + BLOCCHI[b].c + '"></div>' +
-      (hi > lo ? '<div class="pm" style="left:' + x(lo) + ';width:calc(' + x(hi) + ' - ' + x(lo) + ')" title="margine ' + lo + '–' + hi + '"></div>' : '') +
+      (hi > lo ? '<div class="pm" style="left:' + x(lo) + ';width:calc(' + x(hi) + ' - ' + x(lo) + ')"' + tipAttr('Margine', 'fra ' + lo + ' e ' + hi + ' seggi, 8 simulazioni su 10') + '></div>' : '') +
       '<i class="p61" style="left:' + x(MAGG) + '"></i></div><div class="pv">' + t[b] + '<small>' + (hi > lo ? lo + '–' + hi : 'stabile') + '</small></div></div>';
   }).join('') + '<div class="pscala"><div></div><div><div>' + [0, 20, 40, 61].map(v => '<span style="left:' + x(v) + '">' + (v === 61 ? '61' : v) + '</span>').join('') + '</div></div><div></div></div></div>';
   h += '<div style="font-size:14px;margin-top:10px">Il blocco Netanyahu arriva a 61 in <b>' + nf(magg / SIMUL * 100, 0) + ' simulazioni su 100</b>.</div>';
@@ -2845,7 +2919,7 @@ function renderManca() {
     box.innerHTML = '<p class="muted" style="font-size:13.5px;margin:0 0 4px">Il 29 ottobre alle 16:55 israeliane (le 15:55 in Italia) la Commissione elettorale centrale ha annunciato la fine dello spoglio, doppie buste comprese. Sono stati contati ' + nf(R.d.vot) + ' votanti, di cui ' + nf(bc) + ' in doppia busta' +
       (sez ? ', in ' + (sez >= SEZIONI_26 ? 'tutte le ' : '') + nf(sez) + ' sezioni ordinarie' + (sez < SEZIONI_26 ? ' (le altre ' + nf(SEZIONI_26 - sez) + ' delle ' + nf(SEZIONI_26) + ' previste non hanno un risultato pubblicato)' : '') : '') +
       '. I risultati non sono ancora definitivi: dopo un ulteriore controllo sulla regolarità del voto, quelli ufficiali arriveranno il 4 novembre.</p>' +
-      testoBilico(seggiInBilico(R.voti, accordi(), BILICO_MAX).slice(0, 2), t, 'Bastano piccole correzioni nei risultati ufficiali per spostarli.');
+      (bil => testoBilico(bil, t, 'Sarebbero bastate piccole differenze nel voto per spostarl' + (bil.length > 1 ? 'i' : 'o') + '.', true))(seggiInBilico(R.voti, accordi(), BILICO_MAX).slice(0, 2));
     $('proiezCard').classList.add('hidden'); PROIEZ = null;
     return;
   }
