@@ -2047,12 +2047,18 @@ function geomFlussi(fl, W, H, colX) {
   return { L, R, nastri, tot };
 }
 /* Le etichette su una riga, per i diagrammi con tanti nodi: ciascuna parte dal centro del suo
-   nodo, quelle che si accavallano scendono di quanto serve (almeno d fra l'una e l'altra) e, se
-   l'ultima esce dal fondo, risalgono. I nodi sotto lo 0,2% restano senza etichetta (ly). */
+   nodo e, finché due vicine sono a meno di d, si allontanano di metà dello scarto ciascuna; così
+   un gruppo di nodi piccoli si allarga sopra e sotto, e nessuna etichetta va lontano dal suo
+   nodo. I nodi sotto lo 0,2% restano senza etichetta (ly). */
 function distanzia(nodi, d, H) {
   const N = nodi.filter(n => n.q >= .002);
-  N.forEach((n, i) => { n.ly = Math.max(n.y + n.h / 2, i ? N[i - 1].ly + d : -Infinity); });
-  for (let i = N.length - 1; i >= 0; i--) N[i].ly = Math.min(N[i].ly, i < N.length - 1 ? N[i + 1].ly - d : H);
+  N.forEach(n => { n.ly = n.y + n.h / 2; });
+  for (let it = 0; it < 300; it++) {
+    let mosso = false;
+    for (let i = 1; i < N.length; i++) { const o = d - (N[i].ly - N[i - 1].ly); if (o > .05) { N[i - 1].ly -= o / 2; N[i].ly += o / 2; mosso = true; } }
+    if (N.length) { N[0].ly = Math.max(N[0].ly, d * .4); N[N.length - 1].ly = Math.min(N[N.length - 1].ly, H); }
+    if (!mosso) break;
+  }
   return N;
 }
 /* Per ogni gruppo del 2022, una barra: come hanno votato nel 2026 cento suoi elettori. Sotto,
@@ -2071,7 +2077,10 @@ function righeFlussi(fl, dove) {
   }).join('');
 }
 /* Per ogni partito del 2026, una barra: come avevano votato nel 2022 cento suoi elettori */
-const daDove = d => d.k === 'S' ? 'non avevano votato' : d.k === 'X' ? 'da altre liste' : 'da ' + d.n;
+/* con l'articolo dove serve: «dal Likud», «dai Laburisti», «da Yesh Atid» */
+const FLP_ART = { 'Likud': ['dal ', 'il '], 'Sionismo religioso': ['dal ', 'il '], 'Laburisti': ['dai ', 'i '] };
+const daDove = d => d.k === 'S' ? 'non avevano votato' : d.k === 'X' ? 'da altre liste' : (FLP_ART[d.n] ? FLP_ART[d.n][0] : 'da ') + d.n;
+const conArtFL = n => (FLP_ART[n] ? FLP_ART[n][1] : '') + n;
 function origini(fl) {
   const F = fl.F, tot = F.flat().reduce((a, b) => a + b, 0);
   return fl.dx.map((c, k) => {
@@ -4270,8 +4279,8 @@ window.CARD = (function () {
   /* «di Yashar», «dei Democratici», «della Lista unita»; le due origini principali di un partito */
   const diLista = n => n === 'Democratici' ? 'dei Democratici' : n === 'Riservisti' ? 'dei Riservisti' : n === 'Lista unita' ? 'della Lista unita' : 'di ' + n;
   const dueOrigini = o => {
-    const [a, b] = o.src, lista = d => d.k !== 'S' && d.k !== 'X', v = d => d.k === 'S' ? 'non avevano votato' : d.k === 'X' ? 'votavano altre liste' : 'votavano ' + d.n;
-    return nf(a.q * 100, 0) + ' ' + v(a.d) + ' e ' + nf(b.q * 100, 0) + ' ' + (lista(a.d) && lista(b.d) ? b.d.n : v(b.d));
+    const [a, b] = o.src, lista = d => d.k !== 'S' && d.k !== 'X', v = d => d.k === 'S' ? 'non avevano votato' : d.k === 'X' ? 'votavano altre liste' : 'votavano ' + conArtFL(d.n);
+    return nf(a.q * 100, 0) + ' ' + v(a.d) + ' e ' + nf(b.q * 100, 0) + ' ' + (lista(a.d) && lista(b.d) ? conArtFL(b.d.n) : v(b.d));
   };
   const conArt = n => /^(I )?Democratici$/.test(n) ? 'i Democratici' : n === 'Riservisti' ? 'i Riservisti' : n;
   /* raggruppa nomi con lo stesso valore scritto: «Beyachad e Lista unita al 9,1%» */
