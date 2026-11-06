@@ -1368,7 +1368,7 @@ function render() {
 function renderHero() {
   const R = risultato();
   /* dopo la chiusura delle urne (le 20 UTC del 27 ottobre) la frase passa al passato */
-  if (ED === '26' && Date.now() >= Date.UTC(2026, 9, 27, 20, 0)) $('heroText').textContent = $('heroText').textContent.replace('Le urne chiudono alle 22 in Israele, le 21 in Italia.', SPOGLIO_CONCLUSO_26 ? 'Le urne hanno chiuso alle 22 in Israele, le 21 in Italia. Il 29 ottobre la Commissione ha annunciato la fine dello spoglio, doppie buste comprese: i risultati ufficiali arriveranno il 4 novembre.' : 'Le urne hanno chiuso alle 22 in Israele, le 21 in Italia: lo spoglio completo, con le doppie buste, è atteso il 29 ottobre in serata, i risultati ufficiali il 4 novembre.');
+  if (ED === '26' && Date.now() >= Date.UTC(2026, 9, 27, 20, 0)) $('heroText').textContent = $('heroText').textContent.replace('Le urne chiudono alle 22 in Israele, le 21 in Italia.', SPOGLIO_CONCLUSO_26 ? 'Le urne hanno chiuso alle 22 in Israele, le 21 in Italia. Il 29 ottobre la Commissione ha annunciato la fine dello spoglio, doppie buste comprese, e il 4 novembre ha approvato i risultati definitivi.' : 'Le urne hanno chiuso alle 22 in Israele, le 21 in Italia: lo spoglio completo, con le doppie buste, è atteso il 29 ottobre in serata, i risultati ufficiali il 4 novembre.');
   const lu = $('lastUpdate');
   if (PROVA) { lu.textContent = 'Prova · spoglio 2022 al ' + $('provaPct').textContent; lu.className = 'pill'; }
   else if (R && R.fonte === 'manuale') { lu.textContent = 'Risultato inserito a mano'; lu.className = 'pill danger'; }
@@ -1386,7 +1386,7 @@ function renderKpi() {
     $('kVoti').textContent = nf(R.val);
     $('kVotiMeta').textContent = R.fonte === 'manuale' ? 'inseriti a mano'
       : av.tipo === 'seggi' ? nf(av.fatti) + ' sezioni su ' + nf(av.tot) + ' (' + pct(av.f) + ')'
-        : av.tipo === 'concluso' ? 'spoglio concluso secondo la Commissione, doppie buste comprese'
+        : av.tipo === 'concluso' ? 'risultati definitivi della Commissione, doppie buste comprese'
         : (av.seggi ? nf(av.seggi) + ' sezioni scrutinate · ' : '') + 'circa ' + pctScr(av.f) + (av.tipo === 'affluenza' ? ' dei votanti attesi, sull’affluenza 2026 (' + pct(AFFLUENZA_26) + ')' : ' dei voti ordinari, sui volumi del 2022');
     if (R.d) {
       let n = 0, tot = 0;
@@ -1442,7 +1442,7 @@ function renderVerdetto() {
     return;
   }
   const t = totBlocchi(f), n = t.N, win = n >= MAGG;
-  const chi = f.k === 'scrutinio' ? (R.fonte === 'manuale' ? 'Con i voti inseriti a mano' : 'Con il ' + pctScr(av.f) + ' dei voti contati')
+  const chi = f.k === 'scrutinio' ? (R.fonte === 'manuale' ? 'Con i voti inseriti a mano' : av.tipo === 'concluso' ? 'Con i risultati definitivi' : 'Con il ' + pctScr(av.f) + ' dei voti contati')
     : f.k === 'modello' ? 'Secondo il modello previsionale'
     : 'Secondo l’exit poll di ' + f.s + (f.ora ? ' (ore ' + esc(f.ora) + ')' : '');
   const titolo = win ? chi + ', il blocco Netanyahu ha la maggioranza: ' + n + ' seggi'
@@ -1722,7 +1722,7 @@ function renderSimulatore() {
       vis.map((x, i) => '<div class="strada' + (x.veti.length ? '' : ' ok') + '" data-s="' + i + '"><div class="sm">' + x.mem.map(l => '<span><i style="background:' + info(l).c + '"></i>' + esc(nomeBreve(info(l))) + ' ' + f.seggi[l] + '</span>').join('') + '</div><div class="st">' + x.tot + '</div>' +
         '<div class="sv' + (x.veti.length ? ' ko' : '') + '">' + (x.veti.length ? 'Veti: ' + x.veti.map(esc).join('; ') : 'Nessun veto dichiarato') + '</div></div>').join('');
   $('simStrade').onclick = e => { const b = e.target.closest('[data-s]'); if (!b) return; SIM.sel = new Set(vis[+b.dataset.s].mem); renderSimulatore(); $('simCard').scrollIntoView({ block: 'start', behavior: 'smooth' }); };
-  $('simNota').textContent = 'Seggi: ' + nomeFonte(f, true) + (f.k === 'scrutinio' ? (SPOGLIO_CONCLUSO_26 && ED === '26' ? ', ricalcolati con Bader-Ofer sui voti contati: i risultati ufficiali arriveranno il 4 novembre.' : ', ricalcolati con Bader-Ofer sui voti contati finora: possono ancora cambiare.') : f.k === 'k22' ? ', la Knesset uscente.' : '.') + ' I veti sono le dichiarazioni dei leader raccolte dal modello previsionale prima del voto: dopo il voto possono cambiare.';
+  $('simNota').textContent = 'Seggi: ' + nomeFonte(f, true) + (f.k === 'scrutinio' ? (SPOGLIO_CONCLUSO_26 && ED === '26' ? ', ricalcolati con Bader-Ofer sui voti definitivi: coincidono con quelli approvati dalla Commissione il 4 novembre.' : ', ricalcolati con Bader-Ofer sui voti contati finora: possono ancora cambiare.') : f.k === 'k22' ? ', la Knesset uscente.' : '.') + ' I veti sono le dichiarazioni dei leader raccolte dal modello previsionale prima del voto: dopo il voto possono cambiare.';
   sl.onchange = e => { SIM.src = e.target.value; renderSimulatore(); };
 }
 
@@ -2683,10 +2683,10 @@ function renderScrutinio() {
   const R = risultato(), av = avanzamento(R);
   $('progressBar').style.width = (av.f * 100).toFixed(1) + '%';
   $('progressPct').textContent = R ? pct(av.f, av.f === 1 ? 0 : 1) : '—';
-  $('progPill').textContent = av.tipo === 'seggi' ? 'sezioni scrutinate' : av.tipo === 'concluso' ? 'spoglio concluso' : av.tipo === 'affluenza' ? 'stima sull’affluenza 2026' : av.tipo === 'volumi' ? 'stima sui volumi 2022' : av.tipo === 'manuale' ? 'manuale' : '—';
+  $('progPill').textContent = av.tipo === 'seggi' ? 'sezioni scrutinate' : av.tipo === 'concluso' ? 'risultati definitivi' : av.tipo === 'affluenza' ? 'stima sull’affluenza 2026' : av.tipo === 'volumi' ? 'stima sui volumi 2022' : av.tipo === 'manuale' ? 'manuale' : '—';
   $('progressText').textContent = !R ? 'In attesa del file della Commissione'
     : av.tipo === 'seggi' ? nf(av.fatti) + ' sezioni scrutinate su ' + nf(av.tot)
-      : av.tipo === 'concluso' ? 'Spoglio concluso: lo ha annunciato la Commissione il 29 ottobre. ' + nf(av.vo) + ' votanti contati, di cui ' + nf(av.bc) + ' in doppia busta. I risultati ufficiali arriveranno il 4 novembre.'
+      : av.tipo === 'concluso' ? 'Spoglio concluso il 29 ottobre, risultati definitivi approvati dalla Commissione il 4 novembre: ' + nf(av.vo) + ' votanti, di cui ' + nf(av.bc) + ' in doppia busta.'
       : av.tipo === 'affluenza' ? (av.seggi ? nf(av.seggi) + ' sezioni scrutinate, ' : '') + nf(av.vo) + ' votanti contati su circa ' + nf(VOT26) + ' attesi (' + pct(AFFLUENZA_26) + ' di ' + nf(AVENTI_26) + ' aventi diritto, doppie buste comprese)'
       : av.tipo === 'volumi' ? (av.seggi ? nf(av.seggi) + ' sezioni scrutinate, ' : '') + nf(av.ord) + ' voti ordinari su ' + nf(VAL22_ORD) + ' nel 2022' : 'Risultato inserito a mano';
   let cc = '';
@@ -2704,7 +2704,7 @@ function renderScrutinio() {
     ['notte', 'arrivano le grandi città; le reti aggiornano gli exit poll con i voti reali'],
     ['mercoledì', 'nel 2022 le sezioni ordinarie erano complete verso mezzogiorno israeliano'],
     ['29 ottobre', SPOGLIO_CONCLUSO_26 ? 'la Commissione annuncia la fine dello spoglio, doppie buste comprese' : 'in serata lo spoglio completo, con le doppie buste: ' + BUSTE_FORCHETTA + ' secondo la Commissione'],
-    ['4 novembre', 'i risultati ufficiali']
+    ['4 novembre', SPOGLIO_CONCLUSO_26 ? 'la Commissione approva i risultati definitivi e li consegna al presidente Herzog' : 'i risultati ufficiali']
   ].map(([t, x]) => '<div><b>' + t + '</b><span>' + x + '</span></div>').join('');
 }
 /* LA PROIEZIONE A FINE SPOGLIO, se le stime di «Cosa manca da contare» sono giuste.
@@ -2734,8 +2734,9 @@ const RAPPORTO_BUSTE22 = { 'מחל': 1.00, 'רק': 0.95, 'ט': 1.43, 'ב': 1.43,
 const BUSTE_ATTESE_26 = 455000, BUSTE_MIN_26 = 430000, BUSTE_MAX_26 = 480000, BUSTE_FORCHETTA = 'fra 430.000 e 480.000';
 /* LO SPOGLIO CONCLUSO: la Commissione lo ha annunciato il 29 ottobre alle 16:55 israeliane (le
    15:55 in Italia), doppie buste comprese; i dati sul sito hanno continuato ad arrivare fino a
-   sera. I risultati non sono definitivi: quelli ufficiali il 4 novembre, dopo un ulteriore
-   controllo sulla regolarità del voto. Da qui la pagina segna il 100% e non stima più niente. */
+   sera. Il 4 novembre, dopo il controllo sulla regolarità del voto, il plenum della Commissione
+   ha approvato i risultati definitivi: gli stessi seggi. Da qui la pagina segna il 100% e non
+   stima più niente; l'ultimo file, scaricato il 4 novembre dopo l'approvazione, non è più cambiato. */
 const SPOGLIO_CONCLUSO_26 = true;
 /* le sezioni ordinarie (קלפיות) del 2026: 12.018 secondo la Commissione */
 const SEZIONI_26 = 12018;
@@ -2914,14 +2915,14 @@ function renderManca() {
   /* A SPOGLIO CONCLUSO non si stima più niente: il riquadro lo dice, con i seggi in bilico sui
      voti contati, e la proiezione sparisce (i voti contati sono già il risultato) */
   if (a26 && SPOGLIO_CONCLUSO_26 && R.fonte !== 'manuale') {
-    $('mancaTitolo').textContent = 'Lo spoglio è concluso';
-    $('mancaMeta').textContent = 'Commissione, 29 ottobre';
+    $('mancaTitolo').textContent = 'I risultati definitivi';
+    $('mancaMeta').textContent = 'Commissione, 4 novembre';
     $('mancaSub').classList.add('hidden'); $('mancaNote').classList.add('hidden');
     const sez = S.expb && S.expb.fatti, bc = R.env ? R.env.vot : 0, sg = baderOfer(R.voti, accordi()).seggi, t = { N: 0, O: 0, A: 0, X: 0 };
     for (const l in sg) t[infoLista(l).b] += sg[l];
-    box.innerHTML = '<p class="muted" style="font-size:13.5px;margin:0 0 4px">Il 29 ottobre alle 16:55 israeliane (le 15:55 in Italia) la Commissione elettorale centrale ha annunciato la fine dello spoglio, doppie buste comprese. Sono stati contati ' + nf(R.d.vot) + ' votanti, di cui ' + nf(bc) + ' in doppia busta' +
+    box.innerHTML = '<p class="muted" style="font-size:13.5px;margin:0 0 4px">Il 29 ottobre alle 16:55 israeliane (le 15:55 in Italia) la Commissione elettorale centrale ha annunciato la fine dello spoglio, doppie buste comprese; il 4 novembre, dopo il controllo sulla regolarità del voto, ne ha approvato i risultati definitivi e li ha consegnati al presidente Herzog. Sono stati contati ' + nf(R.d.vot) + ' votanti, di cui ' + nf(bc) + ' in doppia busta' +
       (sez ? ', in ' + (sez >= SEZIONI_26 ? 'tutte le ' : '') + nf(sez) + ' sezioni ordinarie' + (sez < SEZIONI_26 ? ' (le altre ' + nf(SEZIONI_26 - sez) + ' delle ' + nf(SEZIONI_26) + ' previste non hanno un risultato pubblicato)' : '') : '') +
-      '. I risultati non sono ancora definitivi: dopo un ulteriore controllo sulla regolarità del voto, quelli ufficiali arriveranno il 4 novembre.</p>' +
+      '.</p>' +
       (bil => testoBilico(bil, t, 'Sarebbero bastate piccole differenze nel voto per spostarl' + (bil.length > 1 ? 'i' : 'o') + '.', true))(seggiInBilico(R.voti, accordi(), BILICO_MAX).slice(0, 2));
     $('proiezCard').classList.add('hidden'); PROIEZ = null;
     return;
@@ -3328,7 +3329,7 @@ function testoCondivisione() {
   const f = fonteAttiva();
   if (f.k === 'k22' || f.k === 'modello') return 'Israele, elezioni del 27 ottobre: i risultati, con i 120 seggi, gli exit poll e la mappa';
   const t = totBlocchi(f), R = risultato(), av = avanzamento(R);
-  const chi = f.k === 'scrutinio' ? (R && R.fonte !== 'manuale' ? (av.tipo === 'concluso' ? 'spoglio concluso' : 'scrutinio ' + alPct(av.f)) : 'voti contati') : 'exit poll di ' + f.s;
+  const chi = f.k === 'scrutinio' ? (R && R.fonte !== 'manuale' ? (av.tipo === 'concluso' ? 'i risultati definitivi' : 'scrutinio ' + alPct(av.f)) : 'voti contati') : 'exit poll di ' + f.s;
   return 'Israele, ' + chi + ': blocco Netanyahu a ' + t.N + ' seggi su 120 (maggioranza a 61). Tutti i risultati';
 }
 function linkSocial(rete) {
@@ -3557,7 +3558,7 @@ window.CARD = (function () {
   /* ---------- CARD 1 — il voto ---------- */
   function card1(x, s, N) {
     frame(x, { badge: s.R && s.R.fonte === 'prova' ? 'PROVA 2022' : 'SCRUTINIO', kicker: s.ambito, title: g('t1').value, sub: s.R ? scr(s) + ' · ' + nf(s.R.val) + ' voti validi · seggi con il metodo Bader-Ofer' : '',
-      nota: 'La soglia di sbarramento è il 3,25% dei voti validi. ' + (SPOGLIO_CONCLUSO_26 ? 'I seggi sono calcolati sui voti contati a spoglio concluso, con gli accordi di eccedenza fra liste; i risultati ufficiali arrivano il 4 novembre.' : 'I seggi sono ricalcolati sui voti contati finora, con gli accordi di eccedenza fra liste, e possono cambiare fino alla fine dello scrutinio e al conteggio delle doppie buste.'),
+      nota: 'La soglia di sbarramento è il 3,25% dei voti validi. ' + (SPOGLIO_CONCLUSO_26 ? 'I seggi sono calcolati sui voti definitivi, con gli accordi di eccedenza fra liste, e coincidono con quelli approvati dalla Commissione il 4 novembre.' : 'I seggi sono ricalcolati sui voti contati finora, con gli accordi di eccedenza fra liste, e possono cambiare fino alla fine dello scrutinio e al conteggio delle doppie buste.'),
       fonte: fonteCEC(s), n: N.n, tot: N.tot });
     if (!s.R) return attesa(x, 'In attesa dei voti contati');
     const R = ordinaVoti(s).filter(r => r.q >= 0.008).slice(0, 10);
